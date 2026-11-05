@@ -2680,13 +2680,9 @@ function makeHat(k,P,hc){const g=new THREE.Group();const M=(c,o)=>lmat(c,Object.
   case 'mohawk':{const m=MC(0xd8402a,{roughness:.8});for(let i=0;i<6;i++){const z=-.13+i*.055,y=.03+Math.cos((i-2.5)*.35)*.06;add(new THREE.BoxGeometry(P(.04),P(.16),P(.06)),m,[0,y,z],[(i-2.5)*.18,0,0]);}break;}
   case 'long':{const m=MC(HC,{roughness:.8});add(new THREE.SphereGeometry(P(.222),18,12,0,Math.PI*2,0,Math.PI*.55),m,[0,-.16,.01],[.62,0,0]);add(new THREE.BoxGeometry(P(.36),P(.42),P(.1)),m,[0,-.33,.16]);break;}
   case 'afro':add(new THREE.SphereGeometry(P(.28),20,14),MC(0x2a1d14,{roughness:1}),[0,-.03,.07]);break;
-  case 'markhair':{const m=MC(0xecebaa,{roughness:.8});
-    add(new THREE.SphereGeometry(P(.232),22,12,0,Math.PI*2,0,Math.PI*.41),m,[0,-.155,0]);add(new THREE.SphereGeometry(P(.215),22,16),m,[0,.035,.01],null,[1.08,.82,1.05]);
-    for(const [x,z,h,rz] of [[-.16,.0,.16,.6],[-.06,-.01,.21,.32],[.05,-.01,.21,.14],[.15,.01,.17,-.1]])add(new THREE.ConeGeometry(P(.11),P(h),7),m,[x,.15+h*.25,z],[0,0,rz],[1,1,.75]);
-    for(const [x,l,r] of [[-.13,.085,.35],[-.04,.1,.1],[.05,.09,-.05],[.14,.08,-.3]])add(new THREE.ConeGeometry(P(.07),P(l),3),m,[x,-.08,-.205+Math.abs(x)*.22],[Math.PI+.1,r,0],[1,1,.25]);
-    const k=M(0x111214);const seg=(x1,y1,x2,y2,w)=>{const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy);add(new THREE.BoxGeometry(P(w||.026),P(L+.02),P(.026)),k,[(x1+x2)/2,(y1+y2)/2,0],[0,0,-Math.atan2(dx,dy)]);};
-    seg(0,.1,0,.17);seg(0,.17,.06,.19,.03);seg(.06,.19,-.03,.235,.03);seg(-.03,.235,.03,.255,.03);seg(.0,.25,0,.31);
-    add(new THREE.SphereGeometry(P(.055),14,10),M(0xfff59a,{emissive:0x8a7a20,roughness:.35}),[0,.345,0]);add(new THREE.TorusGeometry(P(.056),P(.008),6,20),k,[0,.345,0]);add(new THREE.SphereGeometry(P(.016),8,6),M(0xffffff,{emissive:0x888888}),[-.018,.362,-.04]);break;}
+  case 'markhair':{const m=MC(0xf2d24a,{roughness:.75});add(new THREE.SphereGeometry(P(.222),18,10,0,Math.PI*2,0,Math.PI*.45),m,[0,-.16,0],[.3,0,0]);
+    for(const [x,y,z,rx,rz,h] of [[0,.06,-.12,-1.0,0,.26],[-.1,.05,-.1,-.8,.55,.22],[.1,.05,-.1,-.8,-.55,.22],[-.16,0,-.02,-.25,1.0,.2],[.16,0,-.02,-.25,-1.0,.2],[0,.09,.02,.15,0,.28],[-.09,.08,.04,.35,.5,.24],[.09,.08,.04,.35,-.5,.24],[0,.04,.13,.9,0,.22]])add(new THREE.ConeGeometry(P(.075),P(h),8),m,[x,y,z],[rx,0,rz]);
+    {const k=M(0x15161a);const seg=(x1,y1,x2,y2)=>{const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy);add(new THREE.CylinderGeometry(P(.008),P(.008),P(L+.012),6),k,[(x1+x2)/2,(y1+y2)/2,.02],[0,0,-Math.atan2(dx,dy)]);};seg(0,.02,0,.2);seg(0,.2,.035,.225);seg(.035,.225,-.03,.255);seg(-.03,.255,0,.28);seg(0,.28,0,.37);}add(new THREE.SphereGeometry(P(.05),12,10),M(0xffe14a,{emissive:0x806a10,roughness:.4}),[0,.4,.02]);break;}
   case 'antenna':add(new THREE.CylinderGeometry(P(.008),P(.008),P(.36),6),M(0x15161a),[0,.12,0]);add(new THREE.SphereGeometry(P(.05),12,10),MC(0xffe14a,{roughness:.4}),[0,.32,0]);break;
   default:return null;}return g;}
 let LOOK={s:'',p:'2a2b2e',k:'e8c4a0',h:'none',hc:'',e:'round',ec:'2a1d14',t:'tee',t2:'f4f1ea',a:'none',b:'tank',bc:'',sh:'2b2f3a',ac:'',hd:'round',tb:'normal',ar:'normal',lg:'normal',hdc:'',tbc:'',arc:'',lgc:''};try{Object.assign(LOOK,JSON.parse(localStorage.getItem('gluewright.look')||'{}'));}catch(e){}
@@ -2767,7 +2763,7 @@ function bodyStyle(g,L,P,J){const m2=(geo,m,pos,rot,sc)=>{const x=mk(geo,m,pos&&
       case 'none':T.visible=false;break;}}
   /* arms */
   if(L.ar&&L.ar!=='normal')for(const [S,sd] of [[J.shL,-1],[J.shR,1]]){for(const c of [...S.children])S.remove(c);const am=pc('arc',J.arm);
-    switch(L.ar){case 'hands':S.add(m2(new THREE.SphereGeometry(P(.09),14,10),pc('arc',J.skin),[sd*.03,-.6,0],null,[1,1.1,.85]),m2(new THREE.SphereGeometry(P(.042),10,8),pc('arc',J.skin),[-sd*.05,-.53,-.05]));break;
+    switch(L.ar){case 'hands':S.add(m2(new THREE.CapsuleGeometry(P(.075),P(.11),4,10),pc('arc',J.skin),[0,-.56,0]));break;
       case 'robot':{const mm=metal('arc');S.add(m2(new THREE.CylinderGeometry(P(.06),P(.06),P(.28),10),mm,[0,-.16,0]),m2(new THREE.SphereGeometry(P(.066),10,8),dark,[0,-.32,0]),m2(new THREE.CylinderGeometry(P(.055),P(.055),P(.26),10),mm,[0,-.46,0]));for(const k of [-1,1])S.add(m2(new THREE.BoxGeometry(P(.03),P(.11),P(.05)),dark,[k*.035,-.63,0]));break;}
       case 'stick':S.add(m2(new THREE.CylinderGeometry(P(.018),P(.018),P(.6),6),pc('arc','15161a'),[0,-.3,0]),m2(new THREE.SphereGeometry(P(.04),8,6),pc('arc','15161a'),[0,-.62,0]));break;
       case 'noodle':S.add(m2(new THREE.CapsuleGeometry(P(.04),P(.8),4,8),am,[0,-.45,0]));break;
@@ -7506,7 +7502,7 @@ function idCss(id){return `hsl(${hue(id)},70%,70%)`;}
 async function sbClient(){if(NET.sb)return NET.sb;const m=await import(SB_LIB);NET.sb=m.createClient(SB_URL,SB_KEY,{realtime:{params:{eventsPerSecond:40},worker:true,heartbeatIntervalMs:15000},auth:{persistSession:false,autoRefreshToken:false}});return NET.sb;}
 async function freshChannel(name,opts){const sb=await sbClient();try{for(const c of (sb.getChannels?sb.getChannels():[]))if(c.topic==='realtime:'+name||c.subTopic===name)await sb.removeChannel(c);}catch(e){console.warn(e);}return sb.channel(name,opts);}
 function subscribeCh(ch){return new Promise((res,rej)=>{let done=false;const to=setTimeout(()=>{if(!done){done=true;rej(new Error('timeout'));}},10000);ch.subscribe((st,err)=>{const tn=String(ch.topic||'').replace('realtime:','').replace(/^gw-/,'').slice(0,22);if(st!=='SUBSCRIBED'||!done||ch._gwErr)netLog(`${tn}: ${st}${st==='SUBSCRIBED'&&ch._gwErr?' again (reconnected)':''}${err?' '+(err.message||err):''}`);ch._gwErr=st!=='SUBSCRIBED';if(done)return;if(st==='SUBSCRIBED'){done=true;clearTimeout(to);res(ch);}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED'){done=true;clearTimeout(to);rej(new Error(st));}});});}
-const GAME_VERSION='364';const UPDATE_NAME='The Random Fun Update';
+const GAME_VERSION='365';const UPDATE_NAME='The Random Fun Update';
 const NETLOG=[];function netLog(m){const t=new Date();NETLOG.push(`${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')} ${m}`);if(NETLOG.length>14)NETLOG.shift();for(const id of ['netlog','netlog2']){const el=document.getElementById(id);if(el)el.textContent=NETLOG.join('\n');}}
 function bsend0(ch,ev,payload){if(!ch)return;try{const r=ch.send({type:'broadcast',event:ev,payload});if(r&&r.then)r.then(res=>{if(res&&res!=='ok'&&ev!=='s'&&ev!=='st')netLog(`send ${ev} → ${res}`);}).catch(e=>netLog(`send ${ev} failed ${e&&e.message||e}`));}catch(e){netLog(`send ${ev} threw ${e&&e.message||e}`);}}
 let CK_SEQ=0;
