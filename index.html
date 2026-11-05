@@ -2634,7 +2634,7 @@ function groundCheck(b,mask,r=.42){const p=b.position;if(p.y-r<=heightAt(p.x,p.z
 const LOOK_SHIRTS=['3e8fd0','e06a2e','6fae3c','b64fd0','d8402a','f2c230','2b2f3a','f4f1ea','22a39b','ff7aa8'],LOOK_PANTS=['2a2b2e','3b4a6b','1f3a5f','6b4e2e','c8b48a','4a5a3a','8a8a8a','7a2a2a','5a3e6b','e0e0e0'],LOOK_SKIN=['ffe0cc','f2d3b8','e8c4a0','c99a72','a57450','8d5524','7a5134','4f3322','b8e986','7fc8f8'];
 const LOOK_EYEC=['2a1d14','4a2f1c','3e8fd0','3c8a3c','7a7a7a','111111','d8402a','9b59ff','f2c230','22a39b'],LOOK_ANY=['f4f1ea','2b2f3a','d8402a','e06a2e','f2c230','6fae3c','3e8fd0','b64fd0','ff7aa8','7a5134','4a2f1c','9aa0a6'];
 const HATS=[['none','No hat'],['cap','Cap'],['top','Top hat'],['crown','Crown'],['party','Party hat'],['hard','Hard hat'],['cowboy','Cowboy'],['viking','Viking'],['beanie','Propeller cap'],['beret','Beret'],['chef','Chef'],['wizard','Wizard'],['pirate','Pirate'],['santa','Santa'],['bucket','Bucket hat'],['knight','Knight helmet'],['headset','Headphones'],['bunny','Bunny ears'],['halo','Halo'],['flower','Flower'],['spiky','Spiky hair'],['mohawk','Mohawk'],['long','Long hair'],['afro','Afro'],['markhair','Alien hair'],['antenna','Antenna']];
-const LOOK_EYES=[['round','Round'],['dots','Dots'],['happy','Happy'],['sleepy','Sleepy'],['angry','Angry'],['wink','Wink'],['cyclops','Cyclops'],['visor','Visor'],['mark','Mark']];
+const LOOK_EYES=[['round','Round'],['dots','Dots'],['happy','Happy'],['sleepy','Sleepy'],['angry','Angry'],['wink','Wink'],['cyclops','Cyclops'],['visor','Visor'],['mark','Mark'],['markhappy','Mark happy'],['marksmug','Mark smug'],['markangry','Mark angry'],['marksad','Mark sad'],['markshock','Mark shocked'],['markdizzy','Mark dizzy']];
 const LOOK_TOPS=[['tee','T-shirt'],['long','Long sleeve'],['hoodie','Hoodie'],['jacket','Jacket'],['stripes','Stripes'],['suit','Suit'],['overalls','Overalls'],['tank','Tank top'],['armor','Armor']];
 const LOOK_ACC=[['none','Nothing'],['glasses','Glasses'],['shades','Sunglasses'],['mustache','Mustache'],['beard','Beard'],['scarf','Scarf'],['bowtie','Bow tie'],['cape','Cape']];
 const LOOK_HEADS=[['round','Round'],['box','Blocky'],['big','Big'],['small','Small'],['tall','Tall'],['robot','Robot'],['pumpkin','Pumpkin'],['skull','Skull'],['none','No head']];
@@ -2655,6 +2655,13 @@ function logicMesh(col,kind,txt){const g=new THREE.Group();const top=new THREE.M
   else if(kind==='lbl'){const lm=new THREE.Mesh(new THREE.PlaneGeometry(.4,.1),new THREE.MeshBasicMaterial({map:labelTex(txt,'#ffffff',256,64,'800 40px system-ui,sans-serif'),transparent:true}));lm.rotation.x=-Math.PI/2;lm.position.y=.096;g.add(lm);}
   else if(kind==='counter'){for(let i=0;i<4;i++)g.add(mk(new THREE.BoxGeometry(.06,.03,.06),W,[-.12+i*.08,.1,.1]));}
   const led=mk(new THREE.SphereGeometry(.035,10,8),new THREE.MeshBasicMaterial({color:0x331a1a}),[.17,.1,-.17]);g.add(led);g.userData.led=led;return {mesh:g,shapes:[[new CANNON.Box(V(.25,.09,.25))]]};}
+/* Mark's hair, designed by Sam in the Mark Hair Workshop */
+const MARK_HAIR={"c":"f2d24a","s":[[0.07,-0.06,-0.04,-0.182,0.43,-0.836,1.674,1.1,1.6,0.36],[0.06,-0.07,0.05,-0.165,0,-0.913,1.35,1.1,1.75,0.36],[-0.03,-0.11,0.13,-0.167,-0.172,-0.942,1.35,0.95,1.3,0.36],[-0.09,-0.11,0.03,-0.129,-0.037,-0.657,1.85,1.2,1.9,0.36],[-0.06,-0.07,-0.05,-0.173,0.414,-0.749,1.4,1,1.35,0.36],[-0.16,-0.07,0.01,-0.203,0.21,-0.429,0.95,0.75,1.35,0.36],[-0.126,-0.123,0.084,-0.041,0.422,-0.655,1.1,1.25,2.1,0.36],[-0.12,-0.106,-0.078,0.046,-0.689,-0.433,0.95,0.75,1.35,0.36]],"a":{"y":0.24,"z":0.02,"zz":1,"b":0.05}};
+const MARK_TIPS=new Map();
+function markTip(R){const q=Math.round(Math.max(0,Math.min(1,R??.15))*50);let g=MARK_TIPS.get(q);if(g)return g;const r=q/50,pts=[];
+  for(let i=0;i<=8;i++){const a=-Math.PI/2+i/8*Math.PI/2;pts.push([.08*Math.cos(a),.045+.08*Math.sin(a)]);}
+  for(let i=1;i<=16;i++){const t=i/16;pts.push([.08*((1-r)*Math.pow(1-t,.8)+r*Math.sqrt(Math.max(0,1-t*t))),.045+.205*t]);}
+  g=new THREE.LatheGeometry(pts.map(([a,b])=>new THREE.Vector2(Math.max(0,a),b)),20);MARK_TIPS.set(q,g);return g;}
 function makeHat(k,P,hc){const g=new THREE.Group();const M=(c,o)=>lmat(c,Object.assign({roughness:.6},o||{}));const MC=(c,o)=>M(hc?hc:c,o);const add=(geo,m,pos,rot,sc)=>{const x=mk(geo,m,pos&&pos.map(P),rot);if(sc)x.scale.set(...sc);g.add(x);return x;};const HC=0x4a2f1c;
   switch(k){
   case 'cap':add(new THREE.SphereGeometry(P(.215),18,10,0,Math.PI*2,0,Math.PI/2),MC(0xd8402a),[0,-.02,0]);add(new THREE.CylinderGeometry(P(.2),P(.2),P(.02),20,1,false,-Math.PI/2,Math.PI),MC(0xd8402a),[0,-.01,-.12]);break;
@@ -2680,10 +2687,11 @@ function makeHat(k,P,hc){const g=new THREE.Group();const M=(c,o)=>lmat(c,Object.
   case 'mohawk':{const m=MC(0xd8402a,{roughness:.8});for(let i=0;i<6;i++){const z=-.13+i*.055,y=.03+Math.cos((i-2.5)*.35)*.06;add(new THREE.BoxGeometry(P(.04),P(.16),P(.06)),m,[0,y,z],[(i-2.5)*.18,0,0]);}break;}
   case 'long':{const m=MC(HC,{roughness:.8});add(new THREE.SphereGeometry(P(.222),18,12,0,Math.PI*2,0,Math.PI*.55),m,[0,-.16,.01],[.62,0,0]);add(new THREE.BoxGeometry(P(.36),P(.42),P(.1)),m,[0,-.33,.16]);break;}
   case 'afro':add(new THREE.SphereGeometry(P(.28),20,14),MC(0x2a1d14,{roughness:1}),[0,-.03,.07]);break;
-  case 'markhair':{const m=MC(0xf2d24a,{roughness:.75});
-    {const tip=new THREE.LatheGeometry([[0,0],[.075,.01],[.082,.05],[.07,.1],[.05,.15],[.03,.2],[.016,.235],[0,.25]].map(([r,y])=>new THREE.Vector2(P(r),P(y))),14);
-     for(const z of [-.11,0,.11])for(const x of [-.11,0,.11]){const sy=-.16+Math.sqrt(Math.max(.002,.044-x*x-z*z));const k=.95+(x+.11)*2.3+(z>.1?-.1:0);add(tip,m,[x,sy-.06,z],[z*1.5,0,-.45-(x+.11)*2.1],[k*1.15,k*1.05,k*1.15]);}}
-    {const k=M(0x15161a);const seg=(x1,y1,x2,y2)=>{const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy);add(new THREE.CylinderGeometry(P(.008),P(.008),P(L+.012),6),k,[(x1+x2)/2,(y1+y2)/2,.02],[0,0,-Math.atan2(dx,dy)]);};seg(0,.02,0,.12);seg(0,.12,.032,.142);seg(.032,.142,-.027,.168);seg(-.027,.168,0,.188);seg(0,.188,0,.225);}add(new THREE.SphereGeometry(P(.05),12,10),M(0xffe14a,{emissive:0x806a10,roughness:.4}),[0,.255,.02]);break;}
+  case 'markhair':{const H=MARK_HAIR;const m=MC(parseInt(H.c,16),{roughness:.75});const u=P(1);
+    for(const p of H.s)add(markTip(p[9]),m,[p[0],p[1],p[2]],[p[3],p[4],p[5]],[p[6]*u,p[7]*u,p[8]*u]);
+    {const A=H.a,k=M(0x15161a),top=A.y-A.b*.6,z=A.z;const seg=(x1,y1,x2,y2)=>{const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy);if(L<.001)return;add(new THREE.CylinderGeometry(P(.008),P(.008),P(L+.012),6),k,[(x1+x2)/2,(y1+y2)/2,z],[0,0,-Math.atan2(dx,dy)]);};
+     if(A.zz&&top>.08){const h=top-.02,a=.02+h*.43,b=a+h*.12,c2=b+h*.14,d=c2+h*.12;seg(0,.02,0,a);seg(0,a,.032,a+(b-a)*.6);seg(.032,a+(b-a)*.6,-.027,c2);seg(-.027,c2,0,d);seg(0,d,0,top);}else seg(0,.02,0,top);
+     add(new THREE.SphereGeometry(P(A.b),16,12),M(0xffe14a,{emissive:0x806a10,roughness:.4}),[0,A.y,z]);}break;}
   case 'antenna':add(new THREE.CylinderGeometry(P(.008),P(.008),P(.36),6),M(0x15161a),[0,.12,0]);add(new THREE.SphereGeometry(P(.05),12,10),MC(0xffe14a,{roughness:.4}),[0,.32,0]);break;
   default:return null;}return g;}
 let LOOK={s:'',p:'2a2b2e',k:'e8c4a0',h:'none',hc:'',e:'round',ec:'2a1d14',t:'tee',t2:'f4f1ea',a:'none',b:'tank',bc:'',sh:'2b2f3a',ac:'',hd:'round',tb:'normal',ar:'normal',lg:'normal',hdc:'',tbc:'',arc:'',lgc:''};try{Object.assign(LOOK,JSON.parse(localStorage.getItem('gluewright.look')||'{}'));}catch(e){}
@@ -2706,8 +2714,39 @@ function dressUp(g,L,P,J){const add=(geo,m,pos,rot,par,sc)=>{const x=mk(geo,m,po
   case 'mark':{for(const [x,h] of [[-.055,.055],[.045,.065]])add(new THREE.CapsuleGeometry(P(.014),P(h),4,8),ec,[x,EY-.005,EZ-.008]);
     const MY=1.672+HF[0],R=.2025+(HF[1]<0?-HF[1]:0);{const pts=[];for(let i=0;i<=12;i++){const a=-.46+i*.0767;pts.push(new THREE.Vector3(P(Math.sin(a)*R),P(MY+(i<3?(3-i)*.004:0)),P(-Math.cos(a)*R)));}const tb=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),24,P(.014),6,false),ec);g.add(tb);add(new THREE.SphereGeometry(P(.014),8,6),ec,[Math.sin(-.46)*R,MY+.012,-Math.cos(-.46)*R]);add(new THREE.SphereGeometry(P(.014),8,6),ec,[Math.sin(.46)*R,MY,-Math.cos(.46)*R]);}
     add(new THREE.SphereGeometry(P(.04),12,8),ec,[.0,MY-.022,-.191+HF[1]],null,null,[1.25,.7,.35]);add(new THREE.BoxGeometry(P(.045),P(.016),P(.01)),lmat(0xc9c9c9),[.0,MY-.011,-.205+HF[1]]);break;}
+  case 'markhappy':case 'marksmug':case 'markangry':case 'marksad':case 'markshock':case 'markdizzy':{
+    const CY=1.74+HF[0],fz=(x,y,o)=>HF[1]-Math.sqrt(Math.max(0,(.2045+(o||0))**2-x*x-(y-CY)**2));
+    const line=(pp,r,mat)=>{r=r||.013;mat=mat||ec;const v=pp.map(([x,y])=>new THREE.Vector3(P(x),P(y),P(fz(x,y))));g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(v),Math.max(8,pp.length*6),P(r),6,false),mat));
+      for(const [x,y] of [pp[0],pp[pp.length-1]])add(new THREE.SphereGeometry(P(r),8,6),mat,[x,y,fz(x,y)]);};
+    const blob=(x,y,r,sc,mat,o)=>add(new THREE.SphereGeometry(P(r),14,10),mat||ec,[x,y,fz(x,y,o||0)],null,null,sc);
+    const pill=(x,y,h)=>add(new THREE.CapsuleGeometry(P(.014),P(h),4,8),ec,[x,y,fz(x,y)+.004]);
+    const red=lmat(0xe0464a),E=1.77+HF[0],M0=1.672+HF[0];
+    switch(L.e){
+    case 'markhappy':
+      for(const cx of [-.06,.055])line([[cx-.028,E-.012],[cx-.014,E+.006],[cx,E+.012],[cx+.014,E+.006],[cx+.028,E-.012]]);
+      blob(0,M0-.012,.04,[1.7,1.05,.4]);blob(0,M0-.03,.026,[1.5,.75,.4],red,.004);
+      line([[-.075,M0+.008],[-.035,M0+.012],[0,M0+.013],[.035,M0+.012],[.075,M0+.008]]);break;
+    case 'marksmug':
+      for(const [cx,h] of [[-.05,.03],[.05,.035]]){pill(cx+.012,E-.01,h);line([[cx-.02,E+.012],[cx+.03,E+.012]],.011);}
+      line([[-.045,M0+.002],[-.01,M0-.006],[.025,M0-.002],[.055,M0+.012],[.07,M0+.026]]);break;
+    case 'markangry':
+      for(const sd of [-1,1]){pill(sd*.052,E-.012,.035);line([[sd*.09,E+.045],[sd*.055,E+.035],[sd*.022,E+.018]],.012);}
+      blob(0,M0-.01,.035,[1.6,.6,.35]);add(new THREE.BoxGeometry(P(.08),P(.016),P(.01)),lmat(0xf2f2f2),[0,M0-.004,fz(0,M0-.004)-.008]);
+      line([[-.07,M0-.02],[-.035,M0+.004],[0,M0+.01],[.035,M0+.004],[.07,M0-.02]]);break;
+    case 'marksad':
+      for(const sd of [-1,1]){pill(sd*.052,E-.01,.045);line([[sd*.085,E+.028],[sd*.055,E+.04],[sd*.022,E+.052]],.011);}
+      blob(.07,E-.06,.012,[1,1.4,.6],lmat(0x7fc8ff,{roughness:.2}),.003);
+      line([[-.05,M0-.018],[-.025,M0-.002],[0,M0+.004],[.025,M0-.002],[.05,M0-.018]]);break;
+    case 'markshock':
+      for(const sd of [-1,1]){blob(sd*.058,E,.02,[1,1.45,.45]);blob(sd*.058-.006,E+.01,.006,[1,1,.5],white,.008);line([[sd*.085,E+.05],[sd*.058,E+.06],[sd*.03,E+.05]],.01);}
+      blob(0,M0-.018,.03,[1,1.25,.4]);blob(0,M0-.03,.017,[1.3,.6,.4],red,.004);break;
+    case 'markdizzy':
+      for(const cx of [-.058,.058]){line([[cx-.022,E+.02],[cx+.022,E-.02]],.011);line([[cx-.022,E-.02],[cx+.022,E+.02]],.011);}
+      line([[-.07,M0],[-.05,M0+.012],[-.025,M0-.008],[0,M0+.01],[.025,M0-.008],[.05,M0+.012],[.07,M0]]);
+      blob(.03,M0-.018,.016,[1,1.2,.5],red,.003);break;}
+    break;}
   default:eyeBall(-.075,.045);eyeBall(.075,.045);}
-  if(L.a!=='beard'&&!noFace&&L.e!=='mark')add(new THREE.TorusGeometry(P(.045),P(.01),6,14,Math.PI),dark,[0,1.69+HF[0],-.198+HF[1]],[0,0,Math.PI]);
+  if(L.a!=='beard'&&!noFace&&!String(L.e).startsWith('mark'))add(new THREE.TorusGeometry(P(.045),P(.01),6,14,Math.PI),dark,[0,1.69+HF[0],-.198+HF[1]],[0,0,Math.PI]);
   /* face extras */
   const AC=(d,o)=>L.ac?lmat(L.ac,o):d;
   switch(L.a){
@@ -7503,7 +7542,7 @@ function idCss(id){return `hsl(${hue(id)},70%,70%)`;}
 async function sbClient(){if(NET.sb)return NET.sb;const m=await import(SB_LIB);NET.sb=m.createClient(SB_URL,SB_KEY,{realtime:{params:{eventsPerSecond:40},worker:true,heartbeatIntervalMs:15000},auth:{persistSession:false,autoRefreshToken:false}});return NET.sb;}
 async function freshChannel(name,opts){const sb=await sbClient();try{for(const c of (sb.getChannels?sb.getChannels():[]))if(c.topic==='realtime:'+name||c.subTopic===name)await sb.removeChannel(c);}catch(e){console.warn(e);}return sb.channel(name,opts);}
 function subscribeCh(ch){return new Promise((res,rej)=>{let done=false;const to=setTimeout(()=>{if(!done){done=true;rej(new Error('timeout'));}},10000);ch.subscribe((st,err)=>{const tn=String(ch.topic||'').replace('realtime:','').replace(/^gw-/,'').slice(0,22);if(st!=='SUBSCRIBED'||!done||ch._gwErr)netLog(`${tn}: ${st}${st==='SUBSCRIBED'&&ch._gwErr?' again (reconnected)':''}${err?' '+(err.message||err):''}`);ch._gwErr=st!=='SUBSCRIBED';if(done)return;if(st==='SUBSCRIBED'){done=true;clearTimeout(to);res(ch);}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED'){done=true;clearTimeout(to);rej(new Error(st));}});});}
-const GAME_VERSION='369';const UPDATE_NAME='The Random Fun Update';
+const GAME_VERSION='370';const UPDATE_NAME='The Random Fun Update';
 const NETLOG=[];function netLog(m){const t=new Date();NETLOG.push(`${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')} ${m}`);if(NETLOG.length>14)NETLOG.shift();for(const id of ['netlog','netlog2']){const el=document.getElementById(id);if(el)el.textContent=NETLOG.join('\n');}}
 function bsend0(ch,ev,payload){if(!ch)return;try{const r=ch.send({type:'broadcast',event:ev,payload});if(r&&r.then)r.then(res=>{if(res&&res!=='ok'&&ev!=='s'&&ev!=='st')netLog(`send ${ev} → ${res}`);}).catch(e=>netLog(`send ${ev} failed ${e&&e.message||e}`));}catch(e){netLog(`send ${ev} threw ${e&&e.message||e}`);}}
 let CK_SEQ=0;
