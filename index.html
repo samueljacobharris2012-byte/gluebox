@@ -1829,12 +1829,12 @@ DEFS0.pseat=Object.assign({},DEFS0.seat,{name:'Passenger Seat',short:'Passenger'
    g.add(mk(new THREE.TorusGeometry(.45,.035,8,40).rotateX(Math.PI/2),MAT.rubber),mk(new THREE.TorusGeometry(.415,.016,6,40).rotateX(Math.PI/2),MAT.steel),mk(new THREE.CylinderGeometry(.045,.045,.14,12),MAT.steel),mk(new THREE.CylinderGeometry(.02,.02,.2,8),MAT.dark));
    const sp=new THREE.CylinderGeometry(.005,.005,.41,4).rotateZ(Math.PI/2).translate(.205,0,0);for(let i=0;i<16;i++){const m=mk(sp,MAT.steel,[0,(i%2?.03:-.03),0],[0,i*Math.PI/8,0]);g.add(m);}
    return{mesh:g,shapes:[[new CANNON.Sphere(.48)]]};}};
- DEFS0.racewheel={name:'Racing Wheel',short:'Race Wheel',mass:7,float:1.1,snd:'soft',wheel:true,race:true,pmat:'race',r:.42,q:[0,0,Math.PI/2],spd:7.5,grip:1.7,fk:.85,build:()=>{const g=new THREE.Group();
+ DEFS0.racewheel={name:'Racing Wheel',short:'Race Wheel',mass:7,float:1.1,snd:'soft',wheel:true,race:true,pmat:'race',r:.56,q:[0,0,Math.PI/2],spd:7.5,grip:1.7,fk:.5,susp:true,build:()=>{const g0=new THREE.Group(),g=new THREE.Group();g.scale.setScalar(.56/.42);g0.add(g);
    const t=mk(new THREE.TorusGeometry(.31,.11,12,32).rotateX(Math.PI/2),SM(0x111113,{roughness:.35}));t.scale.set(1,1.9,1);g.add(t);
    g.add(mk(new THREE.CylinderGeometry(.24,.24,.36,24),SM(0x1c1c20,{roughness:.4,metalness:.5})));const rim=SM(0xd8262e,{roughness:.3,metalness:.6}),gold=SM(0xf2c230,{roughness:.3,metalness:.7});
    for(const y of [-.185,.185]){g.add(mk(new THREE.TorusGeometry(.225,.018,8,28).rotateX(Math.PI/2),rim,[0,y,0]));for(let i=0;i<5;i++)g.add(mk(new THREE.BoxGeometry(.2,.03,.05),rim,[0,y,0],[0,i*Math.PI*2/5,0]).translateX(.1));g.add(mk(new THREE.CylinderGeometry(.055,.055,.04,12),gold,[0,y*1.04,0]));}
    for(const y of [-.165,.165])g.add(mk(new THREE.TorusGeometry(.305,.01,6,32).rotateX(Math.PI/2),gold,[0,y,0]));
-   return{mesh:g,shapes:[[new CANNON.Sphere(.42)]]};}};
+   return{mesh:g0,shapes:[[new CANNON.Sphere(.56)]]};}};
  DEFS0.stickwheel={name:'Sticky Wheel',short:'Sticky',mass:6,float:1.1,snd:'soft',wheel:true,sticky:true,toggle:true,r:.42,q:[0,0,Math.PI/2],build:()=>{const g=new THREE.Group();const goo=SM(0x46c45a,{roughness:.25,emissive:0x0a3a12,emissiveIntensity:.4});
    g.add(mk(GEO.tire,goo),mk(GEO.hub,MAT.steel),mk(GEO.cap,MAT.dark));const cup=new THREE.SphereGeometry(.05,8,6);cup.scale(1,.55,1);
    for(let i=0;i<14;i++){const a=i/14*Math.PI*2;for(const y of [-.06,.06]){const m=mk(cup,goo,[Math.cos(a+(y>0?.22:0))*.415,y,Math.sin(a+(y>0?.22:0))*.415]);m.lookAt(0,y,0);m.rotateX(Math.PI/2);g.add(m);}}
@@ -5302,7 +5302,9 @@ function driveSeat(seat,th,st,boost,release,down){const grp=vehGroup(seat);const
   if(!release&&active)for(const o of grp)if(o.body.sleepState!==0)o.body.wakeUp();
   if(!release&&!grp.anchored&&grp.some(o=>o.def.race&&o.alive)){let M=0;for(const o of grp)M+=o.body.mass;const G=Math.abs(world.gravity.y)||9.82;const rw=grp.filter(o=>o.def.race&&o.alive);
     for(const o of rw){const v=o.body.velocity,v2=v.x*v.x+v.z*v.z;const F=Math.min(M*G*1.5,M*G*v2/1600)/rw.length;o.body.applyForce(V(-u.x*F,-u.y*F,-u.z*F));}
-    if(u.y>.3){const av=seat.body.angularVelocity;const k=M*16,c2=M*4;const tx=-u.z*k-(av.x-u.x*(av.x*u.x+av.y*u.y+av.z*u.z))*c2,tz=u.x*k-(av.z-u.z*(av.x*u.x+av.y*u.y+av.z*u.z))*c2;seat.body.torque.x+=tx;seat.body.torque.z+=tz;}}
+    if(u.y>.3){const av=seat.body.angularVelocity;const k=M*16,c2=M*7;const tx=-u.z*k-(av.x-u.x*(av.x*u.x+av.y*u.y+av.z*u.z))*c2,tz=u.x*k-(av.z-u.z*(av.x*u.x+av.y*u.y+av.z*u.z))*c2;seat.body.torque.x+=tx;seat.body.torque.z+=tz;}}
+  {const sw=grp.filter(o=>o.def.susp&&o.alive);if(sw.length){let M=0;for(const o of grp)M+=o.frozen?0:o.body.mass;const G=Math.abs(world.gravity.y)||9.82;const k=Math.max(700,M*G/sw.length/.12);
+    for(const o of sw)for(const rec of o.recs){if(rec.kind!=='hinge'||rec.wheel!==o||!rec.c)continue;const eq=rec.c.equationY||(rec.c.equations&&rec.c.equations[1]);if(!eq)continue;const kk=release?1e7:k;if(eq._sk!==kk){eq._sk=kk;eq.setSpookParams(kk,release?3:9,STEP);}}}}
   const hv=grp.filter(o=>o.def.hoverW&&o.alive);
   if(hv.length&&!release&&!grp.anchored){const fl=Math.hypot(f.x,f.z)||1,fx=f.x/fl,fz=f.z/fl,rx=-fz,rz=fx;let M=0,vx=0,vz=0;for(const o of grp){const m=o.frozen?0:o.body.mass;M+=m;vx+=o.body.velocity.x*m;vz+=o.body.velocity.z*m;}
     if(M>0){vx/=M;vz/=M;const vf=vx*fx+vz*fz,vl=vx*rx+vz*rz;const SKh=Math.max(...hv.map(o=>o.spdK||1));const tgt=th*15*SKh*(hv[0].rev?-1:1);const nf=vf+(tgt-vf)*Math.min(1,(Math.abs(th)>.01?2.4:.9)*STEP),nl=vl*(1-Math.min(1,3*STEP));
@@ -7802,7 +7804,7 @@ function idCss(id){return `hsl(${hue(id)},70%,70%)`;}
 async function sbClient(){if(NET.sb)return NET.sb;const m=await import(SB_LIB);NET.sb=m.createClient(SB_URL,SB_KEY,{realtime:{params:{eventsPerSecond:40},worker:true,heartbeatIntervalMs:15000},auth:{persistSession:false,autoRefreshToken:false}});return NET.sb;}
 async function freshChannel(name,opts){const sb=await sbClient();try{for(const c of (sb.getChannels?sb.getChannels():[]))if(c.topic==='realtime:'+name||c.subTopic===name)await sb.removeChannel(c);}catch(e){console.warn(e);}return sb.channel(name,opts);}
 function subscribeCh(ch){return new Promise((res,rej)=>{let done=false;const to=setTimeout(()=>{if(!done){done=true;rej(new Error('timeout'));}},10000);ch.subscribe((st,err)=>{const tn=String(ch.topic||'').replace('realtime:','').replace(/^gw-/,'').slice(0,22);if(st!=='SUBSCRIBED'||!done||ch._gwErr)netLog(`${tn}: ${st}${st==='SUBSCRIBED'&&ch._gwErr?' again (reconnected)':''}${err?' '+(err.message||err):''}`);ch._gwErr=st!=='SUBSCRIBED';if(done)return;if(st==='SUBSCRIBED'){done=true;clearTimeout(to);res(ch);}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED'){done=true;clearTimeout(to);rej(new Error(st));}});});}
-const GAME_VERSION='380';const UPDATE_NAME='The Random Fun Update';
+const GAME_VERSION='381';const UPDATE_NAME='The Random Fun Update';
 const NETLOG=[];function netLog(m){const t=new Date();NETLOG.push(`${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')} ${m}`);if(NETLOG.length>14)NETLOG.shift();for(const id of ['netlog','netlog2']){const el=document.getElementById(id);if(el)el.textContent=NETLOG.join('\n');}}
 function bsend0(ch,ev,payload){if(!ch)return;try{const r=ch.send({type:'broadcast',event:ev,payload});if(r&&r.then)r.then(res=>{if(res&&res!=='ok'&&ev!=='s'&&ev!=='st')netLog(`send ${ev} → ${res}`);}).catch(e=>netLog(`send ${ev} failed ${e&&e.message||e}`));}catch(e){netLog(`send ${ev} threw ${e&&e.message||e}`);}}
 let CK_SEQ=0;
