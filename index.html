@@ -474,7 +474,7 @@ body.touch.short #clock{transform:scale(.6)}
       <div class="panel mpbox"><div class="olab" style="margin-bottom:8px">Your character</div>
         <div class="lookwrap"><canvas id="lookcv" width="180" height="230"></canvas><div class="lookopts">
           <div class="seg looktabs"><button data-lt="body" aria-pressed="true">Body</button><button data-lt="clothes" aria-pressed="false">Clothes</button><button data-lt="head" aria-pressed="false">Head</button><button data-lt="pack" aria-pressed="false">Backpack</button><button id="lookrand" class="lrand">Random</button></div>
-          <div class="lpage" data-lp="body"><div class="lrow"><span>Sets</span><div class="seg" id="lookpre"><button data-pre="mine">My own look</button><button data-pre="mark">Mark the Alien</button><button data-pre="robot">Robot</button><button data-pre="stick">Stickman</button><button data-pre="skel">Skeleton</button><button data-pre="ghost">Ghost</button><button data-pre="pumpkin">Pumpkin head</button><button data-pre="normal">Normal body</button></div></div><div class="lrow"><span>Part</span><div class="seg" id="lookpart"><button data-part="hd">Head</button><button data-part="tb">Body</button><button data-part="ar" aria-pressed="true">Arms</button><button data-part="lg">Legs</button></div></div><div class="lrow"><span>Shape</span><div class="seg" id="lookpstyle" data-look="ar"></div></div><div class="lrow"><span>Part color</span><div class="sw" id="lookpcol" data-look="arc"></div></div><div class="lrow"><span>Skin</span><div class="sw" data-look="k"></div></div><div class="lrow"><span>Eyes</span><div class="seg" data-look="e"></div></div><div class="lrow"><span>Eye color</span><div class="sw" data-look="ec"></div></div></div>
+          <div class="lpage" data-lp="body"><div class="lrow"><span>Sets</span><div class="seg" id="lookpre"><button data-pre="mine">My own look</button><button data-pre="mark">Mark the Alien</button><button data-pre="robot">Robot</button><button data-pre="stick">Stickman</button><button data-pre="skel">Skeleton</button><button data-pre="ghost">Ghost</button><button data-pre="pumpkin">Pumpkin head</button><button data-pre="normal">Normal body</button></div></div><div class="lrow"><span>Part</span><div class="seg" id="lookpart"><button data-part="hd">Head</button><button data-part="tb">Body</button><button data-part="ar" aria-pressed="true">Arms</button><button data-part="lg">Legs</button></div></div><div class="lrow"><span>Shape</span><div class="seg" id="lookpstyle" data-look="ar"></div></div><div class="lrow"><span>Part color</span><div class="sw" id="lookpcol" data-look="arc"></div></div><div class="lrow"><span>Skin</span><div class="sw" data-look="k"></div></div><div class="lrow"><span>Eyes</span><div class="seg" data-look="e"></div></div><div class="lrow" id="lookemrow"><span>Expression</span><select id="lookemood" aria-label="Face expression"></select></div><div class="lrow"><span>Eye color</span><div class="sw" data-look="ec"></div></div></div>
           <div class="lpage" data-lp="clothes" hidden><div class="lrow"><span>Top</span><div class="seg" data-look="t"></div></div><div class="lrow"><span>Shirt</span><div class="sw" data-look="s"></div></div><div class="lrow"><span>Detail</span><div class="sw" data-look="t2"></div></div><div class="lrow"><span>Pants</span><div class="sw" data-look="p"></div></div><div class="lrow"><span>Shoes</span><div class="sw" data-look="sh"></div></div></div>
           <div class="lpage" data-lp="head" hidden><div class="lrow"><span>Hat</span><div class="seg" data-look="h"></div></div><div class="lrow"><span>Hat color</span><div class="sw" data-look="hc"></div></div><div class="lrow"><span>Face</span><div class="seg" data-look="a"></div></div><div class="lrow"><span>Face color</span><div class="sw" data-look="ac"></div></div></div>
           <div class="lpage" data-lp="pack" hidden><div class="lrow"><span>Style</span><div class="seg" data-look="b"></div></div><div class="lrow"><span>Color</span><div class="sw" data-look="bc"></div></div></div>
@@ -2634,7 +2634,19 @@ function groundCheck(b,mask,r=.42){const p=b.position;if(p.y-r<=heightAt(p.x,p.z
 const LOOK_SHIRTS=['3e8fd0','e06a2e','6fae3c','b64fd0','d8402a','f2c230','2b2f3a','f4f1ea','22a39b','ff7aa8'],LOOK_PANTS=['2a2b2e','3b4a6b','1f3a5f','6b4e2e','c8b48a','4a5a3a','8a8a8a','7a2a2a','5a3e6b','e0e0e0'],LOOK_SKIN=['ffe0cc','f2d3b8','e8c4a0','c99a72','a57450','8d5524','7a5134','4f3322','b8e986','7fc8f8'];
 const LOOK_EYEC=['2a1d14','4a2f1c','3e8fd0','3c8a3c','7a7a7a','111111','d8402a','9b59ff','f2c230','22a39b'],LOOK_ANY=['f4f1ea','2b2f3a','d8402a','e06a2e','f2c230','6fae3c','3e8fd0','b64fd0','ff7aa8','7a5134','4a2f1c','9aa0a6'];
 const HATS=[['none','No hat'],['cap','Cap'],['top','Top hat'],['crown','Crown'],['party','Party hat'],['hard','Hard hat'],['cowboy','Cowboy'],['viking','Viking'],['beanie','Propeller cap'],['beret','Beret'],['chef','Chef'],['wizard','Wizard'],['pirate','Pirate'],['santa','Santa'],['bucket','Bucket hat'],['knight','Knight helmet'],['headset','Headphones'],['bunny','Bunny ears'],['halo','Halo'],['flower','Flower'],['spiky','Spiky hair'],['mohawk','Mohawk'],['long','Long hair'],['afro','Afro'],['markhair','Alien hair'],['antenna','Antenna']];
-const LOOK_EYES=[['round','Round'],['dots','Dots'],['happy','Happy'],['sleepy','Sleepy'],['angry','Angry'],['wink','Wink'],['cyclops','Cyclops'],['visor','Visor'],['mark','Mark'],['markhappy','Mark happy'],['marksmug','Mark smug'],['markangry','Mark angry'],['marksad','Mark sad'],['markshock','Mark shocked'],['markdizzy','Mark dizzy']];
+const EYE_VARS={
+  round:[['round','Normal'],['round_left','Looking left'],['round_right','Looking right'],['round_up','Looking up'],['round_scared','Scared'],['round_cute','Cute'],['round_cry','Crying'],['round_crazy','Crazy']],
+  dots:[['dots','Normal'],['dots_small','Small'],['dots_big','Big'],['dots_blush','Blushing'],['dots_sweat','Nervous'],['dots_o','Surprised']],
+  happy:[['happy','Normal'],['happy_laugh','Laughing'],['happy_blush','Blushing'],['happy_tears','Happy tears']],
+  sleepy:[['sleepy','Normal'],['sleepy_zzz','Snoring'],['sleepy_bored','Bored'],['sleepy_drool','Drooling']],
+  angry:[['angry','Normal'],['angry_grumpy','Grumpy'],['angry_furious','Furious'],['angry_evil','Evil grin']],
+  wink:[['wink','Normal'],['wink_other','Other eye'],['wink_tongue','Tongue out'],['wink_kiss','Kiss']],
+  cyclops:[['cyclops','Normal'],['cyclops_left','Looking left'],['cyclops_angry','Angry'],['cyclops_sleepy','Sleepy']],
+  visor:[['visor','Normal'],['visor_glow','Glowing'],['visor_slim','Slim'],['visor_shades','Sunglasses']],
+  mark:[['mark','Normal'],['markhappy','Happy'],['marksmug','Smug'],['markangry','Angry'],['marksad','Sad'],['markshock','Shocked'],['markdizzy','Dizzy'],['markwink','Wink'],['marksleep','Sleeping']]};
+const LOOK_EYE_BASE=[['round','Round'],['dots','Dots'],['happy','Happy'],['sleepy','Sleepy'],['angry','Angry'],['wink','Wink'],['cyclops','Cyclops'],['visor','Visor'],['mark','Mark']];
+const LOOK_EYES=LOOK_EYE_BASE.concat(...LOOK_EYE_BASE.map(([b])=>EYE_VARS[b].slice(1)));
+function eyeBase(e){for(const b in EYE_VARS)if(EYE_VARS[b].some(v=>v[0]===e))return b;return 'round';}
 const LOOK_TOPS=[['tee','T-shirt'],['long','Long sleeve'],['hoodie','Hoodie'],['jacket','Jacket'],['stripes','Stripes'],['suit','Suit'],['overalls','Overalls'],['tank','Tank top'],['armor','Armor']];
 const LOOK_ACC=[['none','Nothing'],['glasses','Glasses'],['shades','Sunglasses'],['mustache','Mustache'],['beard','Beard'],['scarf','Scarf'],['bowtie','Bow tie'],['cape','Cape']];
 const LOOK_HEADS=[['round','Round'],['box','Blocky'],['big','Big'],['small','Small'],['tall','Tall'],['robot','Robot'],['pumpkin','Pumpkin'],['skull','Skull'],['none','No head']];
@@ -2703,7 +2715,57 @@ function lookMats(L,id){const shirt=L.s?L.s:'#'+idColor(id||'x').getHexString();
 function dressUp(g,L,P,J){const add=(geo,m,pos,rot,par,sc)=>{const x=mk(geo,m,pos&&pos.map(P),rot);if(sc)x.scale.set(...sc);(par||g).add(x);return x;};
   const t2=lmat(L.t2),t2o=t2,pants=J.limb,shirt=J.body,dark=lmat(0x15161a,{roughness:.4}),white=lmat(0xfafafa,{roughness:.3}),ec=lmat(L.ec,{roughness:.3});
   /* face */const HF=HEAD_FACE[L.hd]||[0,0,0];const EY=1.775+HF[0],EZ=-.188+HF[1];const noFace=L.hd==='none';const eyeBall=(x,r)=>{add(new THREE.SphereGeometry(P(r),14,10),white,[x,EY,EZ+.02]);add(new THREE.SphereGeometry(P(r*.55),12,8),ec,[x,EY,EZ-r*.62+.02]);};
-  if(!noFace)switch(L.e){
+  const CY=1.74+HF[0],fz=(x,y,o)=>HF[1]-Math.sqrt(Math.max(0,(.2045+(o||0))**2-x*x-(y-CY)**2));
+  const line=(pp,r,mat,zo)=>{r=r||.013;mat=mat||ec;const Z=(x,y)=>zo!=null?zo:fz(x,y);const v=pp.map(([x,y])=>new THREE.Vector3(P(x),P(y),P(Z(x,y))));g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(v),Math.max(8,pp.length*6),P(r),6,false),mat));
+    for(const [x,y] of [pp[0],pp[pp.length-1]])add(new THREE.SphereGeometry(P(r),8,6),mat,[x,y,Z(x,y)]);};
+  const blob=(x,y,r,sc,mat,o)=>add(new THREE.SphereGeometry(P(r),14,10),mat||ec,[x,y,fz(x,y,o||0)],null,null,sc);
+  const red=lmat(0xe0464a),pink=lmat(0xff8fa3,{roughness:.8}),blue=lmat(0x7fc8ff,{roughness:.2}),M0=1.672+HF[0];
+  const EV=String(L.e).split('_')[1]||'';let smile=true;
+  const eyeAt=(x,r,dx,dy,ps)=>{add(new THREE.SphereGeometry(P(r),14,10),white,[x,EY,EZ+.02]);const n=Math.hypot(dx,dy,1),q=Math.max(r*.62,r*(1-ps*.4));add(new THREE.SphereGeometry(P(r*ps),12,8),ec,[x+dx/n*q,EY+dy/n*q,EZ+.02-q/n]);};
+  const blush=()=>{for(const sd of [-1,1])blob(sd*.115,EY-.055,.026,[1.4,.75,.3],pink,-.003);};
+  const frown=(w)=>{w=w||.045;smile=false;line([[-w,M0-.012],[-w*.5,M0+.002],[0,M0+.006],[w*.5,M0+.002],[w,M0-.012]],.011,dark);};
+  const flat=(w)=>{smile=false;line([[-(w||.04),M0+.004],[w||.04,M0+.004]],.011,dark);};
+  const openMouth=(tongue)=>{smile=false;blob(0,M0-.006,.038,[1.6,1.05,.4],dark);if(tongue)blob(0,M0-.024,.024,[1.4,.7,.4],red,.004);};
+  const drop=(x,y,big)=>blob(x,y,big||.012,[1,1.4,.6],blue,.003);
+  if(!noFace&&EV)switch(L.e){
+  case 'round_left':eyeAt(-.075,.045,-.55,0,.55);eyeAt(.075,.045,-.55,0,.55);break;
+  case 'round_right':eyeAt(-.075,.045,.55,0,.55);eyeAt(.075,.045,.55,0,.55);break;
+  case 'round_up':eyeAt(-.075,.045,0,.55,.55);eyeAt(.075,.045,0,.55,.55);break;
+  case 'round_scared':eyeAt(-.075,.048,0,0,.25);eyeAt(.075,.048,0,0,.25);drop(.15,EY+.02,.014);smile=false;line([[-.04,M0],[-.02,M0+.008],[0,M0],[.02,M0+.008],[.04,M0]],.009,dark);break;
+  case 'round_cute':eyeAt(-.075,.048,0,-.1,.78);eyeAt(.075,.048,0,-.1,.78);for(const x of [-.087,.063])blob(x,EY+.016,.009,[1,1,.5],white,.012);blush();break;
+  case 'round_cry':eyeAt(-.075,.045,0,.2,.55);eyeAt(.075,.045,0,.2,.55);for(const sd of [-1,1])line([[sd*.08,EY-.045],[sd*.085,EY-.08],[sd*.08,EY-.11]],.011,blue);frown();break;
+  case 'round_crazy':eyeAt(-.075,.04,.6,.4,.5);eyeAt(.08,.055,-.5,-.3,.6);smile=false;line([[-.06,M0+.004],[-.035,M0+.014],[-.01,M0-.004],[.015,M0+.014],[.04,M0-.004],[.06,M0+.008]],.009,dark);break;
+  case 'dots_small':for(const x of [-.075,.075])add(new THREE.SphereGeometry(P(.017),10,8),ec,[x,EY,EZ+.005]);break;
+  case 'dots_big':for(const x of [-.075,.075]){add(new THREE.SphereGeometry(P(.04),12,10),ec,[x,EY,EZ+.006]);blob(x-.012,EY+.013,.008,[1,1,.5],white,.012);}break;
+  case 'dots_blush':for(const x of [-.075,.075])add(new THREE.SphereGeometry(P(.028),10,8),ec,[x,EY,EZ]);blush();break;
+  case 'dots_sweat':for(const x of [-.075,.075])add(new THREE.SphereGeometry(P(.028),10,8),ec,[x,EY,EZ]);drop(.15,EY+.025,.015);flat(.035);break;
+  case 'dots_o':for(const x of [-.075,.075])add(new THREE.SphereGeometry(P(.028),10,8),ec,[x,EY,EZ]);smile=false;add(new THREE.TorusGeometry(P(.022),P(.009),6,16),dark,[0,M0,fz(0,M0)+.004]);break;
+  case 'happy_laugh':for(const x of [-.075,.075])add(new THREE.TorusGeometry(P(.032),P(.011),6,12,Math.PI),ec,[x,EY-.012,EZ-.008]);openMouth(true);break;
+  case 'happy_blush':for(const x of [-.075,.075])add(new THREE.TorusGeometry(P(.032),P(.011),6,12,Math.PI),ec,[x,EY-.012,EZ-.008]);blush();break;
+  case 'happy_tears':for(const x of [-.075,.075])add(new THREE.TorusGeometry(P(.032),P(.011),6,12,Math.PI),ec,[x,EY-.012,EZ-.008]);for(const sd of [-1,1])drop(sd*.12,EY-.01,.013);openMouth(true);break;
+  case 'sleepy_zzz':for(const x of [-.075,.075])add(new THREE.BoxGeometry(P(.07),P(.014),P(.02)),ec,[x,EY-.01,EZ-.008]);smile=false;add(new THREE.TorusGeometry(P(.014),P(.007),6,12),dark,[0,M0,fz(0,M0)+.004]);
+    for(const [zx,zy,zs] of [[.2,1.86,.035],[.25,1.94,.045]])line([[zx-zs/2,zy+zs/2],[zx+zs/2,zy+zs/2],[zx-zs/2,zy-zs/2],[zx+zs/2,zy-zs/2]],.007,lmat(0xffffff,{roughness:.4}),-.06);break;
+  case 'sleepy_bored':for(const x of [-.075,.075]){add(new THREE.SphereGeometry(P(.026),10,8),ec,[x,EY-.012,EZ]);line([[x-.035,EY+.006],[x+.035,EY+.006]],.011,dark);}flat(.04);break;
+  case 'sleepy_drool':for(const x of [-.075,.075])add(new THREE.BoxGeometry(P(.07),P(.014),P(.02)),ec,[x,EY-.01,EZ-.008]);smile=false;blob(0,M0-.002,.02,[1.3,.8,.4],dark);line([[.022,M0-.01],[.026,M0-.03],[.024,M0-.045]],.008,blue);drop(.024,M0-.05,.01);break;
+  case 'angry_grumpy':for(const s2 of [-1,1]){add(new THREE.SphereGeometry(P(.03),10,8),ec,[s2*.075,EY-.008,EZ]);add(new THREE.BoxGeometry(P(.08),P(.018),P(.02)),dark,[s2*.075,EY+.05,EZ+.004],[0,0,s2*.45]);}frown(.04);break;
+  case 'angry_furious':for(const s2 of [-1,1]){add(new THREE.SphereGeometry(P(.032),10,8),red,[s2*.075,EY-.008,EZ]);add(new THREE.BoxGeometry(P(.09),P(.022),P(.02)),dark,[s2*.072,EY+.045,EZ+.004],[0,0,s2*.6]);}
+    smile=false;blob(0,M0-.006,.036,[1.7,.75,.35],dark);add(new THREE.BoxGeometry(P(.09),P(.016),P(.01)),lmat(0xf2f2f2),[0,M0,fz(0,M0)-.006]);break;
+  case 'angry_evil':for(const s2 of [-1,1]){add(new THREE.SphereGeometry(P(.03),10,8),ec,[s2*.075,EY-.008,EZ]);add(new THREE.BoxGeometry(P(.08),P(.018),P(.02)),dark,[s2*.075,EY+.05,EZ+.004],[0,0,s2*.45]);}
+    smile=false;line([[-.08,M0+.02],[-.05,M0-.004],[0,M0-.014],[.05,M0-.004],[.08,M0+.02]],.011,dark);for(const x of [-.03,0,.03])line([[x-.008,M0-.003],[x,M0-.02+Math.abs(x)*.25],[x+.008,M0-.003]],.006,lmat(0xf2f2f2));break;
+  case 'wink_other':add(new THREE.TorusGeometry(P(.032),P(.011),6,12,Math.PI),ec,[-.075,EY-.012,EZ-.008]);eyeBall(.075,.045);break;
+  case 'wink_tongue':eyeBall(-.075,.045);add(new THREE.TorusGeometry(P(.032),P(.011),6,12,Math.PI),ec,[.075,EY-.012,EZ-.008]);blob(.012,M0-.03,.02,[1,1.2,.5],red,.004);break;
+  case 'wink_kiss':eyeBall(-.075,.045);add(new THREE.TorusGeometry(P(.032),P(.011),6,12,Math.PI),ec,[.075,EY-.012,EZ-.008]);smile=false;for(const dy of [.008,-.008])blob(0,M0+dy,.012,[1.3,.8,.5],red,.003);blush();break;
+  case 'cyclops_left':add(new THREE.SphereGeometry(P(.075),16,12),white,[0,EY+.005,EZ+.035]);add(new THREE.SphereGeometry(P(.042),12,8),ec,[-.03,EY+.005,EZ-.01]);break;
+  case 'cyclops_angry':add(new THREE.SphereGeometry(P(.075),16,12),white,[0,EY+.005,EZ+.035]);add(new THREE.SphereGeometry(P(.042),12,8),ec,[0,EY,EZ-.015]);
+    for(const sd of [-1,1])add(new THREE.BoxGeometry(P(.08),P(.022),P(.03)),dark,[sd*.035,EY+.07,EZ-.03],[0,0,sd*.35]);frown(.04);break;
+  case 'cyclops_sleepy':add(new THREE.SphereGeometry(P(.075),16,12),white,[0,EY+.005,EZ+.035]);add(new THREE.SphereGeometry(P(.042),12,8),ec,[0,EY-.012,EZ-.015]);
+    add(new THREE.SphereGeometry(P(.079),16,8,0,Math.PI*2,0,Math.PI/2),lmat(L.k),[0,EY+.005,EZ+.035],[-.35,0,0]);flat(.035);break;
+  case 'visor_glow':add(new THREE.BoxGeometry(P(.3),P(.09),P(.06)),lmat(0x55e0ff,{roughness:.2,emissive:0x55e0ff,emissiveIntensity:1.1}),[0,1.76,-.18]);break;
+  case 'visor_slim':add(new THREE.BoxGeometry(P(.3),P(.04),P(.06)),lmat(L.ec,{roughness:.25,metalness:.2}),[0,1.765,-.18]);break;
+  case 'visor_shades':for(const sd of [-1,1])add(new THREE.BoxGeometry(P(.11),P(.065),P(.03)),lmat(0x111214,{roughness:.15,metalness:.4}),[sd*.068,EY,EZ-.008],[0,sd*-.25,0]);add(new THREE.BoxGeometry(P(.05),P(.014),P(.02)),lmat(0x111214),[0,EY+.015,EZ-.016]);break;
+  case 'markwink':case 'marksleep':break;
+  default:break;}
+  if(!noFace&&!EV)switch(L.e){
   case 'dots':for(const x of [-.075,.075])add(new THREE.SphereGeometry(P(.028),10,8),ec,[x,EY,EZ]);break;
   case 'happy':for(const x of [-.075,.075])add(new THREE.TorusGeometry(P(.032),P(.011),6,12,Math.PI),ec,[x,EY-.012,EZ-.008]);break;
   case 'sleepy':for(const x of [-.075,.075]){add(new THREE.BoxGeometry(P(.07),P(.014),P(.02)),ec,[x,EY-.01,EZ-.008]);}break;
@@ -2714,13 +2776,9 @@ function dressUp(g,L,P,J){const add=(geo,m,pos,rot,par,sc)=>{const x=mk(geo,m,po
   case 'mark':{for(const [x,h] of [[-.055,.055],[.045,.065]])add(new THREE.CapsuleGeometry(P(.014),P(h),4,8),ec,[x,EY-.005,EZ-.008]);
     const MY=1.672+HF[0],R=.2025+(HF[1]<0?-HF[1]:0);{const pts=[];for(let i=0;i<=12;i++){const a=-.46+i*.0767;pts.push(new THREE.Vector3(P(Math.sin(a)*R),P(MY+(i<3?(3-i)*.004:0)),P(-Math.cos(a)*R)));}const tb=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),24,P(.014),6,false),ec);g.add(tb);add(new THREE.SphereGeometry(P(.014),8,6),ec,[Math.sin(-.46)*R,MY+.012,-Math.cos(-.46)*R]);add(new THREE.SphereGeometry(P(.014),8,6),ec,[Math.sin(.46)*R,MY,-Math.cos(.46)*R]);}
     add(new THREE.SphereGeometry(P(.04),12,8),ec,[.0,MY-.022,-.191+HF[1]],null,null,[1.25,.7,.35]);add(new THREE.BoxGeometry(P(.045),P(.016),P(.01)),lmat(0xc9c9c9),[.0,MY-.011,-.205+HF[1]]);break;}
-  case 'markhappy':case 'marksmug':case 'markangry':case 'marksad':case 'markshock':case 'markdizzy':{
-    const CY=1.74+HF[0],fz=(x,y,o)=>HF[1]-Math.sqrt(Math.max(0,(.2045+(o||0))**2-x*x-(y-CY)**2));
-    const line=(pp,r,mat)=>{r=r||.013;mat=mat||ec;const v=pp.map(([x,y])=>new THREE.Vector3(P(x),P(y),P(fz(x,y))));g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(v),Math.max(8,pp.length*6),P(r),6,false),mat));
-      for(const [x,y] of [pp[0],pp[pp.length-1]])add(new THREE.SphereGeometry(P(r),8,6),mat,[x,y,fz(x,y)]);};
-    const blob=(x,y,r,sc,mat,o)=>add(new THREE.SphereGeometry(P(r),14,10),mat||ec,[x,y,fz(x,y,o||0)],null,null,sc);
+  case 'markhappy':case 'marksmug':case 'markangry':case 'marksad':case 'markshock':case 'markdizzy':case 'markwink':case 'marksleep':{
     const pill=(x,y,h)=>add(new THREE.CapsuleGeometry(P(.014),P(h),4,8),ec,[x,y,fz(x,y)+.004]);
-    const red=lmat(0xe0464a),E=1.77+HF[0],M0=1.672+HF[0];
+    const E=1.77+HF[0];
     switch(L.e){
     case 'markhappy':
       for(const cx of [-.06,.055])line([[cx-.028,E-.012],[cx-.014,E+.006],[cx,E+.012],[cx+.014,E+.006],[cx+.028,E-.012]]);
@@ -2738,15 +2796,22 @@ function dressUp(g,L,P,J){const add=(geo,m,pos,rot,par,sc)=>{const x=mk(geo,m,po
       blob(.07,E-.06,.012,[1,1.4,.6],lmat(0x7fc8ff,{roughness:.2}),.003);
       line([[-.05,M0-.018],[-.025,M0-.002],[0,M0+.004],[.025,M0-.002],[.05,M0-.018]]);break;
     case 'markshock':
-      for(const sd of [-1,1]){blob(sd*.058,E,.02,[1,1.45,.45]);blob(sd*.058-.006,E+.01,.006,[1,1,.5],white,.008);line([[sd*.085,E+.05],[sd*.058,E+.06],[sd*.03,E+.05]],.01);}
+      for(const sd of [-1,1]){blob(sd*.058,E,.02,[1,1.45,.45]);line([[sd*.085,E+.05],[sd*.058,E+.06],[sd*.03,E+.05]],.01);}
       blob(0,M0-.018,.03,[1,1.25,.4]);blob(0,M0-.03,.017,[1.3,.6,.4],red,.004);break;
+    case 'markwink':
+      pill(-.055,E-.005,.055);line([[.02,E-.008],[.045,E+.004],[.07,E-.008]]);
+      line([[-.07,M0+.012],[-.035,M0-.004],[0,M0-.01],[.035,M0-.004],[.07,M0+.012]]);blob(.025,M0-.022,.018,[1,1.1,.5],red,.003);break;
+    case 'marksleep':
+      for(const cx of [-.055,.05])line([[cx-.025,E-.004],[cx-.012,E-.014],[cx,E-.017],[cx+.012,E-.014],[cx+.025,E-.004]]);
+      blob(0,M0-.006,.018,[1,1.1,.4]);
+      for(const [zx,zy,zs] of [[.2,1.86,.035],[.25,1.94,.045]])line([[zx-zs/2,zy+zs/2],[zx+zs/2,zy+zs/2],[zx-zs/2,zy-zs/2],[zx+zs/2,zy-zs/2]],.007,lmat(0xffffff,{roughness:.4}),-.06);break;
     case 'markdizzy':
       for(const cx of [-.058,.058]){line([[cx-.022,E+.02],[cx+.022,E-.02]],.011);line([[cx-.022,E-.02],[cx+.022,E+.02]],.011);}
       line([[-.07,M0],[-.05,M0+.012],[-.025,M0-.008],[0,M0+.01],[.025,M0-.008],[.05,M0+.012],[.07,M0]]);
       blob(.03,M0-.018,.016,[1,1.2,.5],red,.003);break;}
     break;}
   default:eyeBall(-.075,.045);eyeBall(.075,.045);}
-  if(L.a!=='beard'&&!noFace&&!String(L.e).startsWith('mark'))add(new THREE.TorusGeometry(P(.045),P(.01),6,14,Math.PI),dark,[0,1.69+HF[0],-.198+HF[1]],[0,0,Math.PI]);
+  if(smile&&L.a!=='beard'&&!noFace&&!String(L.e).startsWith('mark'))add(new THREE.TorusGeometry(P(.045),P(.01),6,14,Math.PI),dark,[0,1.69+HF[0],-.198+HF[1]],[0,0,Math.PI]);
   /* face extras */
   const AC=(d,o)=>L.ac?lmat(L.ac,o):d;
   switch(L.a){
@@ -7542,7 +7607,7 @@ function idCss(id){return `hsl(${hue(id)},70%,70%)`;}
 async function sbClient(){if(NET.sb)return NET.sb;const m=await import(SB_LIB);NET.sb=m.createClient(SB_URL,SB_KEY,{realtime:{params:{eventsPerSecond:40},worker:true,heartbeatIntervalMs:15000},auth:{persistSession:false,autoRefreshToken:false}});return NET.sb;}
 async function freshChannel(name,opts){const sb=await sbClient();try{for(const c of (sb.getChannels?sb.getChannels():[]))if(c.topic==='realtime:'+name||c.subTopic===name)await sb.removeChannel(c);}catch(e){console.warn(e);}return sb.channel(name,opts);}
 function subscribeCh(ch){return new Promise((res,rej)=>{let done=false;const to=setTimeout(()=>{if(!done){done=true;rej(new Error('timeout'));}},10000);ch.subscribe((st,err)=>{const tn=String(ch.topic||'').replace('realtime:','').replace(/^gw-/,'').slice(0,22);if(st!=='SUBSCRIBED'||!done||ch._gwErr)netLog(`${tn}: ${st}${st==='SUBSCRIBED'&&ch._gwErr?' again (reconnected)':''}${err?' '+(err.message||err):''}`);ch._gwErr=st!=='SUBSCRIBED';if(done)return;if(st==='SUBSCRIBED'){done=true;clearTimeout(to);res(ch);}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED'){done=true;clearTimeout(to);rej(new Error(st));}});});}
-const GAME_VERSION='370';const UPDATE_NAME='The Random Fun Update';
+const GAME_VERSION='371';const UPDATE_NAME='The Random Fun Update';
 const NETLOG=[];function netLog(m){const t=new Date();NETLOG.push(`${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')} ${m}`);if(NETLOG.length>14)NETLOG.shift();for(const id of ['netlog','netlog2']){const el=document.getElementById(id);if(el)el.textContent=NETLOG.join('\n');}}
 function bsend0(ch,ev,payload){if(!ch)return;try{const r=ch.send({type:'broadcast',event:ev,payload});if(r&&r.then)r.then(res=>{if(res&&res!=='ok'&&ev!=='s'&&ev!=='st')netLog(`send ${ev} → ${res}`);}).catch(e=>netLog(`send ${ev} failed ${e&&e.message||e}`));}catch(e){netLog(`send ${ev} threw ${e&&e.message||e}`);}}
 let CK_SEQ=0;
@@ -8121,10 +8186,12 @@ function buildLookUI(){const sw=(k,list,auto)=>{const el=document.querySelector(
     el.querySelector('input').addEventListener('input',e=>{LOOK[k]=e.target.value.slice(1).toLowerCase();saveLook();paintLook();});};
   const sg=(k,list)=>{document.querySelector(`.seg[data-look="${k}"]`).innerHTML=list.map(([v,n])=>`<button data-v="${v}">${n}</button>`).join('');};
   sw('s',LOOK_SHIRTS,'Automatic: your player color');sw('p',LOOK_PANTS);sw('k',LOOK_SKIN);sw('ec',LOOK_EYEC);sw('t2',LOOK_ANY);sw('sh',LOOK_ANY);sw('hc',LOOK_ANY,'Hat\'s normal color');sw('bc',LOOK_ANY,'Normal color');sw('ac',LOOK_ANY,'Normal color');
-  sg('h',HATS);sg('e',LOOK_EYES);sg('t',LOOK_TOPS);sg('a',LOOK_ACC);sg('b',LOOK_PACKS);lookPartUI();}
-function paintLook(){for(const el of document.querySelectorAll('[data-look]')){const k=el.dataset.look;let hit=false;for(const b of el.querySelectorAll('button')){const on=b.dataset.v===(LOOK[k]||'');if(on)hit=true;b.setAttribute('aria-pressed',on?'true':'false');}
+  sg('h',HATS);sg('e',LOOK_EYE_BASE);sg('t',LOOK_TOPS);sg('a',LOOK_ACC);sg('b',LOOK_PACKS);lookPartUI();}
+function paintLook(){emoodUI();for(const el of document.querySelectorAll('[data-look]')){const k=el.dataset.look;let hit=false;for(const b of el.querySelectorAll('button')){const on=b.dataset.v===(k==='e'?eyeBase(LOOK.e):(LOOK[k]||''));if(on)hit=true;b.setAttribute('aria-pressed',on?'true':'false');}
     const wl=el.querySelector('label.wheel');if(wl){const v=LOOK[k]||'';const cust=!hit&&/^[0-9a-f]{6}$/.test(v);wl.classList.toggle('on',cust);wl.querySelector('i').style.background=cust?'#'+v:'#fff';const inp=wl.querySelector('input');if(/^[0-9a-f]{6}$/.test(v))inp.value='#'+v;}}lookPreview(true);}
 
+function emoodUI(){const sel=$('lookemood'),row=$('lookemrow');if(!sel)return;const b=eyeBase(LOOK.e),V=EYE_VARS[b]||[];row.style.display=V.length>1?'':'none';
+  if(sel.dataset.b!==b){sel.dataset.b=b;sel.innerHTML=V.map(([v,n])=>`<option value="${v}">${n}</option>`).join('');}sel.value=LOOK.e;}
 var LOOK_PART='ar';
 function lookPartUI(){const P=LOOK_PARTS[LOOK_PART];const st=$('lookpstyle'),col=$('lookpcol');if(!st||!col)return;st.dataset.look=LOOK_PART;col.dataset.look=P[2];
   st.innerHTML=P[1].map(([v,n])=>`<button data-v="${v}">${n}</button>`).join('');
@@ -8146,6 +8213,7 @@ $('lookpre').addEventListener('click',e=>{const b=e.target.closest('[data-pre]')
   if(b.dataset.pre==='mine'){const bk=lookBackup();if(!bk){toast('You are already wearing your own look.');return;}Object.assign(LOOK,parseLook(lookStr(Object.assign({},LOOK,bk))));try{localStorage.removeItem('gluebox.lookback');}catch(er){}saveLook();paintLook();lookMineBtn();sfx('ui');toast('Back to your own look.','good');return;}
   if(!LOOK_PRESETS[b.dataset.pre])return;if(!lookBackup())try{localStorage.setItem('gluebox.lookback',JSON.stringify(LOOK));}catch(er){}Object.assign(LOOK,LOOK_PRESETS[b.dataset.pre]);saveLook();paintLook();lookMineBtn();sfx('ui');toast(b.textContent+' set on. Press My own look to go back.','good');});
 lookMineBtn();
+$('lookemood').addEventListener('change',e=>{LOOK.e=e.target.value;saveLook();paintLook();sfx('ui');});$('lookemood').addEventListener('keydown',e=>e.stopPropagation());
 for(const el of document.querySelectorAll('[data-look]'))el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;LOOK[el.dataset.look]=b.dataset.v;saveLook();paintLook();sfx('ui');});
 for(const b of document.querySelectorAll('.looktabs [data-lt]'))b.addEventListener('click',()=>{for(const x of document.querySelectorAll('.looktabs [data-lt]'))x.setAttribute('aria-pressed',x===b?'true':'false');for(const pg of document.querySelectorAll('.lpage'))pg.hidden=pg.dataset.lp!==b.dataset.lt;sfx('ui');});
 $('lookexp').addEventListener('click',()=>{dlJSON(`gluebox-outfit_${stamp()}.gluebox`,{gluebox:'outfit',v:1,look:lookStr(LOOK)}).then(ok=>{if(ok)toast('Exported your outfit.','good');});});
