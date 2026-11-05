@@ -5486,8 +5486,8 @@ function buildDrift(){const L=dtLoop(),hw=DT_W/2,loop={pts:L.pts,per:L.per};
   {const N=L.pts.length,ok=[];for(let i=0;i<N;i++){let g=true;for(let k=-3;k<=6;k++)if(Math.abs(L.pts[(i+k+N)%N].cv)>.35){g=false;break;}if(g)ok.push(i);}
     const used=[],sep=L.per/13,start=0;let tab=false,n=0;
     for(const i of ok){const p=L.pts[i];if(p.s<40||p.s>L.per-40)continue;if(used.some(u=>{const d=Math.abs(u-p.s);return Math.min(d,L.per-d)<sep;}))continue;used.push(p.s);const ry=Math.atan2(-p.tx,-p.tz);n++;
-      if(!tab&&p.s>L.per*.3){const len=7,ht=2.2,top=12,y0=heightAt(p.x,p.z);const q=at(p.s+len/2+top/2),r=at(p.s+len+top);if(Math.abs(q.cv)<.4&&Math.abs(r.cv)<.4){tab=true;addRamp(p.x,p.z,ry,len,ht,DT_W-4,MAT.hazard);addStaticBox(q.x,y0+ht/2-.05,q.z,DT_W-4,ht,top,MAT.wood,ry,'wall',.5);addRamp(r.x,r.z,ry+Math.PI,len,ht,DT_W-4,MAT.hazard);used.push(r.s);continue;}}
-      const big=n%3===0;addRamp(p.x,p.z,ry,big?9:6.5,big?2.4:1.5,DT_W-6,MAT.hazard);}
+      if(!tab&&p.s>L.per*.3){const len=7,ht=2.2,top=12,y0=heightAt(p.x,p.z);const q=at(p.s+len/2+top/2),r=at(p.s+len+top);if(Math.abs(q.cv)<.4&&Math.abs(r.cv)<.4){tab=true;addRamp(p.x,p.z,ry,len,ht,DT_W-4,MAT.wood);addStaticBox(q.x,y0+ht/2-.05,q.z,DT_W-4,ht,top,MAT.wood,ry,'wall',.5);addRamp(r.x,r.z,ry+Math.PI,len,ht,DT_W-4,MAT.wood);used.push(r.s);continue;}}
+      const big=n%3===0;addRamp(p.x,p.z,ry,big?9:6.5,big?2.4:1.5,DT_W-6,MAT.wood);}
     window.DT_J=n;}
   // a few hay bales and arrow signs for flavor
   {const sg=new THREE.BoxGeometry(2.6,1.4,.15),S=[];for(let i=0;i<L.pts.length;i+=6){const p=L.pts[i];if(Math.abs(p.cv)<.75)continue;const sd=p.cv>0?-1:1,off=hw+6.2;const x=p.x-p.tz*off*sd,z=p.z+p.tx*off*sd;if(dtNear(x,z).d<hw+3)continue;S.push([x,heightAt(x,z)+1.6,z,Math.atan2(-p.tx,-p.tz)+Math.PI/2]);}
@@ -7802,7 +7802,7 @@ function idCss(id){return `hsl(${hue(id)},70%,70%)`;}
 async function sbClient(){if(NET.sb)return NET.sb;const m=await import(SB_LIB);NET.sb=m.createClient(SB_URL,SB_KEY,{realtime:{params:{eventsPerSecond:40},worker:true,heartbeatIntervalMs:15000},auth:{persistSession:false,autoRefreshToken:false}});return NET.sb;}
 async function freshChannel(name,opts){const sb=await sbClient();try{for(const c of (sb.getChannels?sb.getChannels():[]))if(c.topic==='realtime:'+name||c.subTopic===name)await sb.removeChannel(c);}catch(e){console.warn(e);}return sb.channel(name,opts);}
 function subscribeCh(ch){return new Promise((res,rej)=>{let done=false;const to=setTimeout(()=>{if(!done){done=true;rej(new Error('timeout'));}},10000);ch.subscribe((st,err)=>{const tn=String(ch.topic||'').replace('realtime:','').replace(/^gw-/,'').slice(0,22);if(st!=='SUBSCRIBED'||!done||ch._gwErr)netLog(`${tn}: ${st}${st==='SUBSCRIBED'&&ch._gwErr?' again (reconnected)':''}${err?' '+(err.message||err):''}`);ch._gwErr=st!=='SUBSCRIBED';if(done)return;if(st==='SUBSCRIBED'){done=true;clearTimeout(to);res(ch);}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED'){done=true;clearTimeout(to);rej(new Error(st));}});});}
-const GAME_VERSION='379';const UPDATE_NAME='The Random Fun Update';
+const GAME_VERSION='380';const UPDATE_NAME='The Random Fun Update';
 const NETLOG=[];function netLog(m){const t=new Date();NETLOG.push(`${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')} ${m}`);if(NETLOG.length>14)NETLOG.shift();for(const id of ['netlog','netlog2']){const el=document.getElementById(id);if(el)el.textContent=NETLOG.join('\n');}}
 function bsend0(ch,ev,payload){if(!ch)return;try{const r=ch.send({type:'broadcast',event:ev,payload});if(r&&r.then)r.then(res=>{if(res&&res!=='ok'&&ev!=='s'&&ev!=='st')netLog(`send ${ev} → ${res}`);}).catch(e=>netLog(`send ${ev} failed ${e&&e.message||e}`));}catch(e){netLog(`send ${ev} threw ${e&&e.message||e}`);}}
 let CK_SEQ=0;
