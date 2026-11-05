@@ -2682,7 +2682,7 @@ function makeHat(k,P,hc){const g=new THREE.Group();const M=(c,o)=>lmat(c,Object.
   case 'afro':add(new THREE.SphereGeometry(P(.28),20,14),MC(0x2a1d14,{roughness:1}),[0,-.03,.07]);break;
   case 'markhair':{const m=MC(0xf2d24a,{roughness:.75});
     {const tip=new THREE.LatheGeometry([[0,0],[.075,.01],[.082,.05],[.07,.1],[.05,.15],[.03,.2],[.016,.235],[0,.25]].map(([r,y])=>new THREE.Vector2(P(r),P(y))),14);
-     for(const z of [-.14,-.07,0,.07,.14])for(const x of [-.14,-.07,0,.07,.14]){const sy=-.16+Math.sqrt(Math.max(.002,.044-x*x-z*z));const k=.58+(x+.14)*1.2+(Math.abs(z)>.12?-.06:0);add(tip,m,[x,sy-.045,z],[z*1.5,0,-.45-(x+.14)*1.7],[k,k*1.05,k]);}}
+     for(const z of [-.11,0,.11])for(const x of [-.11,0,.11]){const sy=-.16+Math.sqrt(Math.max(.002,.044-x*x-z*z));const k=.95+(x+.11)*2.3+(z>.1?-.1:0);add(tip,m,[x,sy-.06,z],[z*1.5,0,-.45-(x+.11)*2.1],[k*1.15,k*1.05,k*1.15]);}}
     {const k=M(0x15161a);const seg=(x1,y1,x2,y2)=>{const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy);add(new THREE.CylinderGeometry(P(.008),P(.008),P(L+.012),6),k,[(x1+x2)/2,(y1+y2)/2,.02],[0,0,-Math.atan2(dx,dy)]);};seg(0,.02,0,.12);seg(0,.12,.032,.142);seg(.032,.142,-.027,.168);seg(-.027,.168,0,.188);seg(0,.188,0,.225);}add(new THREE.SphereGeometry(P(.05),12,10),M(0xffe14a,{emissive:0x806a10,roughness:.4}),[0,.255,.02]);break;}
   case 'antenna':add(new THREE.CylinderGeometry(P(.008),P(.008),P(.36),6),M(0x15161a),[0,.12,0]);add(new THREE.SphereGeometry(P(.05),12,10),MC(0xffe14a,{roughness:.4}),[0,.32,0]);break;
   default:return null;}return g;}
@@ -7503,7 +7503,7 @@ function idCss(id){return `hsl(${hue(id)},70%,70%)`;}
 async function sbClient(){if(NET.sb)return NET.sb;const m=await import(SB_LIB);NET.sb=m.createClient(SB_URL,SB_KEY,{realtime:{params:{eventsPerSecond:40},worker:true,heartbeatIntervalMs:15000},auth:{persistSession:false,autoRefreshToken:false}});return NET.sb;}
 async function freshChannel(name,opts){const sb=await sbClient();try{for(const c of (sb.getChannels?sb.getChannels():[]))if(c.topic==='realtime:'+name||c.subTopic===name)await sb.removeChannel(c);}catch(e){console.warn(e);}return sb.channel(name,opts);}
 function subscribeCh(ch){return new Promise((res,rej)=>{let done=false;const to=setTimeout(()=>{if(!done){done=true;rej(new Error('timeout'));}},10000);ch.subscribe((st,err)=>{const tn=String(ch.topic||'').replace('realtime:','').replace(/^gw-/,'').slice(0,22);if(st!=='SUBSCRIBED'||!done||ch._gwErr)netLog(`${tn}: ${st}${st==='SUBSCRIBED'&&ch._gwErr?' again (reconnected)':''}${err?' '+(err.message||err):''}`);ch._gwErr=st!=='SUBSCRIBED';if(done)return;if(st==='SUBSCRIBED'){done=true;clearTimeout(to);res(ch);}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED'){done=true;clearTimeout(to);rej(new Error(st));}});});}
-const GAME_VERSION='368';const UPDATE_NAME='The Random Fun Update';
+const GAME_VERSION='369';const UPDATE_NAME='The Random Fun Update';
 const NETLOG=[];function netLog(m){const t=new Date();NETLOG.push(`${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')} ${m}`);if(NETLOG.length>14)NETLOG.shift();for(const id of ['netlog','netlog2']){const el=document.getElementById(id);if(el)el.textContent=NETLOG.join('\n');}}
 function bsend0(ch,ev,payload){if(!ch)return;try{const r=ch.send({type:'broadcast',event:ev,payload});if(r&&r.then)r.then(res=>{if(res&&res!=='ok'&&ev!=='s'&&ev!=='st')netLog(`send ${ev} → ${res}`);}).catch(e=>netLog(`send ${ev} failed ${e&&e.message||e}`));}catch(e){netLog(`send ${ev} threw ${e&&e.message||e}`);}}
 let CK_SEQ=0;
