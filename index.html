@@ -511,6 +511,7 @@ body.clip-edit #view{cursor:default;touch-action:none}
 @media (max-width:1180px){#clipui kbd{display:none}#cetop .cettl{font-size:19px}#cetop .btn.small{font-size:14px;padding:6px 12px}#cetop .seg{flex-wrap:nowrap}#clipui .mini{padding:5px 8px}}
 @media (max-width:900px){#clipui{grid-template-columns:minmax(0,1fr) 216px;grid-template-rows:auto minmax(0,1fr) auto 204px}#cetop .cettl{font-size:19px}#cekeys{display:none}}
 @media (max-height:620px){#clipui{grid-template-rows:auto minmax(0,1fr) auto 176px}#cekeys{display:none}}
+@media (max-width:1560px){#cebar{gap:5px;padding:6px 8px}#cebar .mini{padding:5px 7px;font-size:12.5px}#cebar kbd{display:none}}
 </style>
 
 <canvas id="view" tabindex="0"></canvas>
@@ -873,11 +874,14 @@ body.clip-edit #view{cursor:default;touch-action:none}
     <div id="cepip" hidden title="Click to switch to the Clip Cam"><span>CLIP CAM</span></div><div id="ceclipbadge" hidden>CLIP CAM · THIS IS YOUR VIDEO</div></div>
   <div id="ceside"></div>
   <div id="cebar"><button class="mini" id="ceplay">Play <kbd>Space</kbd></button><span id="cetime"></span>
-    <button class="mini" id="ceaddkf" title="Put a camera keyframe at the white line, looking where the free cam looks">+ Camera keyframe <kbd>K</kbd></button>
-    <button class="mini" id="ceaddkh" title="Adds a keyframe that is automatically what the camera already is at the white line. Add another keyframe later and the camera glides from this view to the new one. (Shift+K)">+ Keyframe as it is now</button>
+    <button class="mini" id="ceaddkf" title="Put a camera keyframe at the white line, looking where the free cam looks">+ Keyframe <kbd>K</kbd></button>
+    <button class="mini" id="ceaddkh" title="Adds a keyframe that is automatically what the camera already is at the white line. Add another keyframe later and the camera glides from this view to the new one. (Shift+K)">+ Keyframe as it is</button>
+    <button class="mini" id="ceaddmid" title="Adds a curve point where your free cam is, so the camera swings through it on its way between the two keyframes around the white line">+ Curve point</button>
     <button class="mini" id="ceaddfol" title="Lock the camera onto your character or vehicle for a while">+ Follow cam</button>
+    <button class="mini" id="ceaddgc" title="For a part of the clip, show what you saw while you played (or first person, or third person)">+ Game camera</button>
     <button class="mini" id="ceaddfx">+ Effect</button><button class="mini" id="ceaddmus" title="Add music: pick a built-in song or use your own file">+ Song</button>
     <span class="cegap"></span>
+    <button class="mini" id="ceaddcut" title="Cut a part out of the middle of the clip, starting at the white line (X)">+ Cut <kbd>X</kbd></button>
     <button class="mini" id="cetrimin" title="Start the clip at the white line (I)">Start here <kbd>I</kbd></button><button class="mini" id="cetrimout" title="End the clip at the white line (O)">End here <kbd>O</kbd></button>
     <button class="mini on" id="cesnap" title="Things snap to the white line, the clip edges and each other. Hold Alt to turn it off for a moment.">Snap: on</button>
     <button class="mini" id="cezout" title="Zoom the timeline out">−</button><button class="mini" id="cezin" title="Zoom the timeline in">+</button><button class="mini" id="cefit" title="Show the whole 5 minutes">Fit</button></div>
@@ -8178,7 +8182,7 @@ function idCss(id){return `hsl(${hue(id)},70%,70%)`;}
 async function sbClient(){if(NET.sb)return NET.sb;const m=await import(SB_LIB);NET.sb=m.createClient(SB_URL,SB_KEY,{realtime:{params:{eventsPerSecond:40},worker:true,heartbeatIntervalMs:15000},auth:{persistSession:false,autoRefreshToken:false}});return NET.sb;}
 async function freshChannel(name,opts){const sb=await sbClient();try{for(const c of (sb.getChannels?sb.getChannels():[]))if(c.topic==='realtime:'+name||c.subTopic===name)await sb.removeChannel(c);}catch(e){console.warn(e);}return sb.channel(name,opts);}
 function subscribeCh(ch){return new Promise((res,rej)=>{let done=false;const to=setTimeout(()=>{if(!done){done=true;rej(new Error('timeout'));}},10000);ch.subscribe((st,err)=>{const tn=String(ch.topic||'').replace('realtime:','').replace(/^gw-/,'').slice(0,22);if(st!=='SUBSCRIBED'||!done||ch._gwErr)netLog(`${tn}: ${st}${st==='SUBSCRIBED'&&ch._gwErr?' again (reconnected)':''}${err?' '+(err.message||err):''}`);ch._gwErr=st!=='SUBSCRIBED';if(done)return;if(st==='SUBSCRIBED'){done=true;clearTimeout(to);res(ch);}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED'){done=true;clearTimeout(to);rej(new Error(st));}});});}
-const GAME_VERSION='399';const UPDATE_NAME='The Random Fun Update';
+const GAME_VERSION='400';const UPDATE_NAME='The Random Fun Update';
 const NETLOG=[];function netLog(m){const t=new Date();NETLOG.push(`${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')} ${m}`);if(NETLOG.length>14)NETLOG.shift();for(const id of ['netlog','netlog2']){const el=document.getElementById(id);if(el)el.textContent=NETLOG.join('\n');}}
 function bsend0(ch,ev,payload){if(!ch)return;try{const r=ch.send({type:'broadcast',event:ev,payload});if(r&&r.then)r.then(res=>{if(res&&res!=='ok'&&ev!=='s'&&ev!=='st')netLog(`send ${ev} → ${res}`);}).catch(e=>netLog(`send ${ev} failed ${e&&e.message||e}`));}catch(e){netLog(`send ${ev} threw ${e&&e.message||e}`);}}
 let CK_SEQ=0;
@@ -9450,7 +9454,7 @@ function tapeScan(o,f){if(o.__cskip)return;let tr=o.__ct;
   const ch=o.children;for(let i=0,l=ch.length;i<l;i++)tapeScan(ch[i],f);}
 function tapeMe(){return ME.rag&&ME.rag.parts&&ME.rag.parts[5]?ME.rag.parts[5].m:(selfAv?selfAv.mesh:null);}
 function tapeRef(L,f,v){if(!L.length||L[L.length-1]!==v)L.push(f,v);}
-function tapeSkips(){camera.__cskip=sky.__cskip=stars.__cskip=sun.__cskip=sun.target.__cskip=hemi.__cskip=1;if(clouds)clouds.__cskip=1;if(rain)rain.__cskip=1;}
+function tapeSkips(){camera.__cskip=0;sky.__cskip=stars.__cskip=sun.__cskip=sun.target.__cskip=hemi.__cskip=1;if(clouds)clouds.__cskip=1;if(rain)rain.__cskip=1;}
 function tapeSample(){const f=TAPE.f;tapeSkips();
   const sa=selfAv&&selfAv.mesh;let sv=false;if(sa){sv=sa.visible;sa.visible=!ME.dead&&!ME.rag;}
   {const ch=scene.children,cp=camera.position;scene.children=TAPE.none;try{tapeScan(scene,f);}finally{scene.children=ch;}
@@ -9459,7 +9463,7 @@ function tapeSample(){const f=TAPE.f;tapeSkips();
   if(sa)sa.visible=sv;
   for(const tr of TAPE.all)if(tr.seen!==f&&tr.par!==null&&tr.o.parent!==tr.par)tapeCh(tr,'par','PA',f,tr.o.parent);
   const cp=camera.position,cq=camera.quaternion;let sp=0;try{const b=ME.mounted?ME.mounted.body:(ME.rag&&ME.rag.torso)||ME.body;sp=b?b.velocity.length():0;}catch(e){}
-  TAPE.S.push([TAPE.t,dayT,time,storm.k,humGain?humGain.gain.value:0,rainGain?rainGain.gain.value:0,cp.x,cp.y,cp.z,cq.x,cq.y,cq.z,cq.w,camera.fov,sp]);
+  TAPE.S.push([TAPE.t,dayT,time,storm.k,humGain?humGain.gain.value:0,rainGain?rainGain.gain.value:0,cp.x,cp.y,cp.z,cq.x,cq.y,cq.z,cq.w,camera.fov,sp,sv?1:0]);
   tapeRef(TAPE.me,f,tapeMe());tapeRef(TAPE.seat,f,ME.mounted&&ME.mounted.mesh?ME.mounted.mesh:null);tapeRef(TAPE.head,f,ME.rag&&ME.rag.parts&&ME.rag.parts[0]?ME.rag.parts[0].m:(sa?sa.userData.neck||null:null));
   TAPE.f=f+1;
   if(f-TAPE.trimF>=60||TAPE.recN>TAPE.cap){TAPE.trimF=f;tapeTrim();}}
@@ -9530,12 +9534,16 @@ function tapeRestore(){const TC=TAPE.touched;
     if(tr.lp!==undefined){const lp=tr.lp;if(lp){lp.children.splice(Math.min(Math.max(0,tr.li0),lp.children.length),0,o);o.parent=lp;}tr.lp=undefined;}}
   TC.length=0;for(const o of TAPE.hid)o.visible=true;TAPE.hid.length=0;}
 /* world pose of a recorded node at a tape moment (used by follow cams and the sunglasses). Call only while the tape is applied. */
+function tapeNodeAt(o,ff,p,q){const tr=o.__ct;if(!tr)return false;const v=tr.tv,tc=tr.tc,f=Math.floor(ff);if(tc===null){p.set(v[0],v[1],v[2]);q.set(v[3],v[4],v[5],v[6]);return true;}
+  const st=tc.k,k4=st===4,i=tc.find(f),V=tc.V;let k=i*st,x=v[0],y=v[1],z=v[2];if(!k4){x=V[k];y=V[k+1];z=V[k+2];k+=3;}let qx=V[k],qy=V[k+1],qz=V[k+2],qw=V[k+3];
+  const al=i+1<tc.n?(ff-tc.F[i])/(tc.F[i+1]-tc.F[i]):0;if(al>0){k=(i+1)*st;if(!k4){x+=(V[k]-x)*al;y+=(V[k+1]-y)*al;z+=(V[k+2]-z)*al;k+=3;}let bx=V[k],by=V[k+1],bz=V[k+2],bw=V[k+3];if(qx*bx+qy*by+qz*bz+qw*bw<0){bx=-bx;by=-by;bz=-bz;bw=-bw;}qx+=(bx-qx)*al;qy+=(by-qy)*al;qz+=(bz-qz)*al;qw+=(bw-qw)*al;}
+  p.set(x,y,z);q.set(qx,qy,qz,qw).normalize();return true;}
 function tapeFreeRevived(){for(const o of TAPE.revived){if(o.parent===null&&(o.isLine||o.isMesh)&&o.geometry&&o.geometry.dispose)try{o.geometry.dispose();}catch(e){}}TAPE.revived.clear();}
 /* ---- clip editor: state, project, cameras, drawing ---- */
 const CE={open:false,sfxOK:false,envOK:false,envDirty:false,envSun:-9,P:null,sel:null,t:0,playing:false,play:null,view:'free',pip:true,
   fc:{p:new THREE.Vector3(),yaw:0,pitch:0,fov:72},keys:new Set(),undo:[],redo:[],nodes:new Map(),nodeN:1,songs:new Map(),drag:null,exp:null,
   cam:{p:new THREE.Vector3(),q:new THREE.Quaternion(),fov:72},fxw:{},tl:{t0:0,pps:20},snap:true,space:'local',vw:0,vh:0,pr:1,lastT:0,pick:null,hint:'',
-  mix:null,sfxBus:null,musGain:null,master0:null,musSrc:null,hum:null,rain:null,uiT:0,todo:[],shot:null,pickMode:false,drag3:null,built:false,modalOk:null,modalAct:null,lastClip:null};
+  mix:null,sfxBus:null,musGain:null,master0:null,musSrc:null,hum:null,rain:null,uiT:0,todo:[],shot:null,pickMode:false,drag3:null,built:false,modalOk:null,modalAct:null,lastClip:null,cutL:[],folEnd:false};
 const CE_EASE={smooth:u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2,linear:u=>u,in:u=>u*u*u,out:u=>1-Math.pow(1-u,3),
   bounce:u=>{const n=7.5625,d=2.75;if(u<1/d)return n*u*u;if(u<2/d)return n*(u-=1.5/d)*u+.75;if(u<2.5/d)return n*(u-=2.25/d)*u+.9375;return n*(u-=2.625/d)*u+.984375;},
   elastic:u=>u<=0?0:u>=1?1:Math.pow(2,-10*u)*Math.sin((u*10-.75)*(2*Math.PI/3))+1,
@@ -9548,11 +9556,16 @@ function ceT0(){return tapeT0();}
 function ceT1(){const S=TAPE.S;return S.length?S[S.length-1][0]:0;}
 function ceF(T){return tapeFrameAt(T-tapeT0());}
 function ceId(){return CE.P.nid++;}
-function ceNew(){const a=ceT0(),b=ceT1();CE.P={in:a,out:b,kf:[],fol:[],fx:[],music:null,sfxVol:1,res:720,nid:1,done:false};CE.sel=null;CE.undo.length=0;CE.redo.length=0;CE.t=Math.max(a,b-8);CE.nodes.clear();for(const k of [...CE.songs.keys()])if(typeof k!=='string')CE.songs.delete(k);ceTlFit();}
+/* cut-out parts of the footage. "Clip time" is replay time with the cut parts taken out. */
+function ceCutsNow(){const P=CE.P,L=(P.cuts||(P.cuts=[])).map(c=>[Math.max(c.t0,P.in),Math.min(c.t1,P.out)]).filter(c=>c[1]>c[0]+1e-3).sort((a,b)=>a[0]-b[0]),M=[];for(const c of L){const l=M[M.length-1];if(l&&c[0]<=l[1])l[1]=Math.max(l[1],c[1]);else M.push(c);}CE.cutL=M;return M;}
+function ceOut(T){let d=0;for(const c of CE.cutL){if(T<=c[0])break;d+=Math.min(T,c[1])-c[0];}return T-d;}
+function ceTapeOf(o){let T=o;for(const c of CE.cutL){if(T<c[0])break;T+=c[1]-c[0];}return T;}
+function ceClipLen(){return Math.max(0,ceOut(CE.P.out)-ceOut(CE.P.in));}
+function ceNew(){const a=ceT0(),b=ceT1();CE.P={in:a,out:b,kf:[],fol:[],fx:[],cuts:[],view:'tp',music:null,sfxVol:1,res:720,nid:1,done:false};CE.sel=null;CE.undo.length=0;CE.redo.length=0;CE.t=Math.max(a,b-8);CE.nodes.clear();for(const k of [...CE.songs.keys()])if(typeof k!=='string')CE.songs.delete(k);ceTlFit();}
 function cePush(){CE.undo.push(JSON.stringify(CE.P));if(CE.undo.length>80)CE.undo.shift();CE.redo.length=0;CE.P.done=false;}
 function ceUndo(redo){const from=redo?CE.redo:CE.undo,to=redo?CE.undo:CE.redo;if(!from.length){sfx0('error',.3);return;}to.push(JSON.stringify(CE.P));CE.P=JSON.parse(from.pop());ceSelFix();ceMusicSync(true);ceUi();sfx0('ui');}
 function ceSelFix(){const s=CE.sel;if(s&&!ceItem(s))CE.sel=null;}
-function ceItem(s){if(!s)return null;const P=CE.P;if(s.k==='mus')return P.music;const L=s.k==='kf'?P.kf:s.k==='fol'?P.fol:P.fx;return L.find(x=>x.id===s.id)||null;}
+function ceItem(s){if(!s)return null;const P=CE.P;if(s.k==='mus')return P.music;if(s.k==='mid'){const k=P.kf.find(x=>x.id===s.id);return k&&k.mid?k.mid:null;}const L=s.k==='kf'?P.kf:s.k==='fol'?P.fol:s.k==='cut'?P.cuts:P.fx;return L.find(x=>x.id===s.id)||null;}
 function ceSel(k,id){CE.sel=k?{k,id}:null;ceUi();}
 function sfx0(n,v){const ok=CE.sfxOK;CE.sfxOK=true;try{sfx(n,v);}catch(e){}CE.sfxOK=ok;}
 function ceClampT(T){return clamp(T,ceT0(),ceT1());}
@@ -9562,6 +9575,7 @@ function tapeCamQ(ff,out){const S=TAPE.S,n=S.length;if(!n)return out.identity();
 function ceKeyCam(T,out){const K=CE.P.kf,n=K.length;if(!n)return false;let A,B=null,u=0,i=0;
   if(T<=K[0].t){if(K[0].auto&&T<K[0].t)return false;A=K[0];}else if(T>=K[n-1].t){if(K[n-1].auto&&T>K[n-1].t)return false;A=K[n-1];}else{while(i+1<n&&K[i+1].t<=T)i++;A=K[i];B=K[i+1];u=(T-A.t)/Math.max(1e-6,B.t-A.t);}
   if(!B||ceIsCut(B.ease)){const X=B&&((B.ease==='cut0'&&u>0)||(B.ease==='cutm'&&u>=.5))?B:A;out.p.fromArray(X.p);out.q.fromArray(X.q);out.fov=X.fov;return true;}
+  if(B.mid){ceMidCam(A,B,B.ease==='glide'?u:(CE_EASE[B.ease]||CE_EASE.smooth)(u),out);return true;}
   if(B.ease==='glide'){const P0=K[i-1]||A,P3=K[i+2]||B,u2=u*u,u3=u2*u;for(let k=0;k<3;k++){const p0=P0.p[k],p1=A.p[k],p2=B.p[k],p3=P3.p[k];_cv1.setComponent(k,.5*((2*p1)+(-p0+p2)*u+(2*p0-5*p1+4*p2-p3)*u2+(-p0+3*p1-3*p2+p3)*u3));}out.p.copy(_cv1);
     out.q.fromArray(A.q).slerp(_cq1.fromArray(B.q),u);out.fov=lerp(A.fov,B.fov,u);return true;}
   const e=(CE_EASE[B.ease]||CE_EASE.smooth)(u);out.p.fromArray(A.p).lerp(_cv1.fromArray(B.p),e);out.q.fromArray(A.q);_cq1.fromArray(B.q);if(out.q.dot(_cq1)<0)_cq1.set(-_cq1.x,-_cq1.y,-_cq1.z,-_cq1.w);out.q.slerp(_cq1,e).normalize();out.fov=clamp(lerp(A.fov,B.fov,e),5,150);return true;}
@@ -9570,19 +9584,45 @@ function ceFolNode(c,T){const ff=ceF(T);if(c.target==='pick'){const n=CE.nodes.g
 function ceNodePose(n,p,q){n.updateWorldMatrix(true,false);n.matrixWorld.decompose(p,q,_cv4);return n;}
 function ceLevelQ(q){_cv3.set(0,0,-1).applyQuaternion(q);if(Math.abs(_cv3.x)+Math.abs(_cv3.z)<1e-4)_cv3.set(0,1,0).applyQuaternion(q);return q.setFromAxisAngle(C_UP,Math.atan2(-_cv3.x,-_cv3.z));}
 function ceLookQ(eye,at,out){_cm1.lookAt(eye,at,C_UP);return out.setFromRotationMatrix(_cm1);}
-function ceFolCam(c,T,out){const n=ceFolNode(c,T);if(!n)return false;ceNodePose(n,_cv1,_cq1);
-  if(c.mode==='watch'){out.p.fromArray(c.off);_cv1.y+=c.aim!=null?c.aim:1;ceLookQ(out.p,_cv1,out.q);}
-  else{if(c.mode==='level')ceLevelQ(_cq1);out.p.fromArray(c.off).applyQuaternion(_cq1).add(_cv1);out.q.copy(_cq1).multiply(_cq2.fromArray(c.rot));}
-  out.fov=c.fov||72;return true;}
+/* a camera move that swings through a curve point in one go. It always passes through the point; roundness 0 makes a sharp corner there and 10 a smooth round curve (the same idea as smooth_move in Spawnscript) */
+function ceQLog(q,o){let w=q.w,x=q.x,y=q.y,z=q.z;if(w<0){w=-w;x=-x;y=-y;z=-z;}const s=Math.hypot(x,y,z);if(s<1e-9)return o.set(0,0,0);const a=2*Math.atan2(s,w)/s;return o.set(x*a,y*a,z*a);}
+function ceQExp(v,o){const a=v.length();if(a<1e-9)return o.set(0,0,0,1);const s=Math.sin(a/2)/a;return o.set(v.x*s,v.y*s,v.z*s,Math.cos(a/2));}
+const _ma=new THREE.Vector3(),_mb=new THREE.Vector3(),_cmq=new THREE.Quaternion(),_mi=new THREE.Quaternion();
+function ceMidCam(A,B,k,out){const M=B.mid,s=clamp((M.r==null?10:M.r)/10,0,1),u=1-k,h=k<.5?k*2:(k-.5)*2,w0=u*u,w1=2*u*k,w2=k*k;
+  const mixv=(a,m,b)=>{const c=2*m-(a+b)/2,q=w0*a+w1*c+w2*b,p=k<.5?a+(m-a)*h:m+(b-m)*h;return p+(q-p)*s;};
+  out.p.set(mixv(A.p[0],M.p[0],B.p[0]),mixv(A.p[1],M.p[1],B.p[1]),mixv(A.p[2],M.p[2],B.p[2]));
+  _cmq.fromArray(M.q);_mi.copy(_cmq).invert();ceQLog(_cq1.copy(_mi).multiply(_cq2.fromArray(A.q)),_ma);ceQLog(_cq1.copy(_mi).multiply(_cq2.fromArray(B.q)),_mb);
+  _cv1.set(mixv(_ma.x,0,_mb.x),mixv(_ma.y,0,_mb.y),mixv(_ma.z,0,_mb.z));out.q.copy(_cmq).multiply(ceQExp(_cv1,_cq1)).normalize();
+  out.fov=clamp(mixv(A.fov,M.fov||(A.fov+B.fov)/2,B.fov),5,150);}
+function ceFpCam(T,out){const ff=ceF(T);out.p.set(tapeScalar(ff,6),tapeScalar(ff,7),tapeScalar(ff,8));tapeCamQ(ff,out.q);out.fov=clamp(tapeScalar(ff,13)||72,5,150);out.fp=true;return true;}
+/* true first person: your eyes, looking where you looked. If you were already playing in first person this is simply your game camera. */
+function ceHeadCam(T,out){const ff=ceF(T),S0=TAPE.S[clamp(Math.floor(ff)-TAPE.f0,0,TAPE.S.length-1)],hd=S0&&S0[15]?tapeRefAt(TAPE.head,ff):null;if(!hd||!hd.parent)return ceFpCam(T,out);
+  hd.updateWorldMatrix(true,false);out.p.set(0,hd.isMesh?0:.2,0).applyMatrix4(hd.matrixWorld);tapeCamQ(ff,out.q);out.fov=clamp(tapeScalar(ff,13)||72,5,150);out.fp=true;out.hide=true;return true;}
+function ceIsPer(m){return m==='fp'||m==='tp'||m==='gc';}
+function ceDefCam(T,out){const v=CE.P.view;return v==='fp'?ceHeadCam(T,out):v==='gc'?ceFpCam(T,out):ceAutoCam(T,out);}
+const _fo=[0,0,0],_fq=new THREE.Quaternion(),_fp=new THREE.Vector3(),_fpq=new THREE.Quaternion(),_fa=new THREE.Vector3(),_fb=new THREE.Quaternion(),_fc=new THREE.Vector3(),_fd=new THREE.Quaternion();
+function ceFolEase(c,T){const u=clamp((T-c.t0)/Math.max(.01,c.t1-c.t0),0,1),e=c.ease2||'smooth';return ceIsCut(e)?(e==='cut0'?(u>0?1:0):e==='cutm'?(u>=.5?1:0):(u>=1?1:0)):(CE_EASE[e]||CE_EASE.smooth)(u);}
+/* where a follow cam sits for a target at (P,Q): which is 0 for its start spot, 1 for its end spot, or a number in between while it slides */
+function ceFolSpot(c,P,Q,e,out){let off=c.off,fov=c.fov||72;_fq.fromArray(c.rot);
+  if(c.off2&&e>0){const b=c.off2;if(e>=1&&e<=1){off=b;_fq.fromArray(c.rot2);fov=c.fov2||fov;}else{_fo[0]=off[0]+(b[0]-off[0])*e;_fo[1]=off[1]+(b[1]-off[1])*e;_fo[2]=off[2]+(b[2]-off[2])*e;off=_fo;_cq2.fromArray(c.rot2);if(_fq.dot(_cq2)<0)_cq2.set(-_cq2.x,-_cq2.y,-_cq2.z,-_cq2.w);_fq.slerp(_cq2,e).normalize();fov=fov+((c.fov2||fov)-fov)*e;}}
+  if(c.mode==='watch'){out.p.fromArray(off);_fa.copy(P);_fa.y+=c.aim!=null?c.aim:1;ceLookQ(out.p,_fa,out.q);}
+  else{if(c.mode==='level')ceLevelQ(Q);out.p.fromArray(off).applyQuaternion(Q).add(P);out.q.copy(Q).multiply(_fq);}
+  out.fov=clamp(fov,5,150);return out;}
+function ceFolCam(c,T,out,spot){if(c.mode==='gc')return ceFpCam(T,out);if(c.mode==='fp')return ceHeadCam(T,out);if(c.mode==='tp')return ceAutoCam(T,out);const n=ceFolNode(c,T);if(!n)return false;const e=spot!=null?spot:(c.off2?ceFolEase(c,T):0);
+  if(c.soft&&spot==null&&n.__ct&&n.__ct.par===scene){ // soft: average where the rigid camera would have been over the last half second, so it lags and swings a little on fast moves and sharp turns
+    const tmp=CE.softCam||(CE.softCam={p:new THREE.Vector3(),q:new THREE.Quaternion(),fov:72});let W=0,first=true;_fc.set(0,0,0);let ax=0,ay=0,az=0,aw=0;
+    for(let i=0;i<9;i++){const w=Math.exp(-i*.3);if(!tapeNodeAt(n,ceF(T-i*.055),_fp,_fpq))break;ceFolSpot(c,_fp,_fpq,e,tmp);_fc.addScaledVector(tmp.p,w);if(first){_fd.copy(tmp.q);first=false;}const sg=_fd.dot(tmp.q)<0?-w:w;ax+=tmp.q.x*sg;ay+=tmp.q.y*sg;az+=tmp.q.z*sg;aw+=tmp.q.w*sg;W+=w;}
+    if(W>0){out.p.copy(_fc).multiplyScalar(1/W);out.q.set(ax,ay,az,aw).normalize();out.fov=tmp.fov;return true;}}
+  ceNodePose(n,_fp,_fpq);ceFolSpot(c,_fp,_fpq,e,out);return true;}
 function ceAutoCam(T,out){const ff=ceF(T),me=tapeRefAt(TAPE.me,ff),seat=tapeRefAt(TAPE.seat,ff);tapeCamQ(ff,_cq1);_cv2.set(0,0,-1).applyQuaternion(_cq1);
   if(me&&me.parent){ceNodePose(me,_cv1,_cq2);_cv1.y+=seat?1.3:1.35;}else _cv1.set(tapeScalar(ff,6),tapeScalar(ff,7),tapeScalar(ff,8));
   _cv2.y=clamp(_cv2.y,-.55,.3);_cv2.normalize();const d=seat?7.5:4.4;out.p.copy(_cv1).addScaledVector(_cv2,-d);out.p.y+=seat?1.6:.7;
   try{const g=heightAt(out.p.x,out.p.z)+.35;if(out.p.y<g)out.p.y=g;}catch(e){}ceLookQ(out.p,_cv1,out.q);out.fov=72;return true;}
-function ceBaseCam(T,out){const c=ceFolAt(T);if(!(c&&ceFolCam(c,T,out)))ceAutoCam(T,out);return out;}
+function ceBaseCam(T,out){out.fp=out.hide=false;const c=ceFolAt(T);if(!(c&&ceFolCam(c,T,out)))ceDefCam(T,out);return out;}
 function ceAutoDirty(){if(CE.P)for(const k of CE.P.kf)if(k.auto)k.dirty=true;}
 /* "as it is" keyframes copy whatever the camera was already doing at their moment; look that moment up again whenever something changed */
 function ceAutoFix(){const o=CE.tmpCam||(CE.tmpCam={p:new THREE.Vector3(),q:new THREE.Quaternion(),fov:72});for(const k of CE.P.kf){if(!k.auto||!k.dirty)continue;k.dirty=false;tapeApply(ceF(k.t));try{ceBaseCam(k.t,o);k.p=o.p.toArray();k.q=o.q.toArray();k.fov=Math.round(o.fov);}catch(e){}finally{tapeRestore();}}}
-function ceCamAt(T,out,raw){let ok=false;const c=ceFolAt(T);if(c)ok=ceFolCam(c,T,out);if(!ok)ok=ceKeyCam(T,out);if(!ok)ceAutoCam(T,out);if(raw)return out;
+function ceCamAt(T,out,raw){out.fp=out.hide=false;let ok=false;const c=ceFolAt(T);if(c)ok=ceFolCam(c,T,out);if(!ok)ok=ceKeyCam(T,out);if(!ok)ceDefCam(T,out);if(raw)return out;
   const W=CE.fxw;if(W.shake>0){const a=W.shake,t=T*31;out.p.x+=Math.sin(t*1.3)*Math.sin(t*.71+1)*.07*a;out.p.y+=Math.sin(t*1.7+2)*Math.sin(t*.53)*.07*a;
     _ce1.set(Math.sin(t*1.9)*Math.sin(t*.47+.6)*.03*a,Math.sin(t*1.5+1.4)*Math.sin(t*.61)*.03*a,Math.sin(t*2.3+.3)*Math.sin(t*.37+2)*.035*a);out.q.multiply(_cq2.setFromEuler(_ce1));}
   if(W.zoom>0)out.fov=clamp(out.fov*(1-.5*Math.min(1,W.zoom)),5,150);return out;}
@@ -9603,16 +9643,16 @@ function ceFire(e){const pos=_cv1.set(e.x,e.y,e.z).clone(),sp=SFX_P,nn=NO_NET_SF
 function ceEvIdx(T){const E=TAPE.ev;let lo=0,hi=E.length;while(lo<hi){const m=(lo+hi)>>1;if(E[m].t<=T)lo=m+1;else hi=m;}return lo;}
 function ceSounds(Ta,Tb){if(!AC||Tb<=Ta||Tb-Ta>3)return;const E=TAPE.ev;for(let i=ceEvIdx(Ta),n=0;i<E.length&&E[i].t<=Tb&&n<40;i++,n++)ceFire(E[i]);}
 function ceMusicStop(){if(CE.musSrc){try{CE.musSrc.stop();}catch(e){}try{CE.musSrc.disconnect();}catch(e){}CE.musSrc=null;}}
-function ceMusicStart(T){ceMusicStop();const M=CE.P.music,S=M&&CE.songs.get(M.sid);if(!AC||!S||!CE.mix)return;const off=T-M.t;if(off>=S.buf.duration)return;const s=AC.createBufferSource();s.buffer=S.buf;s.connect(CE.musGain);CE.musGain.gain.value=M.vol;
+function ceMusicStart(T){ceMusicStop();const M=CE.P.music,S=M&&CE.songs.get(M.sid);if(!AC||!S||!CE.mix)return;ceCutsNow();const off=ceOut(T)-ceOut(M.t);if(off>=S.buf.duration)return;const s=AC.createBufferSource();s.buffer=S.buf;s.connect(CE.musGain);CE.musGain.gain.value=M.vol;
   try{if(off>=0)s.start(0,off);else s.start(AC.currentTime-off,0);}catch(e){}CE.musSrc=s;}
 function ceMusicSync(restart){if(CE.musGain&&CE.P.music)CE.musGain.gain.value=CE.P.music.vol;if(CE.sfxBus)CE.sfxBus.gain.value=CE.P.sfxVol;if(restart&&CE.playing)ceMusicStart(CE.t);}
-function cePlay(on,from){if(on===CE.playing&&from==null)return;if(on){if(AC&&AC.state==='suspended')AC.resume().catch(()=>{});let T=from!=null?from:CE.t;if(T>=CE.P.out-.05||T<CE.P.in-.001)T=CE.P.in;CE.t=T;
-    CE.play={T0:T,ac0:AC?AC.currentTime:0,p0:performance.now()};CE.playing=true;CE.lastT=T;ceMusicSync();ceMusicStart(T);}
+function cePlay(on,from){if(on===CE.playing&&from==null)return;if(on){if(AC&&AC.state==='suspended')AC.resume().catch(()=>{});ceCutsNow();let T=from!=null?from:CE.t;if(T>=CE.P.out-.05||T<CE.P.in-.001)T=CE.P.in;T=ceTapeOf(ceOut(T));if(T>=CE.P.out-.02)T=ceTapeOf(ceOut(CE.P.in));CE.t=T;
+    CE.play={O0:ceOut(T),ac0:AC?AC.currentTime:0,p0:performance.now()};CE.playing=true;CE.lastT=T;ceMusicSync();ceMusicStart(T);}
   else{CE.playing=false;CE.play=null;ceMusicStop();if(CE.hum&&AC){CE.hum.gain.setTargetAtTime(0,AC.currentTime,.03);CE.rain.gain.setTargetAtTime(0,AC.currentTime,.03);}}
   ceUi();}
-function cePlayTick(){if(!CE.playing)return;const P=CE.play,useAC=AC&&AC.state==='running';const T=P.T0+(useAC?AC.currentTime-P.ac0:(performance.now()-P.p0)/1000);
-  if(!useAC){P.ac0=AC?AC.currentTime:0;P.p0=performance.now();P.T0=T;}
-  if(T>=CE.P.out){CE.t=CE.P.out;if(CE.exp)ceExportEnd();else cePlay(false);return;}CE.t=T;}
+function cePlayTick(){if(!CE.playing)return;const P=CE.play,useAC=AC&&AC.state==='running';const o=P.O0+(useAC?AC.currentTime-P.ac0:(performance.now()-P.p0)/1000);
+  if(!useAC){P.ac0=AC?AC.currentTime:0;P.p0=performance.now();P.O0=o;}const T=ceTapeOf(o);
+  if(T>=CE.P.out-1e-6||o>=ceOut(CE.P.out)-1e-6){CE.t=CE.P.out;if(CE.exp)ceExportEnd();else cePlay(false);return;}CE.t=T;}
 /* ---- which effects are on at a moment ---- */
 function ceFxAt(T){const W=CE.fxw;for(const k in CE_FX)W[k]=0;W.sh=null;for(const c of CE.P.fx){if(T<c.t0||T>=c.t1)continue;const D=CE_FX[c.type];if(!D)continue;const d=c.t1-c.t0,x=T-c.t0,u=x/d;let w;
     if(D.env)w=D.env(u,x,d);else{const r=Math.min(D.ramp||.15,d/2);w=Math.min(1,x/r,(d-x)/r);}w*=c.amt==null?1:c.amt;if(w>W[c.type])W[c.type]=w;if(c.type==='shades')W.sh={c,x,d};}return W;}
@@ -9622,19 +9662,21 @@ function ceCanvasBox(){const r=$('ceview').getBoundingClientRect();let x=r.left,
 function ceLayout(){const [x,y,w,h]=ceCanvasBox();const st=canvas.style;const key=x+','+y+','+w+','+h;if(CE.boxKey!==key){CE.boxKey=key;st.left=x+'px';st.top=y+'px';st.width=w+'px';st.height=h+'px';st.right='auto';st.bottom='auto';}
   const E=CE.exp,pr=E?1:Math.min(devicePixelRatio||1,1.5),bw=E?E.w:w,bh=E?E.h:h;if(CE.vw!==bw||CE.vh!==bh||CE.pr!==pr){CE.vw=bw;CE.vh=bh;CE.pr=pr;CE.uiT=0;renderer.setPixelRatio(pr);renderer.setSize(bw,bh,false);}
   camera.aspect=bw/bh;}
+function ceFpHide(ff,force){const S0=TAPE.S[clamp(Math.floor(ff)-TAPE.f0,0,TAPE.S.length-1)];if(!force&&S0&&S0[15])return null;const me=tapeRefAt(TAPE.me,ff);if(me&&me.userData&&me.userData.neck&&me.visible){me.visible=false;return me;}return null;}
 function ceSetCam(p,q,fov){camera.position.copy(p);camera.quaternion.copy(q);camera.fov=fov;camera.updateProjectionMatrix();camera.updateMatrixWorld(true);}
 function clipFrame(dt){const P=CE.P;if(!P){renderer.render(scene,camera);return;}
   ceLayout();ceFly(dt);cePlayTick();const T=CE.t=ceClampT(CE.t),ff=ceF(T);
-  const sv={dayT,time,sk:storm.k,ls:lastSunY,et:envTimer,gt:grassU.uTime.value,exp:renderer.toneMappingExposure,fog:scene.fog.density,sm:renderer.shadowMap.autoUpdate};const kids=[];for(const c of camera.children)if(c.visible){kids.push(c);c.visible=false;}
-  tapeSkips();try{ceAutoFix();}catch(e){}tapeApply(ff);
+  const sv={dayT,time,sk:storm.k,ls:lastSunY,et:envTimer,gt:grassU.uTime.value,exp:renderer.toneMappingExposure,fog:scene.fog.density,sm:renderer.shadowMap.autoUpdate};const kids=[];let hidMe=null;
+  tapeSkips();ceCutsNow();try{ceAutoFix();}catch(e){}tapeApply(ff);
   try{if(CE.todo.length){const L=CE.todo.splice(0);for(const f of L)try{f();}catch(e){console.warn(e);}}
     ceFxAt(T);const clipView=CE.view==='clip'||!!CE.exp;ceCamAt(T,CE.cam);
+    if(clipView&&CE.cam.fp)hidMe=ceFpHide(ff,CE.cam.hide);else for(const c of camera.children)if(c.visible){kids.push(c);c.visible=false;} // your game camera shows your hands and hides your own body, like when you played
     if(clipView)ceSetCam(CE.cam.p,CE.cam.q,CE.cam.fov);else ceSetCam(CE.fc.p,ceFcQuat(_cq1),CE.fc.fov);
     // the sky, sun and weather as they were at that moment
     {const S0=TAPE.S[clamp(Math.floor(ff)-TAPE.f0,0,TAPE.S.length-1)];dayT=S0[1];storm.k=S0[3];}const gt=tapeScalar(ff,2);time=gt;grassU.uTime.value=gt;lastSunY=CE.envSun;envTimer=1;CE.envOK=true;
     try{updateSky(0);drawStorm(CE.playing?dt:0);}finally{CE.envOK=false;CE.envSun=lastSunY;}
     let wo=null;if(water&&water.material.normalMap){const o=water.material.normalMap.offset;wo=[o.x,o.y];o.x=gt*.012;o.y=gt*.008;}
-    if(CE.playing){ceSounds(CE.lastT,T);if(CE.hum&&AC){CE.hum.gain.setTargetAtTime(tapeScalar(ff,4),AC.currentTime,.05);CE.rain.gain.setTargetAtTime(tapeScalar(ff,5),AC.currentTime,.1);}}CE.lastT=T;
+    if(CE.playing){let Ta=CE.lastT;for(const c of CE.cutL)if(Ta<c[1]&&T>=c[1])Ta=c[1];ceSounds(Ta,T);if(CE.hum&&AC){CE.hum.gain.setTargetAtTime(tapeScalar(ff,4),AC.currentTime,.05);CE.rain.gain.setTargetAtTime(tapeScalar(ff,5),AC.currentTime,.1);}}CE.lastT=T;
     ceShadesOn(T);
     renderer.setRenderTarget(null);const W=CE.vw,H=CE.vh;renderer.setViewport(0,0,W,H);renderer.setScissor(0,0,W,H);renderer.setScissorTest(false);
     if(clipView){renderer.render(scene,camera);cePost(0,0,W,H,T);}
@@ -9643,13 +9685,13 @@ function clipFrame(dt){const P=CE.P;if(!P){renderer.render(scene,camera);return;
     if(CE.shot)try{CE.shot();}catch(e){console.warn(e);}
     if(wo){const o=water.material.normalMap.offset;o.x=wo[0];o.y=wo[1];}
   }catch(e){softErr('clip',e);}
-  finally{ceShadesOff();tapeRestore();for(const c of kids)c.visible=true;dayT=sv.dayT;time=sv.time;renderer.shadowMap.autoUpdate=sv.sm;storm.k=sv.sk;lastSunY=sv.ls;envTimer=sv.et;grassU.uTime.value=sv.gt;renderer.toneMappingExposure=sv.exp;scene.fog.density=sv.fog;renderer.setScissorTest(false);if(NET.on)scene.updateMatrixWorld();}
+  finally{ceShadesOff();for(const c of kids)c.visible=true;if(hidMe)hidMe.visible=true;tapeRestore();dayT=sv.dayT;time=sv.time;renderer.shadowMap.autoUpdate=sv.sm;storm.k=sv.sk;lastSunY=sv.ls;envTimer=sv.et;grassU.uTime.value=sv.gt;renderer.toneMappingExposure=sv.exp;scene.fog.density=sv.fog;renderer.setScissorTest(false);if(NET.on)scene.updateMatrixWorld();}
   CE.uiT-=dt;try{ceTlDraw();if(CE.uiT<=0){CE.uiT=.1;ceUiTick();}}catch(e){softErr('clipui',e);}}
 /* ---- open and close ---- */
 function clipCan(){return started&&ready&&!CR.edit&&!NET.poss&&TAPE.S.length>=45;}
 function clipOpen(){if(CE.open)return;if(!started){return;}if(CR.edit){toast('Leave the Map Creator first.');return;}if(TAPE.S.length<45){toast('Play for a few seconds first. The Clip Editor shows the last 5 minutes of what happened.');return;}
   if(!paused)pauseGame();$('pause').hidden=true;$('help').hidden=true;if(document.pointerLockElement)document.exitPointerLock();
-  const P=CE.P;if(!P||P.done||P.out<=ceT0()+1||P.in>=ceT1()){ceNew();}else{P.in=clamp(P.in,ceT0(),ceT1()-.5);P.out=clamp(P.out,P.in+.5,ceT1());CE.t=ceClampT(CE.t);}
+  const P=CE.P;if(!P||P.done||P.out<=ceT0()+1||P.in>=ceT1()){ceNew();}else{P.cuts=P.cuts||[];P.view=P.view||'tp';P.in=clamp(P.in,ceT0(),ceT1()-.5);P.out=clamp(P.out,P.in+.5,ceT1());CE.t=ceClampT(CE.t);}
   CE.open=true;CE.view='free';CE.keys.clear();CE.envSun=lastSunY;CE.envGen=false;CE.envDirty=false;CE.boxKey='';CE.vw=0;document.body.classList.add('clip-edit');$('clipui').hidden=false;
   // start the free camera a little behind where you were looking
   {const d=_cv1.set(0,0,-1).applyQuaternion(camera.quaternion);CE.fc.p.copy(camera.position).addScaledVector(d,-5);CE.fc.p.y+=1.6;try{CE.fc.p.y=Math.max(CE.fc.p.y,heightAt(CE.fc.p.x,CE.fc.p.z)+.6);}catch(e){}_ce1.setFromQuaternion(camera.quaternion,'YXZ');CE.fc.yaw=_ce1.y;CE.fc.pitch=clamp(_ce1.x-.12,-1.5,1.5);CE.fc.fov=72;}
@@ -9661,7 +9703,7 @@ function clipClose(){if(!CE.open)return;if(CE.exp)ceExportCancel();cePlay(false)
   $('pause').hidden=false;resumeGame();} // if the browser will not lock the mouse again right away, the pause menu is there to click Resume
 addEventListener('resize',()=>{if(CE.open){CE.boxKey='';CE.vw=0;}});
 /* ---- clip editor: things you grab in the 3D view (camera icons, the path, and move arrows and turn rings like the Map Creator's) ---- */
-const CE3={ov:null,giz:null,hit:[],vis:[],hov:null,kIcons:[],fIcon:null,path:null,fLine:null,rc:new THREE.Raycaster(),rcam:new THREE.PerspectiveCamera(72,1,.05,1300),pcam:new THREE.PerspectiveCamera(72,16/9,.05,1300),
+const CE3={ov:null,giz:null,hit:[],vis:[],hov:null,kIcons:[],mIcons:[],fIcon:null,fIcon2:null,fpose2:{p:new THREE.Vector3(),q:new THREE.Quaternion(),fov:72,ok:false},path:null,fLine:null,rc:new THREE.Raycaster(),rcam:new THREE.PerspectiveCamera(72,1,.05,1300),pcam:new THREE.PerspectiveCamera(72,16/9,.05,1300),
   tgt:null,ref:{p:new THREE.Vector3(),q:new THREE.Quaternion(),ok:false},fpose:{p:new THREE.Vector3(),q:new THREE.Quaternion(),fov:72,ok:false},ptrs:new Map(),ndc:new THREE.Vector2()};
 function ceCamIcon(col){const g=new THREE.Group();const dark=new THREE.MeshBasicMaterial({color:0x1d1915,fog:false}),acc=new THREE.MeshBasicMaterial({color:col,fog:false}),ln=new THREE.LineBasicMaterial({color:col,fog:false,transparent:true,opacity:.9});
   const body=new THREE.Mesh(new THREE.BoxGeometry(.5,.36,.62),dark);g.add(body,new THREE.LineSegments(new THREE.EdgesGeometry(body.geometry),ln));
@@ -9679,14 +9721,15 @@ function ceOvBuild(){if(CE3.ov)return;const S=CE3.ov=new THREE.Scene();
     {const m=vmat(col);const v=new THREE.Mesh(new THREE.TorusGeometry(.8,.02,8,72),m);v.renderOrder=22;const hit=new THREE.Mesh(new THREE.TorusGeometry(.8,.085,6,48),hmat);for(const o of [v,hit]){if(ax==='x')o.rotation.y=Math.PI/2;if(ax==='y')o.rotation.x=Math.PI/2;}g.add(v,hit);hit.userData={kind:'rot',ax,mat:m,base:col,ring:v};CE3.hit.push(hit);}}
   g.visible=false;S.add(g);
   const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(6000*3),3));CE3.path=new THREE.LineSegments(pg,new THREE.LineBasicMaterial({color:0xf2a93b,transparent:true,opacity:.85,fog:false}));CE3.path.frustumCulled=false;S.add(CE3.path);
-  const fg=new THREE.BufferGeometry();fg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(6),3));CE3.fLine=new THREE.Line(fg,new THREE.LineBasicMaterial({color:0x4ad0ff,transparent:true,opacity:.8,fog:false}));CE3.fLine.frustumCulled=false;S.add(CE3.fLine);
-  CE3.fIcon=ceCamIcon(0x4ad0ff);CE3.fIcon.userData.sel={k:'fol',id:0};S.add(CE3.fIcon);}
+  const fg=new THREE.BufferGeometry();fg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(50*3),3));CE3.fLine=new THREE.LineSegments(fg,new THREE.LineBasicMaterial({color:0x4ad0ff,transparent:true,opacity:.8,fog:false}));CE3.fLine.frustumCulled=false;S.add(CE3.fLine);
+  CE3.fIcon=ceCamIcon(0x4ad0ff);CE3.fIcon.userData.sel={k:'fol',id:0,end:false};CE3.fIcon2=ceCamIcon(0x4ad0ff);CE3.fIcon2.userData.sel={k:'fol',id:0,end:true};S.add(CE3.fIcon,CE3.fIcon2);}
 /* what the gizmo is holding: {rot:bool, get(p,q), set(p,q)} */
 function ceGizTarget(){const s=CE.sel,it=ceItem(s);if(!it||CE.view!=='free'||CE.exp)return null;
   if(s.k==='kf')return {rot:true,get(p,q){p.fromArray(it.p);q.fromArray(it.q);},set(p,q){p.toArray(it.p);q.toArray(it.q);it.auto=false;}};
-  if(s.k==='fol'){if(!CE3.fpose.ok||CE.t<it.t0||CE.t>it.t1)return null;const R=CE3.ref;
-    if(it.mode==='watch')return {rot:false,get(p,q){p.fromArray(it.off);q.copy(CE3.fpose.q);},set(p){p.toArray(it.off);}};
-    return {rot:true,get(p,q){p.copy(CE3.fpose.p);q.copy(CE3.fpose.q);},set(p,q){const iq=_cq2.copy(R.q).invert();_cv4.copy(p).sub(R.p).applyQuaternion(iq).toArray(it.off);iq.multiply(q).normalize().toArray(it.rot);}};}
+  if(s.k==='mid')return {rot:true,get(p,q){p.fromArray(it.p);q.fromArray(it.q);},set(p,q){p.toArray(it.p);q.toArray(it.q);}};
+  if(s.k==='fol'){if(ceIsPer(it.mode)||!CE3.fpose.ok||CE.t<it.t0||CE.t>it.t1)return null;const R=CE3.ref,end=!!(it.off2&&CE.folEnd),F=end?CE3.fpose2:CE3.fpose; // the arrows hold the start spot, or the end spot of a sliding follow cam
+    if(it.mode==='watch')return {rot:false,get(p,q){p.fromArray(end?it.off2:it.off);q.copy(F.q);},set(p){p.toArray(end?it.off2:it.off);}};
+    return {rot:true,get(p,q){p.copy(F.p);q.copy(F.q);},set(p,q){const iq=_cq2.copy(R.q).invert();_cv4.copy(p).sub(R.p).applyQuaternion(iq).toArray(end?it.off2:it.off);iq.multiply(q).normalize().toArray(end?it.rot2:it.rot);}};}
   if(s.k==='fx'&&it.type==='shades'){const H=CE3.head;if(!H||!H.ok||CE.t<it.t0||CE.t>it.t1)return null;
     return {rot:true,small:true,get(p,q){p.fromArray(it.off||CE_SH_OFF).applyQuaternion(H.q).multiplyScalar(H.s).add(H.p);q.copy(H.q).multiply(_cq2.fromArray(it.rot||[0,0,0,1]));},
       set(p,q){const iq=_cq2.copy(H.q).invert();it.off=_cv4.copy(p).sub(H.p).divideScalar(H.s||1).applyQuaternion(iq).toArray();it.rot=iq.multiply(q).normalize().toArray();}};}
@@ -9697,15 +9740,22 @@ function ceOverlay(T){ceOvBuild();const P=CE.P,S=CE3.ov,cp=camera.position;{cons
   const K=P.kf;while(CE3.kIcons.length<K.length){const ic=ceCamIcon(0xf2a93b);CE3.kIcons.push(ic);S.add(ic);}
   for(let i=0;i<CE3.kIcons.length;i++){const ic=CE3.kIcons[i],k=K[i];ic.visible=!!k;if(!k)continue;ic.position.fromArray(k.p);ic.quaternion.fromArray(k.q);const sel=CE.sel&&CE.sel.k==='kf'&&CE.sel.id===k.id;const d=cp.distanceTo(ic.position);if(d<.9){ic.visible=false;continue;}ic.scale.setScalar(clamp(d*.045,.3,5)*(sel?1.25:1));
     const U=ic.userData;U.sel={k:'kf',id:k.id};const col=sel?0xfff3c8:0xf2a93b;if(U.cc!==col){U.cc=col;U.acc.color.setHex(col);U.ln.color.setHex(col);U.fr.material.color.setHex(col);}U.fr.visible=sel;}
+  // curve points (the spot a move swings through)
+  {let n=0;for(let i=1;i<K.length;i++){const m=K[i].mid;if(!m||ceIsCut(K[i].ease))continue;let ic=CE3.mIcons[n];if(!ic){ic=CE3.mIcons[n]=ceCamIcon(0x8fe38a);S.add(ic);}n++;ic.position.fromArray(m.p);ic.quaternion.fromArray(m.q);const sel=CE.sel&&CE.sel.k==='mid'&&CE.sel.id===K[i].id,d=cp.distanceTo(ic.position);ic.visible=d>=.9;ic.scale.setScalar(clamp(d*.036,.24,4)*(sel?1.25:1));
+      const U=ic.userData;U.sel={k:'mid',id:K[i].id};const col=sel?0xe9ffe0:0x8fe38a;if(U.cc!==col){U.cc=col;U.acc.color.setHex(col);U.ln.color.setHex(col);U.fr.material.color.setHex(col);}U.fr.visible=sel;}
+    for(let i=n;i<CE3.mIcons.length;i++)CE3.mIcons[i].visible=false;}
   // the path the camera takes between keyframes
   {const pa=CE3.path.geometry.attributes.position,A=pa.array;let n=0;const o={p:_cv3.clone(),q:new THREE.Quaternion(),fov:0};let prev=null;
     for(let i=0;i+1<K.length&&n<5900;i++){if(ceIsCut(K[i+1].ease)){prev=null;continue;}const a=K[i].t,b=K[i+1].t;for(let s=0;s<=24;s++){ceKeyCam(a+(b-a)*Math.min(.9999,s/24),o);if(prev&&s>0){A[n++]=prev.x;A[n++]=prev.y;A[n++]=prev.z;A[n++]=o.p.x;A[n++]=o.p.y;A[n++]=o.p.z;}prev=(prev||new THREE.Vector3()).copy(o.p);}prev=null;}
     CE3.path.geometry.setDrawRange(0,n/3);pa.needsUpdate=true;CE3.path.visible=n>0;}
   // the follow cam that is on right now (or selected)
-  {let c=ceFolAt(T);const s=CE.sel&&CE.sel.k==='fol'?ceItem(CE.sel):null;if(s&&T>=s.t0&&T<=s.t1)c=s;CE3.fpose.ok=false;const ic=CE3.fIcon;
-    if(c&&ceFolCam(c,T,CE3.fpose)){CE3.fpose.ok=true;const n=ceFolNode(c,T);ceNodePose(n,CE3.ref.p,CE3.ref.q);CE3.ref.ok=true;ic.position.copy(CE3.fpose.p);ic.quaternion.copy(CE3.fpose.q);ic.visible=cp.distanceTo(ic.position)>.9;const sel=c===s;ic.scale.setScalar(clamp(cp.distanceTo(ic.position)*.045,.3,5)*(sel?1.25:1));ic.userData.sel.id=c.id;ic.userData.fr.visible=sel;
-      const la=CE3.fLine.geometry.attributes.position;la.setXYZ(0,ic.position.x,ic.position.y,ic.position.z);la.setXYZ(1,CE3.ref.p.x,CE3.ref.p.y+(c.mode==='watch'?(c.aim!=null?c.aim:1):.9),CE3.ref.p.z);la.needsUpdate=true;CE3.fLine.visible=true;}
-    else{ic.visible=false;CE3.fLine.visible=false;}}
+  {let c=ceFolAt(T);const s=CE.sel&&CE.sel.k==='fol'?ceItem(CE.sel):null;if(s&&T>=s.t0&&T<=s.t1)c=s;CE3.fpose.ok=false;const ic=CE3.fIcon,ic2=CE3.fIcon2;ic.visible=ic2.visible=false;CE3.fLine.visible=false;
+    if(c&&!ceIsPer(c.mode)&&ceFolCam(c,T,CE3.fpose,0)){CE3.fpose.ok=true;const n=ceFolNode(c,T);ceNodePose(n,CE3.ref.p,CE3.ref.q);if(c.mode==='level')ceLevelQ(CE3.ref.q);CE3.ref.ok=true;const sel=c===s,two=!!c.off2,end=two&&!!CE.folEnd;
+      const put=(I,F,on)=>{I.position.copy(F.p);I.quaternion.copy(F.q);const d=cp.distanceTo(I.position);I.visible=d>.9;I.scale.setScalar(clamp(d*.045,.3,5)*(on?1.25:1));I.userData.sel.id=c.id;I.userData.fr.visible=on;const col=on?0xd8f6ff:0x4ad0ff,U=I.userData;if(U.cc!==col){U.cc=col;U.acc.color.setHex(col);U.ln.color.setHex(col);U.fr.material.color.setHex(col);}};
+      put(ic,CE3.fpose,sel&&!end);if(two){ceFolCam(c,T,CE3.fpose2,1);put(ic2,CE3.fpose2,sel&&end);}
+      const la=CE3.fLine.geometry.attributes.position,F=end&&sel?CE3.fpose2:CE3.fpose;let k=0;la.setXYZ(k++,F.p.x,F.p.y,F.p.z);la.setXYZ(k++,CE3.ref.p.x,CE3.ref.p.y+(c.mode==='watch'?(c.aim!=null?c.aim:1):.9),CE3.ref.p.z);
+      if(two){const o=CE3.ftmp||(CE3.ftmp={p:new THREE.Vector3(),q:new THREE.Quaternion(),fov:0});let px=CE3.fpose.p.x,py=CE3.fpose.p.y,pz=CE3.fpose.p.z;for(let i=1;i<=20;i++){ceFolCam(c,T,o,i/20+1e-9);la.setXYZ(k++,px,py,pz);la.setXYZ(k++,o.p.x,o.p.y,o.p.z);px=o.p.x;py=o.p.y;pz=o.p.z;}} // the line the camera slides along, from the start spot to the end spot
+      CE3.fLine.geometry.setDrawRange(0,k);la.needsUpdate=true;CE3.fLine.visible=true;}}
   // gizmo
   const g=CE3.giz,tg=CE3.tgt=ceGizTarget();g.visible=!!tg;
   if(tg){tg.get(_gp,_gq);g.position.copy(_gp);if(cp.distanceTo(_gp)<.9&&!CE.drag3)g.visible=false;const D=CE.drag3;if(!(D&&(D.kind==='mv'||D.kind==='rot'))){if(CE.space==='world')g.quaternion.identity();else g.quaternion.copy(_gq);}
@@ -9713,13 +9763,13 @@ function ceOverlay(T){ceOvBuild();const P=CE.P,S=CE3.ov,cp=camera.position;{cons
   renderer.autoClear=false;renderer.clearDepth();renderer.render(S,camera);renderer.autoClear=true;}
 /* small "what the video sees" picture in the corner while you fly around */
 function cePipBox(){const W=CE.vw,H=CE.vh;const w=Math.round(clamp(W*.3,150,380)),h=Math.round(w*9/16);return [W-w-12,12,w,h];}
-function cePip(T){const [x,y,w,h]=cePipBox();if(CE.vw<420||CE.vh<300)return;const pc=CE3.pcam;pc.position.copy(CE.cam.p);pc.quaternion.copy(CE.cam.q);pc.fov=CE.cam.fov;pc.aspect=w/h;pc.updateProjectionMatrix();pc.updateMatrixWorld(true);
+function cePip(T){const [x,y,w,h]=cePipBox();if(CE.vw<420||CE.vh<300)return;const hm=CE.cam.fp?ceFpHide(ceF(T),CE.cam.hide):null;const pc=CE3.pcam;pc.position.copy(CE.cam.p);pc.quaternion.copy(CE.cam.q);pc.fov=CE.cam.fov;pc.aspect=w/h;pc.updateProjectionMatrix();pc.updateMatrixWorld(true);
   renderer.setViewport(x,y,w,h);renderer.setScissor(x,y,w,h);renderer.setScissorTest(true);renderer.shadowMap.autoUpdate=false;
-  try{renderer.render(scene,pc);cePost(x,y,w,h,T,pc);}finally{renderer.setScissorTest(false);renderer.setViewport(0,0,CE.vw,CE.vh);}}
+  try{renderer.render(scene,pc);cePost(x,y,w,h,T,pc);}finally{if(hm)hm.visible=true;renderer.setScissorTest(false);renderer.setViewport(0,0,CE.vw,CE.vh);}}
 /* ---- mouse / touch in the 3D view ---- */
 function ceNdc(e){const r=canvas.getBoundingClientRect();CE3.ndc.set((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1);CE3.rc.setFromCamera(CE3.ndc,CE3.rcam);return CE3.rc.ray;}
 function ceGizPick(e){if(!CE3.giz||!CE3.giz.visible)return null;ceNdc(e);const h=CE3.rc.intersectObjects(CE3.hit.filter(x=>x.visible),false);if(!h.length)return null;let best=h[0];if(best.object.userData.kind==='rot')for(const x of h)if(x.object.userData.kind==='mv'&&x.distance<best.distance+CE3.giz.scale.x*.1){best=x;break;}return best.object.userData;}
-function ceIconPick(e){if(!CE3.ov||CE.view!=='free')return null;ceNdc(e);const L=[];for(const ic of CE3.kIcons)if(ic.visible)L.push(ic.userData.hit);if(CE3.fIcon&&CE3.fIcon.visible)L.push(CE3.fIcon.userData.hit);const h=CE3.rc.intersectObjects(L,false);return h.length?h[0].object.userData.icon.userData.sel:null;}
+function ceIconPick(e){if(!CE3.ov||CE.view!=='free')return null;ceNdc(e);const L=[];for(const ic of CE3.kIcons)if(ic.visible)L.push(ic.userData.hit);for(const ic of CE3.mIcons)if(ic.visible)L.push(ic.userData.hit);for(const ic of [CE3.fIcon,CE3.fIcon2])if(ic&&ic.visible)L.push(ic.userData.hit);const h=CE3.rc.intersectObjects(L,false);return h.length?h[0].object.userData.icon.userData.sel:null;}
 function ceClosestT(ray,P,D){const w0=_cv1.copy(P).sub(ray.origin),a=D.dot(D),b=D.dot(ray.direction),c=ray.direction.dot(ray.direction),d=D.dot(w0),e2=ray.direction.dot(w0);const den=a*c-b*b;return Math.abs(den)<1e-6?0:(b*e2-c*d)/den;}
 function ceRayPlane(ray,n,p){const den=ray.direction.dot(n);if(Math.abs(den)<1e-5)return null;const t=_cv1.copy(p).sub(ray.origin).dot(n)/den;if(t<0)return null;return ray.origin.clone().addScaledVector(ray.direction,t);}
 function ceHover(e){const H=CE.view==='free'?ceGizPick(e):null;const m=H?H.mat:null;if(m!==CE3.hov){CE3.hov=m;for(const h of CE3.hit)h.userData.mat.color.setHex(h.userData.mat===m?0xffe38a:h.userData.base);}
@@ -9732,7 +9782,7 @@ function ce3Down(e){if(CE.exp)return;const P3=CE3.ptrs;P3.set(e.pointerId,{x:e.c
     if(H&&tg){const ray=ceNdc(e);const p0=new THREE.Vector3(),q0=new THREE.Quaternion();tg.get(p0,q0);cePush();
       if(H.kind==='mv')CE.drag3={kind:'mv',dir:H.dir.clone(),p0,q0,t0:ceClosestT(ray,p0,H.dir)};
       else{const hp=ceRayPlane(ray,H.dir,p0);if(!hp){CE.undo.pop();return;}CE.drag3={kind:'rot',n:H.dir.clone(),p0,q0,v0:hp.sub(p0)};}return;}
-    const ic=ceIconPick(e);if(ic){ceSel(ic.k,ic.id);const it=ceItem(ic);if(it&&ic.k==='kf'&&Math.abs(CE.t-it.t)>1e-3){/* keep the playhead; selecting is enough */}CE.drag3={kind:'none'};return;}}
+    const ic=ceIconPick(e);if(ic){if(ic.k==='fol')CE.folEnd=!!ic.end;ceSel(ic.k,ic.id);const it=ceItem(ic);if(it&&ic.k==='kf'&&Math.abs(CE.t-it.t)>1e-3){/* keep the playhead; selecting is enough */}CE.drag3={kind:'none'};return;}}
   CE.drag3={kind:'look',moved:0,btn:e.button};}
 function ce3Move(e){const P3=CE3.ptrs,pp=P3.get(e.pointerId);const D=CE.drag3;if(!D||!pp){if(!CE.exp)ceHover(e);return;}const dx=e.clientX-pp.x,dy=e.clientY-pp.y;
   if(D.kind==='two'&&P3.size>=2){const [a,b]=[...P3.values()];const d0=Math.hypot(a.x-b.x,a.y-b.y);pp.x=e.clientX;pp.y=e.clientY;const d1=Math.hypot(a.x-b.x,a.y-b.y);const f=CE.fc;ceFcQuat(_cq1);_cv1.set(0,0,-1).applyQuaternion(_cq1);_cv2.set(1,0,0).applyQuaternion(_cq1);f.p.addScaledVector(_cv1,(d1-d0)*.05).addScaledVector(_cv2,-dx*.012);f.p.y+=dy*.012;return;}
@@ -9746,7 +9796,7 @@ function ce3Up(e){CE3.ptrs.delete(e.pointerId);try{canvas.releasePointerCapture(
 canvas.addEventListener('pointerdown',e=>{if(!CE.open)return;e.preventDefault();e.stopImmediatePropagation();ce3Down(e);},true);
 canvas.addEventListener('pointermove',e=>{if(!CE.open)return;e.stopImmediatePropagation();ce3Move(e);},true);
 for(const ev of ['pointerup','pointercancel'])canvas.addEventListener(ev,e=>{if(!CE.open)return;e.stopImmediatePropagation();ce3Up(e);},true);
-canvas.addEventListener('dblclick',e=>{if(!CE.open||CE.view!=='free')return;const ic=ceIconPick(e);if(ic){const it=ceItem(ic);if(it&&ic.k==='kf'){ceFcFrom(_cv1.fromArray(it.p),_cq1.fromArray(it.q),it.fov);ceSeek(it.t);}}},true);
+canvas.addEventListener('dblclick',e=>{if(!CE.open||CE.view!=='free')return;const ic=ceIconPick(e);if(ic){const it=ceItem(ic);if(it&&ic.k==='kf'){ceFcFrom(_cv1.fromArray(it.p),_cq1.fromArray(it.q),it.fov);ceSeek(it.t);}else if(it&&ic.k==='mid')ceFcFrom(_cv1.fromArray(it.p),_cq1.fromArray(it.q),it.fov);}},true);
 canvas.addEventListener('wheel',e=>{if(!CE.open)return;e.preventDefault();e.stopImmediatePropagation();if(CE.view!=='free'||CE.exp)return;ceFcQuat(_cq1);_cv1.set(0,0,-1).applyQuaternion(_cq1);CE.fc.p.addScaledVector(_cv1,-Math.sign(e.deltaY)*(e.shiftKey?6:1.6));},{passive:false,capture:true});
 /* choose what a follow cam sticks to by clicking it in the world */
 function cePickDo(){const pk=CE.pick;CE.pick=null;CE.pickMode=false;const c=CE.sel&&CE.sel.k==='fol'?ceItem(CE.sel):null;if(!c){ceUi();return;}CE3.ndc.set(pk.x,pk.y);CE3.rc.setFromCamera(CE3.ndc,camera);
@@ -9757,8 +9807,7 @@ function cePickDo(){const pk=CE.pick;CE.pick=null;CE.pickMode=false;const c=CE.s
   cePush();let id=0;for(const [k,v] of CE.nodes)if(v===root)id=k;if(!id){id=CE.nodeN++;CE.nodes.set(id,root);}
   let nm='that thing';try{for(const o of objects.values())if(o.mesh===root){nm=o.def.name;break;}for(const a of actors)if(a.mesh===root)nm=a.name||a.kind;if(NET.avatars)for(const A of NET.avatars.values())if(A.mesh===root)nm=A.name||'player';}catch(e){}
   // keep the camera where it is now, but measured from the new thing
-  const o={p:new THREE.Vector3(),q:new THREE.Quaternion(),fov:0};const had=ceFolCam(c,CE.t,o);c.target='pick';c.node=id;c.nm=String(nm).slice(0,24);
-  if(had&&c.mode!=='watch'){ceNodePose(root,_cv1,_cq1);if(c.mode==='level')ceLevelQ(_cq1);const iq=_cq1.clone().invert();o.p.sub(_cv1).applyQuaternion(iq).toArray(c.off);iq.multiply(o.q).normalize().toArray(c.rot);}
+  ceFolRebase(c,()=>{c.target='pick';c.node=id;c.nm=String(nm).slice(0,24);});
   sfx0('ui');ceHint('Following '+c.nm+'.');ceUi();}
 /* ---- clip editor: screen effects ---- */
 const CE_FX={
@@ -9848,10 +9897,10 @@ function tlLanes(){const L=CE.P.fx.slice().sort((a,b)=>a.t0-b.t0||a.id-b.id);con
 function tlRR(x,X,Y,W,H,r){r=Math.min(r,W/2,H/2);x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+W,Y,X+W,Y+H,r);x.arcTo(X+W,Y+H,X,Y+H,r);x.arcTo(X,Y+H,X,Y,r);x.arcTo(X,Y,X+W,Y,r);x.closePath();}
 function tlSpeed(x0,w){const key=[CE.tl.t0.toFixed(3),CE.tl.pps.toFixed(3),w,TAPE.f,TAPE.f0].join('|');if(TL.spdKey===key&&TL.spd)return TL.spd;TL.spdKey=key;const a=TL.spd&&TL.spd.length===w?TL.spd:(TL.spd=new Float32Array(w));const S=TAPE.S,n=S.length;let mx=8;for(let i=0;i<n;i+=3)if(S[i][14]>mx)mx=S[i][14];
   for(let i=0;i<w;i++){const fa=tapeFrameAt(tlT(x0+i)-ceT0())-TAPE.f0,fb=tapeFrameAt(tlT(x0+i+1)-ceT0())-TAPE.f0;const T=tlT(x0+i);if(T<ceT0()||T>ceT1()){a[i]=-1;continue;}let m=0;for(let k=Math.floor(fa),e=Math.min(n-1,Math.ceil(fb));k<=e;k++)if(S[k][14]>m)m=S[k][14];a[i]=Math.min(1,m/mx);}return a;}
-function tlWave(x0,w,h){const M=CE.P.music,S=M&&CE.songs.get(M.sid);if(!S)return null;const key=[CE.tl.t0.toFixed(3),CE.tl.pps.toFixed(3),w,h,M.t.toFixed(3),M.sid].join('|');if(TL.waveKey===key&&TL.wave)return TL.wave;TL.waveKey=key;
+function tlWave(x0,w,h){const M=CE.P.music,S=M&&CE.songs.get(M.sid);if(!S)return null;const key=[CE.tl.t0.toFixed(3),CE.tl.pps.toFixed(3),w,h,M.t.toFixed(3),M.sid,CE.cutL.join()].join('|');if(TL.waveKey===key&&TL.wave)return TL.wave;TL.waveKey=key;
   const c=TL.wave||(TL.wave=document.createElement('canvas'));c.width=Math.max(1,Math.round(w*TL.dpr));c.height=Math.max(1,Math.round(h*TL.dpr));const g=c.getContext('2d');g.setTransform(TL.dpr,0,0,TL.dpr,0,0);g.clearRect(0,0,w,h);
   const spp=1/CE.tl.pps;let lod=0;while(lod+1<S.lods.length&&1/S.lods[lod+1].rate<=spp)lod++;const L=S.lods[lod],mid=h/2,A=h/2-2;g.fillStyle='#f2a93b';
-  for(let i=0;i<w;i++){const ta=tlT(x0+i)-M.t,tb=ta+spp;if(tb<0||ta>S.buf.duration)continue;let a=Math.max(0,Math.floor(ta*L.rate)),b=Math.min(L.n-1,Math.max(a,Math.ceil(tb*L.rate)-1));let lo=1,hi=-1;for(let k=a;k<=b;k++){if(L.lo[k]<lo)lo=L.lo[k];if(L.hi[k]>hi)hi=L.hi[k];}if(hi<lo)continue;
+  const o0=ceOut(M.t),CL=CE.cutL;for(let i=0;i<w;i++){const tt=tlT(x0+i);let cut=false;for(const c of CL)if(tt>c[0]&&tt<c[1]){cut=true;break;}if(cut)continue;const ta=ceOut(tt)-o0,tb=ta+spp;if(tb<0||ta>S.buf.duration)continue;let a=Math.max(0,Math.floor(ta*L.rate)),b=Math.min(L.n-1,Math.max(a,Math.ceil(tb*L.rate)-1));let lo=1,hi=-1;for(let k=a;k<=b;k++){if(L.lo[k]<lo)lo=L.lo[k];if(L.hi[k]>hi)hi=L.hi[k];}if(hi<lo)continue;
     const y0=mid-hi*A,y1=mid-lo*A;g.fillRect(i,y0,1,Math.max(1,y1-y0));}return c;}
 function ceTlDraw(){const cv=TL.cv;if(!cv||!CE.P)return;const r=cv.getBoundingClientRect();const w=Math.round(r.width),h=Math.round(r.height);if(w<50||h<50)return;const dpr=Math.min(2,devicePixelRatio||1);
   if(TL.w!==w||TL.h!==h||TL.dpr!==dpr){TL.w=w;TL.h=h;TL.dpr=dpr;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);TL.spdKey='';TL.waveKey='';}
@@ -9870,12 +9919,17 @@ function ceTlDraw(){const cv=TL.cv;if(!cv||!CE.P)return;const r=cv.getBoundingCl
     const E=TAPE.ev;const ia=ceEvIdx(tlT(G)),ib=ceEvIdx(tlT(w));let lastX=-9;for(let i=ia;i<ib;i++){const e=E[i],n=e.n;if(n==='step'||n==='soft')continue;const X=Math.round(tlX(e.t));const big=n==='boom'||n==='thunder';if(!big&&X-lastX<3)continue;if(!big)lastX=X;x.fillStyle=big?'#ff7a3a':'rgba(238,231,215,.5)';x.fillRect(X,big?y+3:y+hh-9,big?2:1,big?hh-6:6);}
     x.fillStyle='rgba(0,0,0,.55)';if(xi>G)x.fillRect(G,22,Math.min(xi,w)-G,h-22-R.sb[1]);if(xo<w)x.fillRect(Math.max(G,xo),22,w-Math.max(G,xo),h-22-R.sb[1]);
     x.fillStyle='rgba(0,0,0,.35)';if(xa>G)x.fillRect(G,0,xa-G,h);if(xb<w)x.fillRect(xb,0,w-xb,h);
+    for(const c of P.cuts){const A=tlX(c.t0),B=tlX(c.t1);if(B<G||A>w)continue;const sel=CE.sel&&CE.sel.k==='cut'&&CE.sel.id===c.id,on=isH('cut',c.id),W=Math.max(3,B-A);x.save();x.beginPath();x.rect(A,y+1,W,hh-2);x.clip();x.fillStyle=sel?'rgba(120,24,20,.95)':'rgba(92,20,18,.9)';x.fillRect(A,y,W,hh);x.strokeStyle=sel||on?'rgba(255,120,100,.85)':'rgba(255,96,80,.5)';x.lineWidth=2;x.beginPath();for(let X=Math.max(A,G)-hh-((Math.max(A,G)-A)%9);X<Math.min(B,w)+9;X+=9){x.moveTo(X,y+hh);x.lineTo(X+hh,y);}x.stroke();
+      if(W>40){x.fillStyle='#ffd9d2';x.font='700 10px "IBM Plex Mono",ui-monospace,monospace';x.shadowColor='#000';x.shadowBlur=3;x.fillText('CUT '+tlFmt(c.t1-c.t0,1),Math.max(A+6,G+4),y+hh/2+1);}x.restore();x.strokeStyle=sel?'#fff':'#ff6a55';x.lineWidth=sel?1.5:1;x.strokeRect(Math.round(A)+.5,y+1.5,Math.round(W)-1,hh-3);
+      const ew=Math.min(7,Math.max(2,W/3));H.push({k:'cut',id:c.id,x0:A,x1:B,y0:y,y1:y+hh,part:'body',cur:'grab'},{k:'cut',id:c.id,x0:A-4,x1:A+ew,y0:y,y1:y+hh,part:'l',cur:'ew-resize'},{k:'cut',id:c.id,x0:B-ew,x1:B+4,y0:y,y1:y+hh,part:'r',cur:'ew-resize'});}
     for(const [k,X] of [['in',xi],['out',xo]]){const on=isH('trim',k);x.fillStyle=on?'#ffe38a':TL_C.glue;const d=k==='in'?1:-1;x.fillRect(X-(k==='in'?0:3),y,3,hh);x.beginPath();x.moveTo(X,y);x.lineTo(X+d*9,y);x.lineTo(X+d*9,y+5);x.lineTo(X+d*3,y+5);x.closePath();x.fill();x.beginPath();x.moveTo(X,y+hh);x.lineTo(X+d*9,y+hh);x.lineTo(X+d*9,y+hh-5);x.lineTo(X+d*3,y+hh-5);x.closePath();x.fill();
       H.push({k:'trim',id:k,x0:X-8,x1:X+8,y0:y,y1:y+hh,part:'body',cur:'ew-resize'});}
     x.strokeStyle=TL_C.glue;x.lineWidth=1;x.strokeRect(Math.round(xi)+.5,y+.5,Math.round(xo-xi)-1,hh-1);}
   // camera keyframes
   {const [y,hh]=R.cam,my=y+hh/2,K=P.kf;x.lineWidth=2;for(let i=0;i+1<K.length;i++){const A=tlX(K[i].t),B=tlX(K[i+1].t);if(B<G||A>w)continue;const cut=ceIsCut(K[i+1].ease);x.strokeStyle=cut?'rgba(242,169,59,.3)':'rgba(242,169,59,.75)';x.setLineDash(cut?[3,4]:[]);x.beginPath();x.moveTo(A,my);x.lineTo(B,my);x.stroke();x.setLineDash([]);
       if(B-A>64){x.fillStyle=TL_C.dim;x.font='500 10px "IBM Plex Sans Condensed",system-ui,sans-serif';x.textAlign='center';const nm=(CE_EASES.find(e=>e[0]===K[i+1].ease)||['','?'])[1];x.fillText(nm,(A+B)/2,y+hh-5);x.textAlign='left';}}
+    for(let i=1;i<K.length;i++){const B=K[i];if(!B.mid||ceIsCut(B.ease))continue;const X=tlX(K[i-1].t+(B.t-K[i-1].t)*ceMidU(B.ease));if(X<G-8||X>w+8)continue;const sel=CE.sel&&CE.sel.k==='mid'&&CE.sel.id===B.id,on=isH('mid',B.id);x.beginPath();x.arc(X,my-2,sel?5.5:4.5,0,6.2832);x.fillStyle=sel?'#e9ffe0':on?'#c9f7c0':'#8fe38a';x.fill();if(sel){x.strokeStyle='#fff';x.lineWidth=1.5;x.stroke();}
+      H.push({k:'mid',id:B.id,x0:X-7,x1:X+7,y0:y,y1:y+hh,part:'body',cur:'pointer'});}
     for(const k of K){const X=tlX(k.t);if(X<G-10||X>w+10)continue;const sel=CE.sel&&CE.sel.k==='kf'&&CE.sel.id===k.id,on=isH('kf',k.id);const s=sel?8:7;x.beginPath();x.moveTo(X,my-s-2);x.lineTo(X+s,my-2);x.lineTo(X,my+s-2);x.lineTo(X-s,my-2);x.closePath();x.fillStyle=k.auto?TL_C.bg:sel?'#fff3c8':on?'#ffe38a':TL_C.glue;x.fill();if(sel||k.auto){x.strokeStyle=sel?'#fff':on?'#ffe38a':TL_C.glue;x.lineWidth=k.auto?2:1.5;x.stroke();}
       H.push({k:'kf',id:k.id,x0:X-9,x1:X+9,y0:y,y1:y+hh,part:'body',cur:'ew-resize'});}
     if(!K.length){x.fillStyle='rgba(143,135,118,.8)';x.font='500 11px "IBM Plex Sans Condensed",system-ui,sans-serif';x.fillText('No keyframes yet, so the camera follows behind you. Fly somewhere and press K to make your own shot.',Math.max(G+8,xi+8),my);}}
@@ -9884,15 +9938,17 @@ function ceTlDraw(){const cv=TL.cv;if(!cv||!CE.P)return;const r=cv.getBoundingCl
     if(B-A>26){x.save();x.beginPath();x.rect(A+5,y,B-A-10,hh);x.clip();x.fillStyle='#1a1206';x.font='700 11px "IBM Plex Sans Condensed",system-ui,sans-serif';x.fillText(label,Math.max(A+7,G+4),y+hh/2+1);x.restore();}
     if((sel||on)&&B-A>14){x.fillStyle='rgba(26,18,6,.55)';x.fillRect(A+2,y+6,2,hh-12);x.fillRect(B-4,y+6,2,hh-12);}
     const ew=Math.min(7,Math.max(2,(B-A)/3));H.push({k,id:c.id,x0:A,x1:B,y0:y,y1:y+hh,part:'body',cur:'grab'},{k,id:c.id,x0:A-4,x1:A+ew,y0:y,y1:y+hh,part:'l',cur:'ew-resize'},{k,id:c.id,x0:B-ew,x1:B+4,y0:y,y1:y+hh,part:'r',cur:'ew-resize'});};
-  for(const c of P.fol)clip(c,'fol',R.fol[0],R.fol[1],TL_C.cyan,(c.target==='seat'?'My vehicle':c.target==='pick'?(c.nm||'Picked'):'Me')+' · '+(c.mode==='watch'?'watch':c.mode==='level'?'level':'stuck on'));
+  for(const c of P.fol){if(ceIsPer(c.mode))clip(c,'fol',R.fol[0],R.fol[1],'#c9b8ff',c.mode==='fp'?'First person':c.mode==='tp'?'Third person':'My game camera');else clip(c,'fol',R.fol[0],R.fol[1],TL_C.cyan,(c.target==='seat'?'My vehicle':c.target==='pick'?(c.nm||'Picked'):'Me')+' · '+(c.mode==='watch'?'watch':c.mode==='level'?'level':'stuck on')+(c.off2?' · slide':'')+(c.soft?' · soft':''));}
   {const n=tlLanes(),[y,hh]=R.fx,lh=Math.min(24,hh/n);for(let i=1;i<n;i++){x.fillStyle=i%2?TL_C.lane:'transparent';x.fillRect(G,y+i*lh,w-G,lh);}for(const c of P.fx){const D=CE_FX[c.type];if(D)clip(c,'fx',y+c.ln*lh,lh,D.c,D.n);}
     if(!P.fx.length){x.fillStyle='rgba(143,135,118,.6)';x.font='500 11px "IBM Plex Sans Condensed",system-ui,sans-serif';x.fillText('Effects go here',Math.max(G+8,xi+8),y+12);}}
-  {const [y,hh]=R.mus,M=P.music,S=M&&CE.songs.get(M.sid);if(S){const A=tlX(M.t),B=tlX(M.t+S.buf.duration);const sel=CE.sel&&CE.sel.k==='mus',on=isH('mus',0);tlRR(x,A,y+2,B-A,hh-4,4);x.fillStyle=sel?'rgba(242,169,59,.26)':on?'rgba(242,169,59,.2)':'rgba(242,169,59,.13)';x.fill();x.strokeStyle=sel?'#fff':'rgba(242,169,59,.6)';x.lineWidth=sel?1.5:1;x.stroke();
+  {const [y,hh]=R.mus,M=P.music,S=M&&CE.songs.get(M.sid);if(S){const A=tlX(M.t),B=tlX(ceTapeOf(ceOut(M.t)+S.buf.duration));const sel=CE.sel&&CE.sel.k==='mus',on=isH('mus',0);tlRR(x,A,y+2,B-A,hh-4,4);x.fillStyle=sel?'rgba(242,169,59,.26)':on?'rgba(242,169,59,.2)':'rgba(242,169,59,.13)';x.fill();x.strokeStyle=sel?'#fff':'rgba(242,169,59,.6)';x.lineWidth=sel?1.5:1;x.stroke();
       const wv=tlWave(G,w-G,hh-8);if(wv){x.save();x.beginPath();x.rect(Math.max(G,A),y+2,Math.min(w,B)-Math.max(G,A),hh-4);x.clip();x.globalAlpha=.95;x.drawImage(wv,G,y+4,w-G,hh-8);x.restore();}
       x.fillStyle=TL_C.ink;x.font='700 11px "IBM Plex Sans Condensed",system-ui,sans-serif';x.save();x.beginPath();x.rect(Math.max(G,A),y,Math.min(w,B)-Math.max(G,A),hh);x.clip();x.shadowColor='#000';x.shadowBlur=4;x.fillText(S.name,Math.max(A+7,G+6),y+11);x.restore();
-      if(S.drop!=null&&S.lib!=='lofi'){const X=Math.round(tlX(M.t+S.drop));if(X>G&&X<w){x.fillStyle='#fff';x.fillRect(X,y+2,1.5,hh-4);x.beginPath();x.moveTo(X+1,y+hh-13);x.lineTo(X+33,y+hh-13);x.lineTo(X+33,y+hh-3);x.lineTo(X+1,y+hh-3);x.closePath();x.fill();x.fillStyle='#1a1206';x.font='700 9px "IBM Plex Mono",ui-monospace,monospace';x.fillText('DROP',X+5,y+hh-7.5);}}
+      if(S.drop!=null&&S.lib!=='lofi'){const X=Math.round(tlX(ceTapeOf(ceOut(M.t)+S.drop)));if(X>G&&X<w){x.fillStyle='#fff';x.fillRect(X,y+2,1.5,hh-4);x.beginPath();x.moveTo(X+1,y+hh-13);x.lineTo(X+33,y+hh-13);x.lineTo(X+33,y+hh-3);x.lineTo(X+1,y+hh-3);x.closePath();x.fill();x.fillStyle='#1a1206';x.font='700 9px "IBM Plex Mono",ui-monospace,monospace';x.fillText('DROP',X+5,y+hh-7.5);}}
       H.push({k:'mus',id:0,x0:A,x1:B,y0:y,y1:y+hh,part:'body',cur:'grab'});}
     else{x.fillStyle='rgba(143,135,118,.6)';x.font='500 11px "IBM Plex Sans Condensed",system-ui,sans-serif';x.fillText('Press + Song to pick one of the built-in songs (or your own file), then slide it so the drop lands on your best moment',Math.max(G+8,xi+8),y+hh/2);}}
+  // cut-out parts are dark on every row
+  for(const c of CE.cutL){const A=Math.max(G,tlX(c[0])),B=Math.min(w,tlX(c[1]));if(B<=A)continue;const y=R.cam[0];x.fillStyle='rgba(8,4,3,.62)';x.fillRect(A,y,B-A,h-y-R.sb[1]);x.fillStyle='rgba(255,106,85,.5)';x.fillRect(A,y,1,h-y-R.sb[1]);x.fillRect(B-1,y,1,h-y-R.sb[1]);}
   // snap guide + playhead
   if(dg&&dg.snapX!=null){x.strokeStyle='rgba(255,255,255,.5)';x.setLineDash([2,3]);x.beginPath();x.moveTo(dg.snapX+.5,22);x.lineTo(dg.snapX+.5,h);x.stroke();x.setLineDash([]);}
   {const X=Math.round(tlX(CE.t))+.5;x.strokeStyle='#fff';x.lineWidth=1;x.beginPath();x.moveTo(X,0);x.lineTo(X,h-R.sb[1]);x.stroke();x.fillStyle='#fff';x.beginPath();x.moveTo(X-6,0);x.lineTo(X+6,0);x.lineTo(X+6,7);x.lineTo(X,13);x.lineTo(X-6,7);x.closePath();x.fill();}
@@ -9902,14 +9958,17 @@ function ceTlDraw(){const cv=TL.cv;if(!cv||!CE.P)return;const r=cv.getBoundingCl
     H.push({k:'sb',id:0,x0:G,x1:w,y0:y,y1:y+hh,part:'body',cur:'pointer'});}
   x.strokeStyle=TL_C.line;x.lineWidth=1;x.beginPath();x.moveTo(G+.5,0);x.lineTo(G+.5,h);x.moveTo(0,22.5);x.lineTo(w,22.5);x.stroke();}
 function tlHit(px,py){const H=TL.hits;let best=null;for(let i=H.length-1;i>=0;i--){const q=H[i];if(px>=q.x0&&px<=q.x1&&py>=q.y0&&py<=q.y1){if(q.part!=='body')return q;if(!best)best=q;}}return best;}
-function tlSnap(T,skip){const D=TL.drag;if(D)D.snapX=null;if(!CE.snap||TL.alt)return T;const P=CE.P,C=[CE.t,P.in,P.out];for(const k of P.kf)if(!(skip&&skip.k==='kf'&&skip.id===k.id))C.push(k.t);for(const k of ['fol','fx'])for(const c of P[k])if(!(skip&&skip.k===k&&skip.id===c.id))C.push(c.t0,c.t1);
+function tlSnap(T,skip){const D=TL.drag;if(D)D.snapX=null;if(!CE.snap||TL.alt)return T;const P=CE.P,C=[CE.t,P.in,P.out];for(const k of P.kf)if(!(skip&&skip.k==='kf'&&skip.id===k.id))C.push(k.t);for(const [k,L] of [['fol',P.fol],['fx',P.fx],['cut',P.cuts]])for(const c of L)if(!(skip&&skip.k===k&&skip.id===c.id))C.push(c.t0,c.t1);
   if(P.music&&!(skip&&skip.k==='mus'))C.push(P.music.t);let b=null,bd=7/CE.tl.pps;for(const c of C){const d=Math.abs(c-T);if(d<bd){bd=d;b=c;}}if(b!=null){if(D)D.snapX=Math.round(tlX(b));return b;}return T;}
+/* where along a move (0 to 1) the camera reaches its curve point */
+const TL_MU={};function ceMidU(e){if(e==='glide'||e==='linear'||!CE_EASE[e])return .5;let u=TL_MU[e];if(u==null){u=.5;const f=CE_EASE[e];for(let i=1;i<=200;i++)if(f(i/200)>=.5){u=i/200;break;}TL_MU[e]=u;}return u;}
 function tlPos(e){const r=TL.cv.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top];}
 function tlDown(e){if(CE.exp)return;const [px,py]=tlPos(e);try{TL.cv.setPointerCapture(e.pointerId);}catch(er){}TL.alt=e.altKey;const q=px>=TL.gut?tlHit(px,py):null,P=CE.P;
   if(e.button===1||(e.button===0&&e.shiftKey&&!q)){TL.drag={k:'pan',x:px,t0:CE.tl.t0};return;}
   if(!q||py<22){TL.drag={k:'scrub'};ceSeek(tlT(px));if(py>=22&&!q)ceSel(null);return;}
   if(q.k==='sb'){const d=Math.max(1,ceT1()-ceT0()),W=TL.w-TL.gut,vis=W/CE.tl.pps;CE.tl.t0=ceT0()+((px-TL.gut)/W)*d-vis/2;tlClampView();TL.drag={k:'sb'};return;}
   if(q.k==='trim'){TL.drag={k:'trim',id:q.id,moved:false,x:px};return;}
+  if(q.k==='mid'){ceSel('mid',q.id);return;}
   const it=ceItem(q.k==='mus'?{k:'mus'}:{k:q.k,id:q.id});if(!it)return;ceSel(q.k,q.id);
   TL.drag={k:q.k,id:q.id,part:q.part,x:px,moved:false,o:q.k==='kf'?{t:it.t}:q.k==='mus'?{t:it.t}:{t0:it.t0,t1:it.t1},grab:tlT(px)};}
 function tlMove(e){const [px,py]=tlPos(e);TL.ptr.x=px;TL.ptr.y=py;TL.alt=e.altKey;const D=TL.drag,P=CE.P;
@@ -9922,7 +9981,7 @@ function tlMove(e){const [px,py]=tlPos(e);TL.ptr.x=px;TL.ptr.y=py;TL.alt=e.altKe
   if(D.k==='trim'){let T=tlSnap(clamp(tlT(px),a0,a1),null);if(D.id==='in')P.in=Math.min(T,P.out-.25);else P.out=Math.max(T,P.in+.25);return;}
   const it=ceItem(D.k==='mus'?{k:'mus'}:D);if(!it)return;
   if(D.k==='kf'){if(it.auto)it.dirty=true;it.t=clamp(tlSnap(D.o.t+dT,D),a0,a1);for(const k of P.kf)if(k!==it&&Math.abs(k.t-it.t)<.02)it.t=k.t+.02;P.kf.sort((a,b)=>a.t-b.t);return;}
-  if(D.k==='mus'){const S=CE.songs.get(it.sid),dur=S?S.buf.duration:0;let T=D.o.t+dT;const dp=S&&S.drop!=null?S.drop:null;const sd=dp!=null?tlSnap(T+dp,D):T+(dp||0);if(dp!=null&&sd!==T+dp)T=sd-dp;else{const s=tlSnap(T,D);if(s!==T)T=s;}it.t=clamp(T,a0-dur+.2,a1-.2);ceMusicSync(true);return;}
+  if(D.k==='mus'){const S=CE.songs.get(it.sid),dur=S?S.buf.duration:0;let T=D.o.t+dT;const dp=S&&S.drop!=null?S.drop:null,dT0=dp!=null?ceTapeOf(ceOut(T)+dp):T;const sd=dp!=null?tlSnap(dT0,D):dT0;if(dp!=null&&sd!==dT0)T=ceTapeOf(ceOut(sd)-dp);else{const s=tlSnap(T,D);if(s!==T)T=s;}it.t=clamp(T,a0-dur+.2,a1-.2);ceMusicSync(true);return;}
   const len=D.o.t1-D.o.t0;
   if(D.part==='l'){it.t0=clamp(tlSnap(D.o.t0+dT,D),a0,it.t1-.1);}else if(D.part==='r'){it.t1=clamp(tlSnap(D.o.t1+dT,D),it.t0+.1,a1);}
   else{let T=D.o.t0+dT;const s0=tlSnap(T,D);if(s0!==T)T=s0;else{const s1=tlSnap(T+len,D);if(s1!==T+len)T=s1-len;}T=clamp(T,a0,a1-len);it.t0=T;it.t1=T+len;}}
@@ -9930,7 +9989,7 @@ function tlUp(e){const D=TL.drag;TL.drag=null;if(D&&D.moved)ceAutoDirty();try{TL
 function tlAuto(){const D=TL.drag;if(!D||D.k==='pan'||D.k==='sb'||(D.k!=='scrub'&&!D.moved))return;const x=TL.ptr.x,m=28;let v=0;if(x>TL.w-m)v=(x-(TL.w-m))/m;else if(x<TL.gut+m)v=-((TL.gut+m)-x)/m;if(!v)return;const t0=CE.tl.t0;CE.tl.t0+=clamp(v,-2,2)*14/CE.tl.pps;tlClampView();if(D.grab!=null)D.grab-=0;}
 function tlInit(cv){TL.cv=cv;TL.x=cv.getContext('2d');cv.addEventListener('pointerdown',e=>{e.preventDefault();tlDown(e);});cv.addEventListener('pointermove',tlMove);cv.addEventListener('pointerup',tlUp);cv.addEventListener('pointercancel',tlUp);cv.addEventListener('pointerleave',()=>{if(!TL.drag){TL.hover=null;}});cv.addEventListener('contextmenu',e=>e.preventDefault());
   cv.addEventListener('wheel',e=>{e.preventDefault();const [px]=tlPos(e);if(e.shiftKey||Math.abs(e.deltaX)>Math.abs(e.deltaY)){CE.tl.t0+=(e.deltaX||e.deltaY)/CE.tl.pps;tlClampView();}else tlZoom(Math.exp(-e.deltaY*.0022),Math.max(TL.gut,px));},{passive:false});
-  cv.addEventListener('dblclick',e=>{const [px,py]=tlPos(e);const q=tlHit(px,py);if(!q)return;const it=ceItem(q.k==='mus'?{k:'mus'}:q);if(!it)return;if(q.k==='kf'){ceSeek(it.t);if(CE.view==='free')ceFcFrom(_cv1.fromArray(it.p),_cq1.fromArray(it.q),it.fov);}else if(q.k==='fol'||q.k==='fx'){if(CE.t<it.t0||CE.t>it.t1)ceSeek(it.t0+.01);}});}
+  cv.addEventListener('dblclick',e=>{const [px,py]=tlPos(e);const q=tlHit(px,py);if(!q)return;const it=ceItem(q.k==='mus'?{k:'mus'}:q);if(!it)return;if(q.k==='mid'){if(CE.view==='free')ceFcFrom(_cv1.fromArray(it.p),_cq1.fromArray(it.q),it.fov);}else if(q.k==='kf'){ceSeek(it.t);if(CE.view==='free')ceFcFrom(_cv1.fromArray(it.p),_cq1.fromArray(it.q),it.fov);}else if(q.k==='fol'||q.k==='fx'){if(CE.t<it.t0||CE.t>it.t1)ceSeek(it.t0+.01);}});}
 /* ---- clip editor: buttons, the side panel, keys ---- */
 function ceHint(t,ms){const el=$('cehint');if(!el)return;el.textContent=t;el.classList.add('on');clearTimeout(CE.hintT);CE.hintT=setTimeout(()=>el.classList.remove('on'),ms||4200);}
 function ceModal(html,clear){const m=$('cemodal');$('cemodalbox').innerHTML=html;m.classList.toggle('clear',!!clear);m.hidden=false;}
@@ -9942,11 +10001,21 @@ function ceUi(){if(!CE.open||!CE.P)return;ceAutoDirty();const P=CE.P,s=CE.sel,it
   if(it&&s.k==='kf'){const i=P.kf.indexOf(it);h=`<h3>Camera keyframe</h3><p class="sub">Shot ${i+1} of ${P.kf.length}. Drag the arrows and rings in the world to move and turn it, or drag its diamond on the timeline to change when it happens.</p>`;
     if(it.auto)h+=`<p class="tip" style="margin:0 0 8px;color:var(--glue)">This keyframe copies the camera as it already was at this moment (it follows along if you drag it). ${i===0?'Before it, the camera carries on as normal. After it, the camera glides to your next keyframe.':i===P.kf.length-1?'After it, the camera carries on as normal.':''} Move it with the arrows and it becomes a normal keyframe.</p>`;
     h+=`<div class="lab">How the camera gets here</div>`+(i===0?`<p class="tip" style="margin-top:0">This is the first shot, so the camera just starts here. The style matters from the second keyframe on.</p>`:'')+`<div class="eases">`+CE_EASES.map(e=>`<button data-act="ease" data-v="${e[0]}" aria-pressed="${it.ease===e[0]}" title="${e[2]}">${ceEaseSvg(e[0])}${e[1]}</button>`).join('')+`</div>`;
+    if(i>0&&!ceIsCut(it.ease))h+=`<div class="lab">Curve point</div><p class="tip" style="margin-top:0">${it.mid?'This move swings through a curve point (the green camera).':'Makes the camera swing through a middle spot on its way here, all in one move. Good for sweeping around something or flipping to its other side.'}</p><div class="btns"><button class="mini" data-act="${it.mid?'kfmidsel':'kfmid'}" title="${it.mid?'Select the curve point':'Adds the curve point where your free cam is right now'}">${it.mid?'Edit the curve point':'Add a curve point'}</button></div>`;
     h+=ceRow('Zoom','kfov',0,100,1,ceFovTo(it.fov),it.fov+'°')+`<div class="btns"><button class="mini" data-act="kfview" title="Move this keyframe to where the free cam is right now">Use my view</button><button class="mini" data-act="kfgo" title="Fly the free cam to this shot">Look through it</button><button class="mini danger" data-act="del">Delete</button></div>`;}
-  else if(it&&s.k==='fol'){h=`<h3>Follow cam</h3><p class="sub">Locks the camera onto something for this part of the clip. Drag its ends on the timeline to choose the part.</p><div class="lab">Sticks to</div><div class="seg">${[['me','Me'],['seat','My vehicle'],['pick',it.target==='pick'&&it.nm?esc(it.nm):'Pick…']].map(t=>`<button data-act="ftarget" data-v="${t[0]}" aria-pressed="${it.target===t[0]}">${t[1]}</button>`).join('')}</div>`
-      +(CE.pickMode?`<p class="tip" style="color:var(--glue)">Now click a part, vehicle, creature or player in the world.</p>`:'')
-      +`<div class="lab">Style</div><div class="seg">${[['stuck','Stuck on'],['level','Level'],['watch','Watch']].map(t=>`<button data-act="fmode" data-v="${t[0]}" aria-pressed="${it.mode===t[0]}">${t[1]}</button>`).join('')}</div><p class="tip">${it.mode==='stuck'?'Glued to it. The camera turns, tilts and flips with it, like a camera bolted to your car.':it.mode==='level'?'Follows and turns with it, but stays level when it flips or rolls.':'The camera stays in one spot in the world and turns to keep it in the shot.'}</p>`
-      +ceRow('Zoom','ffov',0,100,1,ceFovTo(it.fov),it.fov+'°')+`<p class="tip">Put the white line inside this clip, then drag the arrows and rings on the blue camera to choose where it sits.</p><div class="btns"><button class="mini" data-act="fview" title="Put the follow cam where the free cam is right now">Use my view</button><button class="mini" data-act="fgo">Look through it</button><button class="mini danger" data-act="del">Delete</button></div>`;}
+  else if(it&&s.k==='fol'){const per=ceIsPer(it.mode),two=!!it.off2,end=two&&!!CE.folEnd,fv=end?(it.fov2||it.fov):it.fov,seg=(L,act,cur)=>`<div class="seg">${L.map(t=>`<button data-act="${act}" data-v="${t[0]}" aria-pressed="${cur===t[0]}">${t[1]}</button>`).join('')}</div>`;
+    h=`<h3>${per?'Camera clip':'Follow cam'}</h3><p class="sub">${per?'Chooses the view for this part of the clip.':'Locks the camera onto something for this part of the clip.'} Drag its ends on the timeline to choose the part.</p><div class="lab">Style</div>`+seg([['stuck','Stuck on'],['level','Level'],['watch','Watch']],'fmode',it.mode)+`<div style="height:4px"></div>`+seg([['tp','Third person'],['fp','First person'],['gc','My game camera']],'fmode',it.mode)
+      +`<p class="tip">${it.mode==='stuck'?'Glued to it. The camera turns, tilts and flips with it, like a camera bolted to your car.':it.mode==='level'?'Follows and turns with it, but stays level when it flips or rolls.':it.mode==='watch'?'The camera stays in one spot in the world and turns to keep it in the shot.':it.mode==='tp'?'The normal chase camera behind you.':it.mode==='fp'?'Through your own eyes, looking where you looked.':'Exactly what you saw on your screen while you played: the same view, the same looking around, and your hands if you were in first person.'}</p>`;
+    if(!per){h+=`<div class="lab">Sticks to</div>`+seg([['me','Me'],['seat','My vehicle'],['pick',it.target==='pick'&&it.nm?esc(it.nm):'Pick…']],'ftarget',it.target)+(CE.pickMode?`<p class="tip" style="color:var(--glue)">Now click a part, vehicle, creature or player in the world.</p>`:'')
+      +`<div class="lab">Feel</div>`+seg([['0','Stiff'],['1','Soft']],'fsoft',it.soft?'1':'0')+`<p class="tip">${it.soft?'Soft: the camera is a little loose. On sharp turns and at high speed it drags behind and swings back into place.':'Stiff: the camera is locked on tight and never lags.'}</p>`
+      +`<div class="lab">Slide</div>`+(two?seg([['0','Start spot'],['1','End spot']],'fend',end?'1':'0')+`<p class="tip">The camera slides from the start spot to the end spot while this clip plays. Pick which one the arrows (and Zoom) move. You can also click either blue camera in the world.</p><div class="lab">How it slides</div><div class="eases">`+CE_EASES.map(e=>`<button data-act="fease" data-v="${e[0]}" aria-pressed="${(it.ease2||'smooth')===e[0]}" title="${e[2]}">${ceEaseSvg(e[0])}${e[1]}</button>`).join('')+`</div><div class="btns"><button class="mini" data-act="fslideoff">Remove the end spot</button></div>`
+        :`<p class="tip" style="margin-top:0">The camera can slide from one spot to another while it follows, like keyframes that stay stuck to what it follows.</p><div class="btns"><button class="mini" data-act="fslide">Slide to a second spot</button></div>`)
+      +ceRow(two?(end?'Zoom at the end spot':'Zoom at the start spot'):'Zoom','ffov',0,100,1,ceFovTo(fv),fv+'°')+`<p class="tip">Put the white line inside this clip, then drag the arrows and rings on the blue camera to choose where it sits.</p><div class="btns"><button class="mini" data-act="fview" title="Put the follow cam where the free cam is right now">Use my view</button><button class="mini" data-act="fgo">Look through it</button><button class="mini danger" data-act="del">Delete</button></div>`;}
+    else h+=`<div class="btns"><button class="mini danger" data-act="del">Delete</button></div>`;}
+  else if(it&&s.k==='mid'){const i=P.kf.findIndex(k=>k.id===s.id),r=it.r==null?10:it.r;h=`<h3>Curve point</h3><p class="sub">The camera swings through this spot on its way from shot ${i} to shot ${i+1}, in one move. Drag the arrows and rings on the green camera to move and turn it.</p>`
+      +ceRow('Roundness','mround',0,10,.5,r,r)+`<p class="tip">10 is a smooth round curve. 0 goes straight to the point and turns a sharp corner there. Either way the camera always passes through the point.</p>`+ceRow('Zoom','mfov',0,100,1,ceFovTo(it.fov),it.fov+'°')
+      +`<div class="btns"><button class="mini" data-act="midview" title="Move the curve point to where the free cam is right now">Use my view</button><button class="mini" data-act="midgo" title="Fly the free cam to the curve point">Look through it</button><button class="mini danger" data-act="del">Delete</button></div>`;}
+  else if(it&&s.k==='cut'){h=`<h3>Cut</h3><p class="sub">This part of the replay is left out of the video: it jumps straight from the start of the red block to the end of it. Cuts out <b data-rv="cutlen" style="color:var(--ink)"></b>.</p><p class="tip" style="margin-top:0">Drag the red block on the timeline to move it, and drag its ends to cut more or less. The song keeps playing across the cut.</p><div class="btns"><button class="mini danger" data-act="del">Bring this part back</button></div>`;}
   else if(it&&s.k==='fx'){const D=CE_FX[it.type]||{n:'Effect',tip:''};h=`<h3>${D.n}</h3><p class="sub">${D.tip}. Drag it on the timeline to move it, and drag its ends to make it longer or shorter.</p>`;
     if(!D.noAmt)h+=ceRow('Strength','amt',.1,1.5,.05,it.amt==null?1:it.amt,Math.round((it.amt==null?1:it.amt)*100)+'%');
     if(it.type==='shades')h+=ceRow('Size','shsize',.6,2.2,.05,it.size||1,Math.round((it.size||1)*100)+'%')+`<p class="tip">Put the white line inside this effect and switch to the Free cam. Then drag the arrows and rings to fit the shades on your face.</p><div class="btns"><button class="mini" data-act="shreset">Reset fit</button></div>`;
@@ -9955,12 +10024,14 @@ function ceUi(){if(!CE.open||!CE.P)return;ceAutoDirty();const P=CE.P,s=CE.sel,it
   else if(it&&s.k==='mus'){const S=CE.songs.get(it.sid);h=`<h3>Song</h3><p class="sub">${S?esc(S.name):''}</p><p class="tip" style="margin-top:0">Drag the song left and right on the timeline. Line up the big part of the waveform (the drop) with the white line, where your best moment is.</p>`
       +ceRow('Song volume','mvol',0,1.5,.05,it.vol,Math.round(it.vol*100)+'%')+ceRow('Game sounds','svol',0,1.5,.05,P.sfxVol,Math.round(P.sfxVol*100)+'%')+(S&&S.drop!=null&&S.lib!=='lofi'?`<p class="tip">The little DROP flag on the song shows where the drop is.</p>`:'')+`<div class="btns">`+(S&&S.drop!=null&&S.lib!=='lofi'?`<button class="mini" data-act="musdrop" title="Slide the song so its drop happens at the white line">Put the drop on the white line</button>`:'')+`<button class="mini" data-act="musnew">Change song</button><button class="mini danger" data-act="del">Remove</button></div>`;}
   else{h=`<h3>Your clip</h3><p class="sub">Clip length <b data-rv="len" style="color:var(--ink)"></b>. The game remembered the last <b style="color:var(--ink)">${tlFmt(tapeDur())}</b>.</p>`+ceRow('Game sounds','svol',0,1.5,.05,P.sfxVol,Math.round(P.sfxVol*100)+'%')
+      +`<div class="lab">View</div><div class="seg">${[['tp','Third person'],['fp','First person'],['gc','As I played']].map(t=>`<button data-act="pview" data-v="${t[0]}" aria-pressed="${(P.view||'tp')===t[0]}">${t[1]}</button>`).join('')}</div><p class="tip">${P.view==='fp'?'Through your own eyes.':P.view==='gc'?'Exactly what was on your screen while you played, hands and all.':'The chase camera behind you.'} This is the view wherever you have not put keyframes or a follow cam. To change it for just one part, use + Game camera.</p>`
       +`<div class="lab">Video quality</div><div class="seg">${[[720,'720p'],[1080,'1080p']].map(t=>`<button data-act="res" data-v="${t[0]}" aria-pressed="${P.res===t[0]}">${t[1]}</button>`).join('')}</div>`
-      +`<ul class="tips"><li><b>Trim:</b> drag the orange brackets on the REPLAY row, or press I and O at the white line.</li><li><b>Camera:</b> fly somewhere, then press K to drop a keyframe. The camera moves from one keyframe to the next.</li><li><b>Follow cam, effects, song:</b> add them with the + buttons, then drag them on the timeline.</li><li><b>Click</b> anything to select it. Delete removes it. Ctrl+Z undoes.</li><li><b>Save clip</b> makes the video and puts it in the Photos app on your laptop or Gaming PC.</li></ul>`;}
+      +`<ul class="tips"><li><b>Trim:</b> drag the orange brackets on the REPLAY row, or press I and O at the white line.</li><li><b>Cut:</b> press X to cut a boring part out of the middle, then drag the ends of the red block.</li><li><b>Camera:</b> fly somewhere, then press K to drop a keyframe. The camera moves from one keyframe to the next.</li><li><b>Follow cam, effects, song:</b> add them with the + buttons, then drag them on the timeline.</li><li><b>Click</b> anything to select it. Delete removes it. Ctrl+Z undoes.</li><li><b>Save clip</b> makes the video and puts it in the Photos app on your laptop or Gaming PC.</li></ul>`;}
   el.innerHTML=h;ceUiTick();}
 function ceUiTick(){if(!CE.open||!CE.P)return;const P=CE.P,free=CE.view==='free'&&!CE.exp;
-  $('cetime').innerHTML=(CE.t<P.in-.01||CE.t>P.out+.01)?`<i>outside the clip</i>`:`${tlFmt(CE.t-P.in,1)} <i>/ ${tlFmt(P.out-P.in,1)}</i>`;
-  const lenEl=$('ceside').querySelector('[data-rv="len"]');if(lenEl)lenEl.textContent=tlFmt(P.out-P.in,1);
+  ceCutsNow();let inCut=false;for(const c of CE.cutL)if(CE.t>c[0]+.005&&CE.t<c[1]-.005)inCut=true;
+  $('cetime').innerHTML=(CE.t<P.in-.01||CE.t>P.out+.01)?`<i>outside the clip</i>`:inCut?`<i>cut out</i>`:`${tlFmt(ceOut(CE.t)-ceOut(P.in),1)} <i>/ ${tlFmt(ceClipLen(),1)}</i>`;
+  const lenEl=$('ceside').querySelector('[data-rv="len"]');if(lenEl)lenEl.textContent=tlFmt(ceClipLen(),1);{const ce=$('ceside').querySelector('[data-rv="cutlen"]'),it=ce&&ceItem(CE.sel);if(ce&&it)ce.textContent=(it.t1-it.t0).toFixed(1)+' seconds';}
   const pb=$('ceplay');const want=CE.playing?'Pause':'Play';if(pb.dataset.s!==want){pb.dataset.s=want;pb.innerHTML=want+' <kbd>Space</kbd>';}
   $('ceundo').disabled=!CE.undo.length;$('ceredo').disabled=!CE.redo.length;for(const b of $('ceviewseg').children)b.setAttribute('aria-pressed',String(b.dataset.v===CE.view));
   $('cesnap').textContent='Snap: '+(CE.snap?'on':'off');$('cesnap').classList.toggle('on',CE.snap);$('cespace').textContent='Arrows: '+(CE.space==='world'?'world':'camera');$('cepipb').textContent='Preview: '+(CE.pip?'on':'off');$('cepipb').classList.toggle('on',CE.pip);
@@ -9975,12 +10046,27 @@ function ceAddKey(){const P=CE.P;cePush();let p,q,fov;if(CE.view==='free'){p=CE.
 function ceAddKeyHere(){cePush();CE.todo.push(()=>{const P=CE.P,K=P.kf,T=CE.t,o={p:new THREE.Vector3(),q:new THREE.Quaternion(),fov:72};ceCamAt(T,o,true);const inside=K.length>1&&T>K[0].t+.04&&T<K[K.length-1].t-.04;
     let k=K.find(k=>Math.abs(k.t-T)<.04);if(!k){k={id:ceId(),t:T,ease:'smooth'};K.push(k);}else if(!k.auto){ceHint('There is already a keyframe here.');ceSel('kf',k.id);return;}k.p=o.p.toArray();k.q=o.q.toArray();k.fov=Math.round(o.fov);k.auto=!inside;k.dirty=false;K.sort((a,b)=>a.t-b.t);sfx0('snap',.5);ceSel('kf',k.id);
     ceHint(inside?'Keyframe added right where the camera already was.':'Keyframe added that copies the camera as it is here. Now move the white line, fly to a new view and press K: the camera will glide from this view to that one.',7000);});}
-function ceFolFromView(c){const n=ceFolNode(c,CE.t);if(!n)return;ceNodePose(n,_cv1,_cq1);if(c.mode==='watch'){c.off=CE.fc.p.toArray();c.fov=CE.fc.fov;return;}if(c.mode==='level')ceLevelQ(_cq1);const iq=_cq1.clone().invert();c.off=CE.fc.p.clone().sub(_cv1).applyQuaternion(iq).toArray();c.rot=iq.multiply(ceFcQuat(new THREE.Quaternion())).normalize().toArray();c.fov=CE.fc.fov;}
-function ceAddFol(){const P=CE.P;cePush();const [t0,t1]=ceRoom(CE.t,4);const c={id:ceId(),t0,t1,target:'me',mode:'stuck',off:[1.5,1.5,3.4],rot:new THREE.Quaternion().setFromEuler(new THREE.Euler(-.2,.38,0,'YXZ')).toArray(),fov:72,aim:1};P.fol.push(c);if(CE.t<t0||CE.t>t1)CE.t=t0;
+function ceFolFromView(c,end){const n=ceFolNode(c,CE.t);if(!n||ceIsPer(c.mode))return;end=!!(end&&c.off2);ceNodePose(n,_cv1,_cq1);if(end)c.fov2=CE.fc.fov;else c.fov=CE.fc.fov;if(c.mode==='watch'){c[end?'off2':'off']=CE.fc.p.toArray();return;}if(c.mode==='level')ceLevelQ(_cq1);const iq=_cq1.clone().invert();c[end?'off2':'off']=CE.fc.p.clone().sub(_cv1).applyQuaternion(iq).toArray();c[end?'rot2':'rot']=iq.multiply(ceFcQuat(new THREE.Quaternion())).normalize().toArray();}
+/* change what a follow cam sticks to (or its style) but keep the camera where it is in the world right now, for both of its spots */
+function ceFolRebase(it,change){const mk=()=>({p:new THREE.Vector3(),q:new THREE.Quaternion(),fov:0}),a=mk(),b=mk(),per=ceIsPer(it.mode);const hadA=per?ceFolCam(it,CE.t,a):ceFolCam(it,CE.t,a,0),hadB=!per&&it.off2?ceFolCam(it,CE.t,b,1):false;change();const n=ceFolNode(it,CE.t);if(ceIsPer(it.mode)||!n)return;
+  const np=new THREE.Vector3(),nq=new THREE.Quaternion();ceNodePose(n,np,nq);if(it.mode==='level')ceLevelQ(nq);const iq=nq.clone().invert();
+  const put=(o,end)=>{if(it.mode==='watch'){it[end?'off2':'off']=o.p.toArray();if(it.aim==null)it.aim=1;return;}if(o.p.distanceTo(np)>60)return;it[end?'off2':'off']=o.p.clone().sub(np).applyQuaternion(iq).toArray();it[end?'rot2':'rot']=iq.clone().multiply(o.q).normalize().toArray();};
+  if(hadA)put(a,false);if(hadB)put(b,true);}
+function ceAddPer(mode){const P=CE.P;cePush();const [t0,t1]=ceRoom(CE.t,4);const c={id:ceId(),t0,t1,target:'me',mode:mode||'gc',off:[1.5,1.5,3.4],rot:new THREE.Quaternion().setFromEuler(new THREE.Euler(-.2,.38,0,'YXZ')).toArray(),fov:72,aim:1};P.fol.push(c);if(CE.t<t0||CE.t>t1)CE.t=t0;sfx0('snap',.5);
+  ceHint('Game camera added: for this part the video shows exactly what you saw while you played. Pick Third person or First person on the right if you want that instead.',7000);ceSel('fol',c.id);}
+/* cut a part out of the middle of the footage */
+function ceAddCut(){const P=CE.P;if(CE.t<P.in-.01||CE.t>P.out-.3){ceHint('Put the white line inside your clip, where the part you want to cut out starts.');sfx0('error',.3);return;}cePush();const t0=Math.max(P.in,CE.t),t1=Math.min(P.out,t0+2);const c={id:ceId(),t0,t1};P.cuts.push(c);sfx0('snap',.5);ceSel('cut',c.id);
+  ceHint('Cut added. The red part is left out of the video. Drag its ends on the timeline to cut more or less, or press Delete to bring it back.',7000);}
+/* a curve point: the camera swings through it on its way from one keyframe to the next */
+function ceAddMid(B){const P=CE.P,K=P.kf;if(!B){for(let i=1;i<K.length;i++)if(CE.t>K[i-1].t-1e-3&&CE.t<=K[i].t+1e-3){B=K[i];break;}}
+  if(!B||K.indexOf(B)<1){ceHint(K.length<2?'A curve point bends the move between two keyframes, so add two camera keyframes first (fly somewhere and press K).':'Put the white line between two keyframes first. The curve point bends the move between them.',6000);sfx0('error',.3);return;}
+  if(ceIsCut(B.ease)){ceHint('That move is a cut, so there is nothing to bend. Pick a different style for that keyframe first.');sfx0('error',.3);return;}
+  cePush();B.mid={p:CE.fc.p.toArray(),q:ceFcQuat(new THREE.Quaternion()).toArray(),fov:CE.fc.fov,r:10};if(CE.view!=='free')ceView('free');sfx0('snap',.5);ceSel('mid',B.id);ceHint('Curve point added where your free cam is. The camera now swings through it in one move. Drag the green camera to move it, and set its Roundness on the right.',7000);}
+function ceAddFol(){const P=CE.P;cePush();const [t0,t1]=ceRoom(CE.t,4);CE.folEnd=false;const c={id:ceId(),t0,t1,target:'me',mode:'stuck',off:[1.5,1.5,3.4],rot:new THREE.Quaternion().setFromEuler(new THREE.Euler(-.2,.38,0,'YXZ')).toArray(),fov:72,aim:1};P.fol.push(c);if(CE.t<t0||CE.t>t1)CE.t=t0;
   CE.todo.push(()=>{const ff=ceF(CE.t);if(tapeRefAt(TAPE.seat,ff)){c.target='seat';c.off=[2.2,.9,3.2];c.rot=new THREE.Quaternion().setFromEuler(new THREE.Euler(-.08,.5,0,'YXZ')).toArray();}const n=ceFolNode(c,CE.t);if(n&&CE.view==='free'){ceNodePose(n,_cv1,_cq1);if(CE.fc.p.distanceTo(_cv1)<40)ceFolFromView(c);}ceUi();});
   sfx0('snap',.5);ceHint('Follow cam added. It starts where your free cam is. Drag the arrows on the blue camera to move it, and drag the clip on the timeline to choose when.');ceSel('fol',c.id);}
 function ceAddFx(type){const D=CE_FX[type];if(!D)return;cePush();const [t0,t1]=ceRoom(CE.t,D.d);const c={id:ceId(),t0,t1,type,amt:1};CE.P.fx.push(c);sfx0('snap',.5);ceSel('fx',c.id);ceHint(D.n+' added at the white line. Drag it on the timeline, or drag its ends to change how long it lasts.');}
-function ceDel(){const s=CE.sel,P=CE.P;if(!s||!ceItem(s))return;cePush();if(s.k==='mus'){P.music=null;ceMusicStop();}else{const L=s.k==='kf'?P.kf:s.k==='fol'?P.fol:P.fx;const i=L.findIndex(x=>x.id===s.id);if(i>=0)L.splice(i,1);}CE.sel=null;sfx0('pop',.4);ceUi();}
+function ceDel(){const s=CE.sel,P=CE.P;if(!s||!ceItem(s))return;cePush();if(s.k==='mus'){P.music=null;ceMusicStop();}else if(s.k==='mid'){const k=P.kf.find(x=>x.id===s.id);if(k)delete k.mid;}else{const L=s.k==='kf'?P.kf:s.k==='fol'?P.fol:s.k==='cut'?P.cuts:P.fx;const i=L.findIndex(x=>x.id===s.id);if(i>=0)L.splice(i,1);}CE.sel=null;sfx0('pop',.4);ceUi();}
 function ceFind(){if(!CE3.meOk){ceHint('Your character is not in the world at this moment.');return;}const f=CE.fc;ceFcQuat(_cq1);_cv1.set(0,0,-1).applyQuaternion(_cq1);_cv1.y=0;if(_cv1.lengthSq()<1e-4)_cv1.set(0,0,-1);_cv1.normalize();f.p.copy(CE3.mePos).addScaledVector(_cv1,-5.5);f.p.y+=1.4;try{f.p.y=Math.max(f.p.y,heightAt(f.p.x,f.p.z)+.5);}catch(e){}ceLookQ(f.p,CE3.mePos,_cq1);ceFcFrom(f.p.clone(),_cq1);if(CE.view!=='free')ceView('free');}
 function ceView(v){CE.view=v;CE.keys.clear();if(v==='clip')ceHint('Clip Cam: this is what your video will look like. Press C to go back to flying.',2600);ceUi();}
 /* ---- songs ---- */
@@ -9999,7 +10085,7 @@ function ceBuildOnce(){if(CE.built)return;CE.built=true;CE.todo=CE.todo||[];tlIn
   $('ceviewseg').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&!CE.exp)ceView(b.dataset.v);});
   on('ceundo',()=>ceUndo(false));on('ceredo',()=>ceUndo(true));on('ceclose',()=>clipClose());on('cesave',()=>ceExportAsk());on('cehelpb',()=>ceHelp());
   on('cenew',()=>{const P=CE.P;if(!P.kf.length&&!P.fol.length&&!P.fx.length&&!P.music){ceNew();ceUi();return;}ceModal(`<h2>Start over?</h2><p>This throws away your keyframes, follow cams, effects and song, and starts a fresh clip from the last 5 minutes.</p><div class="btns"><button class="mini" data-m="x">Keep editing</button><button class="mini danger" data-m="ok">Start over</button></div>`);CE.modalOk=()=>{ceNew();ceUi();};});
-  on('ceplay',()=>cePlay(!CE.playing));on('ceaddkf',ceAddKey);on('ceaddkh',ceAddKeyHere);on('ceaddfol',ceAddFol);on('ceaddmus',()=>ceSongMenu());ceSongWire();
+  on('ceplay',()=>cePlay(!CE.playing));on('ceaddkf',ceAddKey);on('ceaddkh',ceAddKeyHere);on('ceaddfol',ceAddFol);on('ceaddmid',()=>ceAddMid());on('ceaddgc',()=>ceAddPer('gc'));on('ceaddcut',ceAddCut);on('ceaddmus',()=>ceSongMenu());ceSongWire();
   on('ceaddfx',()=>{const m=$('cefxmenu');if(!m.innerHTML)m.innerHTML=Object.entries(CE_FX).map(([k,D])=>`<button data-fx="${k}" style="border-left-color:${D.c}">${D.n}<span>${D.tip}</span></button>`).join('');m.hidden=!m.hidden;if(!m.hidden){const r=$('ceaddfx').getBoundingClientRect();m.style.left=clamp(r.left-120,8,innerWidth-m.offsetWidth-8)+'px';m.style.top=Math.max(8,r.top-m.offsetHeight-8)+'px';}});
   $('cefxmenu').addEventListener('click',e=>{const b=e.target.closest('[data-fx]');if(!b)return;$('cefxmenu').hidden=true;ceAddFx(b.dataset.fx);});
   $('cefile').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];e.target.value='';ceLoadSong(f);});
@@ -10012,22 +10098,32 @@ function ceBuildOnce(){if(CE.built)return;CE.built=true;CE.todo=CE.todo||[];tlIn
 function ceTrim(k){const P=CE.P;cePush();if(k==='in'){P.in=Math.min(CE.t,ceT1()-.25);if(P.out<P.in+.25)P.out=ceT1();}else{P.out=Math.max(CE.t,ceT0()+.25);if(P.in>P.out-.25)P.in=ceT0();}sfx0('ui');ceUi();}
 function ceRange(k,v){const P=CE.P,it=ceItem(CE.sel);const set=t=>{const b=$('ceside').querySelector(`[data-rv="${k}"]`);if(b)b.textContent=t;};
   if(k==='svol'){P.sfxVol=v;ceMusicSync();set(Math.round(v*100)+'%');return;}if(!it)return;
-  if(k==='kfov'||k==='ffov'){it.fov=ceFovOf(v);if(k==='kfov')it.auto=false;set(it.fov+'°');}else if(k==='amt'){it.amt=v;set(Math.round(v*100)+'%');}else if(k==='shsize'){it.size=v;set(Math.round(v*100)+'%');}else if(k==='mvol'){it.vol=v;ceMusicSync();set(Math.round(v*100)+'%');}}
+  if(k==='ffov'&&it.off2&&CE.folEnd){it.fov2=ceFovOf(v);set(it.fov2+'°');}else if(k==='mround'){it.r=v;set(v);}
+  else if(k==='kfov'||k==='ffov'||k==='mfov'){it.fov=ceFovOf(v);if(k==='kfov')it.auto=false;set(it.fov+'°');}else if(k==='amt'){it.amt=v;set(Math.round(v*100)+'%');}else if(k==='shsize'){it.size=v;set(Math.round(v*100)+'%');}else if(k==='mvol'){it.vol=v;ceMusicSync();set(Math.round(v*100)+'%');}}
 function ceAct(a,v){const P=CE.P,s=CE.sel,it=ceItem(s);
-  if(a==='res'){P.res=+v;ceUi();return;}if(!it)return;
+  if(a==='res'){P.res=+v;ceUi();return;}if(a==='pview'){if(P.view!==v){cePush();P.view=v;sfx0('ui');ceUi();}return;}if(!it)return;
   if(a==='del'){ceDel();return;}
   if(a==='ease'){cePush();it.ease=v;sfx0('ui');ceUi();return;}
   if(a==='kfview'){cePush();it.auto=false;it.p=CE.fc.p.toArray();it.q=ceFcQuat(new THREE.Quaternion()).toArray();it.fov=CE.fc.fov;if(CE.view!=='free')ceView('free');ceHint('Keyframe moved to your view.');ceUi();return;}
+  if(a==='kfmid'){ceAddMid(it);return;}if(a==='kfmidsel'){ceSel('mid',s.id);return;}
+  if(a==='midview'){cePush();it.p=CE.fc.p.toArray();it.q=ceFcQuat(new THREE.Quaternion()).toArray();it.fov=CE.fc.fov;if(CE.view!=='free')ceView('free');ceHint('Curve point moved to your view.');ceUi();return;}
+  if(a==='midgo'){const i=P.kf.findIndex(k=>k.id===s.id);ceFcFrom(_cv1.fromArray(it.p),_cq1.fromArray(it.q),it.fov);if(i>0)ceSeek(P.kf[i-1].t+(P.kf[i].t-P.kf[i-1].t)*ceMidU(P.kf[i].ease));if(CE.view!=='free')ceView('free');return;}
+  if(a==='fsoft'){cePush();it.soft=v==='1';sfx0('ui');ceUi();return;}
+  if(a==='fend'){CE.folEnd=v==='1';if(CE.t<it.t0||CE.t>it.t1)ceSeek(it.t0+.01);ceUi();return;}
+  if(a==='fease'){cePush();it.ease2=v;sfx0('ui');ceUi();return;}
+  if(a==='fslideoff'){cePush();delete it.off2;delete it.rot2;delete it.fov2;delete it.ease2;CE.folEnd=false;ceUi();return;}
+  if(a==='fslide'){cePush();if(it.mode==='watch'){it.off2=[it.off[0]+3,it.off[1]+1.5,it.off[2]+3];it.rot2=it.rot.slice();}else{it.off2=[-it.off[0],it.off[1],it.off[2]];const r=it.rot;it.rot2=[r[0],-r[1],-r[2],r[3]];}it.fov2=it.fov;it.ease2='smooth';CE.folEnd=true;if(CE.t<it.t0||CE.t>it.t1)ceSeek(it.t0+.01);if(CE.view!=='free')ceView('free');sfx0('snap',.5);
+    ceHint(it.mode==='watch'?'End spot added nearby. Drag its arrows to place it. The camera slides from the start spot to the end spot while this clip plays.':'End spot added on the other side. Drag its arrows to place it. The camera slides from the start spot to the end spot while this clip plays.',7000);ceUi();return;}
   if(a==='kfgo'){ceFcFrom(_cv1.fromArray(it.p),_cq1.fromArray(it.q),it.fov);ceSeek(it.t);if(CE.view!=='free')ceView('free');return;}
   if(a==='ftarget'){if(v==='pick'){CE.pickMode=true;if(CE.view!=='free')ceView('free');if(CE.t<it.t0||CE.t>it.t1)ceSeek(it.t0+.01);ceHint('Click a part, vehicle, creature or player in the world to follow it.',7000);ceUi();return;}cePush();CE.pickMode=false;
-      CE.todo.push(()=>{const o={p:new THREE.Vector3(),q:new THREE.Quaternion(),fov:0};const had=ceFolCam(it,CE.t,o);it.target=v;const n=ceFolNode(it,CE.t);if(had&&n&&it.mode!=='watch'){ceNodePose(n,_cv1,_cq1);if(it.mode==='level')ceLevelQ(_cq1);const iq=_cq1.clone().invert();if(o.p.distanceTo(_cv1)<60){o.p.sub(_cv1).applyQuaternion(iq).toArray(it.off);iq.multiply(o.q).normalize().toArray(it.rot);}}ceUi();});return;}
-  if(a==='fmode'){if(it.mode===v)return;cePush();CE.todo.push(()=>{const o={p:new THREE.Vector3(),q:new THREE.Quaternion(),fov:0};const had=ceFolCam(it,CE.t,o);const n=ceFolNode(it,CE.t);it.mode=v;if(had&&n){ceNodePose(n,_cv1,_cq1);if(v==='watch'){it.off=o.p.toArray();it.aim=1;}else{if(v==='level')ceLevelQ(_cq1);const iq=_cq1.clone().invert();it.off=o.p.sub(_cv1).applyQuaternion(iq).toArray();it.rot=iq.multiply(o.q).normalize().toArray();}}ceUi();});if(CE.t<it.t0||CE.t>it.t1)ceSeek(it.t0+.01);return;}
-  if(a==='fview'){cePush();if(CE.t<it.t0||CE.t>it.t1)ceSeek(it.t0+.01);if(CE.view!=='free')ceView('free');CE.todo.push(()=>{ceFolFromView(it);ceUi();});ceHint('Follow cam set to your view.');return;}
-  if(a==='fgo'){if(CE.t<it.t0||CE.t>it.t1)ceSeek(it.t0+.01);CE.todo.push(()=>{const o={p:new THREE.Vector3(),q:new THREE.Quaternion(),fov:0};if(ceFolCam(it,CE.t,o))ceFcFrom(o.p,o.q,it.fov);});if(CE.view!=='free')ceView('free');return;}
+      CE.todo.push(()=>{ceFolRebase(it,()=>{it.target=v;});ceUi();});return;}
+  if(a==='fmode'){if(it.mode===v)return;cePush();CE.pickMode=false;if(ceIsPer(v)){it.mode=v;sfx0('ui');ceUi();return;}const was=ceIsPer(it.mode);CE.todo.push(()=>{if(was){it.mode=v;if(v==='watch'){const o={p:new THREE.Vector3(),q:new THREE.Quaternion(),fov:0};ceAutoCam(CE.t,o);it.off=o.p.toArray();it.aim=1;}}else ceFolRebase(it,()=>{it.mode=v;if(v==='watch')it.aim=1;});ceUi();});if(CE.t<it.t0||CE.t>it.t1)ceSeek(it.t0+.01);return;}
+  if(a==='fview'){cePush();if(CE.t<it.t0||CE.t>it.t1)ceSeek(it.t0+.01);if(CE.view!=='free')ceView('free');CE.todo.push(()=>{ceFolFromView(it,CE.folEnd);ceUi();});ceHint(it.off2?(CE.folEnd?'End spot set to your view.':'Start spot set to your view.'):'Follow cam set to your view.');return;}
+  if(a==='fgo'){if(CE.t<it.t0||CE.t>it.t1)ceSeek(it.t0+.01);CE.todo.push(()=>{const o={p:new THREE.Vector3(),q:new THREE.Quaternion(),fov:0};if(ceFolCam(it,CE.t,o,it.off2&&CE.folEnd?1:0))ceFcFrom(o.p,o.q,o.fov);});if(CE.view!=='free')ceView('free');return;}
   if(a==='shreset'){cePush();delete it.off;delete it.rot;it.size=1;ceUi();return;}
   if(a==='musnew'){ceSongMenu(true);return;}
-  if(a==='musdrop'){const S=CE.songs.get(it.sid);if(S&&S.drop!=null){cePush();it.t=clamp(CE.t-S.drop,ceT0()-S.buf.duration+.2,ceT1()-.2);ceMusicSync(true);sfx0('snap',.5);ceHint('The drop now lands on the white line.');}return;}}
-function ceHelp(){ceModal(`<h2>How it works</h2><ul><li><b>The replay.</b> The game always remembers the last 5 minutes. It remembers where everything was, not a video, so you can film it again from any angle.</li><li><b>Trim.</b> Drag the orange brackets on the REPLAY row to pick the part you want. The orange hills show how fast you were going, and the tall orange lines are explosions.</li><li><b>Free cam.</b> Hold the right mouse button and drag to look. W A S D to fly, Q and E for down and up, Shift to go faster.</li><li><b>Keyframes.</b> Fly to a nice spot and press K. Move the white line, fly somewhere else, press K again. The camera travels between them. Click a keyframe to pick how it moves: smooth, bounce, cut and more.</li><li><b>Follow cam.</b> A clip that sticks the camera to you or your vehicle. Drag the arrows on the blue camera to choose the spot.</li><li><b>Effects and song.</b> Add them with the + buttons and drag them on the timeline.</li><li><b>Clip cam</b> (press C) shows exactly what the video will look like.</li><li><b>Save clip</b> makes the video. Watch it in the Photos app on a laptop or Gaming PC, under Clips.</li></ul><div class="btns"><button class="mini on" data-m="x">Got it</button></div>`);}
+  if(a==='musdrop'){const S=CE.songs.get(it.sid);if(S&&S.drop!=null){cePush();ceCutsNow();it.t=clamp(ceTapeOf(ceOut(CE.t)-S.drop),ceT0()-S.buf.duration+.2,ceT1()-.2);ceMusicSync(true);sfx0('snap',.5);ceHint('The drop now lands on the white line.');}return;}}
+function ceHelp(){ceModal(`<h2>How it works</h2><ul><li><b>The replay.</b> The game always remembers the last 5 minutes. It remembers where everything was, not a video, so you can film it again from any angle.</li><li><b>Trim.</b> Drag the orange brackets on the REPLAY row to pick the part you want. The orange hills show how fast you were going, and the tall orange lines are explosions.</li><li><b>Free cam.</b> Hold the right mouse button and drag to look. W A S D to fly, Q and E for down and up, Shift to go faster.</li><li><b>Keyframes.</b> Fly to a nice spot and press K. Move the white line, fly somewhere else, press K again. The camera travels between them. Click a keyframe to pick how it moves: smooth, bounce, cut and more.</li><li><b>Curve point.</b> Put the white line between two keyframes and press + Curve point. The camera swings through that spot in one move. Roundness sets how round the curve is.</li><li><b>Follow cam.</b> A clip that sticks the camera to you or your vehicle. Drag the arrows on the blue camera to choose the spot. It can be stiff or soft, and it can slide from one spot to a second one.</li><li><b>Game camera.</b> A clip that shows what you saw while you played, or first person, or third person, for just that part.</li><li><b>Cut.</b> Press X to cut a part out of the middle. Drag the ends of the red block, or delete it to bring the part back.</li><li><b>Effects and song.</b> Add them with the + buttons and drag them on the timeline.</li><li><b>Clip cam</b> (press C) shows exactly what the video will look like.</li><li><b>Save clip</b> makes the video. Watch it in the Photos app on a laptop or Gaming PC, under Clips.</li></ul><div class="btns"><button class="mini on" data-m="x">Got it</button></div>`);}
 /* ---- keys ---- */
 addEventListener('keydown',e=>{if(e.code==='F8'&&!e.repeat&&started&&!(e.target&&e.target.tagName==='INPUT'&&!CE.open)){if(CE.open){e.preventDefault();e.stopImmediatePropagation();if(!CE.exp)clipClose();return;}if(!chatOpen&&(!invOpen||paused)&&!CR.edit&&!NET.poss){e.preventDefault();e.stopImmediatePropagation();clipOpen();return;}}
   if(!CE.open)return;const t=e.target,c=e.code;e.stopImmediatePropagation();
@@ -10038,7 +10134,7 @@ addEventListener('keydown',e=>{if(e.code==='F8'&&!e.repeat&&started&&!(e.target&
   if(['KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE','ShiftLeft','ShiftRight','AltLeft'].includes(c)){CE.keys.add(c);e.preventDefault();return;}
   if(['Tab','Space','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','Backspace','F5','F9'].includes(c))e.preventDefault();
   if(c==='ArrowLeft'||c==='ArrowRight'){ceSeek(CE.t+(c==='ArrowLeft'?-1:1)*(e.shiftKey?1:1/30));return;}if(e.repeat)return;
-  if(c==='Space')cePlay(!CE.playing);else if(c==='KeyK'){if(e.shiftKey)ceAddKeyHere();else ceAddKey();}else if(c==='KeyC')ceView(CE.view==='free'?'clip':'free');else if(c==='KeyF')ceFind();else if(c==='KeyI')ceTrim('in');else if(c==='KeyO')ceTrim('out');
+  if(c==='Space')cePlay(!CE.playing);else if(c==='KeyK'){if(e.shiftKey)ceAddKeyHere();else ceAddKey();}else if(c==='KeyC')ceView(CE.view==='free'?'clip':'free');else if(c==='KeyF')ceFind();else if(c==='KeyX')ceAddCut();else if(c==='KeyI')ceTrim('in');else if(c==='KeyO')ceTrim('out');
   else if(c==='Delete'||c==='Backspace')ceDel();else if(c==='Home')ceSeek(CE.P.in);else if(c==='End')ceSeek(CE.P.out);
   else if(c==='Escape'){if(!$('cesongmenu').hidden)ceSongMenu(false);else if(!$('cefxmenu').hidden)$('cefxmenu').hidden=true;else if(CE.pickMode){CE.pickMode=false;ceUi();}else if(CE.sel)ceSel(null);}},true);
 addEventListener('keyup',e=>{if(!CE.open)return;CE.keys.delete(e.code);e.stopImmediatePropagation();},true);
@@ -10072,20 +10168,21 @@ async function ceFixWebm(blob,durMs){try{const head=new Uint8Array(await blob.sl
 /* ---- Save: play the clip through once while the browser records the picture and the sound into a video file ---- */
 function ceMime(){const L=['video/mp4;codecs="avc1.640028,mp4a.40.2"','video/mp4;codecs="avc1.42E01E,mp4a.40.2"','video/mp4;codecs="avc1.640028,opus"','video/mp4','video/webm;codecs="vp9,opus"','video/webm;codecs="vp8,opus"','video/webm'];if(!window.MediaRecorder)return '';const v=document.createElement('video');let any='';
   for(const m of L)try{if(!MediaRecorder.isTypeSupported(m))continue;if(!any)any=m;if(v.canPlayType(m.replace(/opus/,'opus')))return m;}catch(e){}return any;} // prefer a format this browser can also play back in the Photos app
-function ceExportAsk(){if(CE.exp)return;const P=CE.P,len=P.out-P.in;cePlay(false);
+function ceExportAsk(){if(CE.exp)return;ceCutsNow();const P=CE.P,len=ceClipLen();cePlay(false);
+  if(len<.3){ceHint('Everything is cut out, so there is nothing to save. Delete a cut or make the clip longer.');sfx0('error',.3);return;}
   if(!window.MediaRecorder||!canvas.captureStream||!ceMime()){ceModal(`<h2>Can't make videos here</h2><p>This browser can't record video from the game. Try Chrome, Edge or Firefox on a computer.</p><div class="btns"><button class="mini on" data-m="x">OK</button></div>`);return;}
   if(len>90){ceModal(`<h2>That's a long clip</h2><p>Your clip is <b>${tlFmt(len)}</b> long. Making the video takes just as long as the clip, and long clips make big files.</p><p class="dimp">Tip: drag the orange brackets on the REPLAY row to trim it to the best part.</p><div class="btns"><button class="mini" data-m="x">Go back and trim</button><button class="mini on" data-m="ok">Make it anyway</button></div>`);CE.modalOk=()=>ceExportStart();return;}
   ceExportStart();}
 function ceFrames(n){return new Promise(r=>{const f=()=>{if(--n<=0)r();else requestAnimationFrame(f);};requestAnimationFrame(f);});}
 async function ceExportStart(){const P=CE.P,mime=ceMime();if(CE.exp||!mime)return;const h=P.res===1080?1080:720,w=h*16/9;const before=CE.t;
-  const E=CE.exp={w,h,mime,chunks:[],state:'prep',len:P.out-P.in,thumbT:(before>P.in+.2&&before<P.out-.2)?before:P.in+(P.out-P.in)*.4,thumb:'',rec:null,dest:null,stream:null,cancel:false,view0:CE.view,t0:before};
+  ceCutsNow();const E=CE.exp={w,h,mime,chunks:[],state:'prep',len:ceClipLen(),thumbT:(before>P.in+.2&&before<P.out-.2)?before:P.in+(P.out-P.in)*.4,thumb:'',rec:null,dest:null,stream:null,cancel:false,view0:CE.view,t0:before};
   CE.sel=null;$('cefxmenu').hidden=true;ceSongMenu(false);ceUi();ceModal(`<h2>Making your video</h2><p id="ceexpmsg">Getting ready…</p><div class="bar"><i id="ceexpbar"></i></div><p class="dimp">Keep this tab open and in front until it finishes. It takes as long as the clip.</p><div class="btns"><button class="mini" data-m="cancel">Cancel</button></div>`,true);CE.modalAct=k=>{if(k==='cancel')ceExportCancel();};
   try{CE.t=P.in;await ceFrames(3);if(E.cancel)return;if(AC&&AC.state==='suspended')try{await AC.resume();}catch(e){}
     const vs=canvas.captureStream(60);const tracks=[...vs.getVideoTracks()];E.stream=vs;if(AC&&CE.mix){E.dest=AC.createMediaStreamDestination();E.pre=AC.createGain();E.pre.gain.value=.8;E.lim=AC.createDynamicsCompressor();E.lim.threshold.value=-8;E.lim.knee.value=6;E.lim.ratio.value=14;E.lim.attack.value=.003;E.lim.release.value=.2;CE.mix.connect(E.pre);E.pre.connect(E.lim);E.lim.connect(E.dest);tracks.push(...E.dest.stream.getAudioTracks());} // a limiter keeps loud explosions plus music from crackling
     const rec=E.rec=new MediaRecorder(new MediaStream(tracks),{mimeType:mime,videoBitsPerSecond:h>=1080?14e6:8e6,audioBitsPerSecond:160000});
     rec.ondataavailable=e=>{if(e.data&&e.data.size)E.chunks.push(e.data);};rec.onerror=e=>{console.warn('recorder',e);ceExportFail('The recorder stopped with an error.');};rec.onstop=()=>{if(!E.cancel)ceExportDone(E);};
     rec.start(1000);E.state='rec';E.wall=performance.now();
-    CE.shot=()=>{if(CE.exp!==E)return;const u=(CE.t-P.in)/Math.max(.01,E.len);const b=$('ceexpbar');if(b)b.style.width=(clamp(u,0,1)*100).toFixed(1)+'%';const m=$('ceexpmsg');if(m)m.textContent=`${Math.round(clamp(u,0,1)*100)}%  ·  ${tlFmt(Math.max(0,CE.t-P.in),0)} of ${tlFmt(E.len,0)}`;
+    CE.shot=()=>{if(CE.exp!==E)return;const done=ceOut(CE.t)-ceOut(P.in),u=done/Math.max(.01,E.len);const b=$('ceexpbar');if(b)b.style.width=(clamp(u,0,1)*100).toFixed(1)+'%';const m=$('ceexpmsg');if(m)m.textContent=`${Math.round(clamp(u,0,1)*100)}%  ·  ${tlFmt(Math.max(0,done),0)} of ${tlFmt(E.len,0)}`;
       if(!E.thumb&&CE.t>=E.thumbT){try{const c=document.createElement('canvas');c.width=320;c.height=180;c.getContext('2d').drawImage(canvas,0,0,320,180);E.thumb=c.toDataURL('image/jpeg',.78);}catch(e){}}};
     cePlay(true,P.in);}
   catch(e){console.warn(e);ceExportFail('Recording could not start: '+(e&&e.message||e));}}
@@ -10311,7 +10408,7 @@ function ceSongMenu(show){const m=$('cesongmenu');if(show===false||(show==null&&
   if(!m.innerHTML)m.innerHTML=`<div class="lab">Songs made for Gluebox</div>`+CE_SONGS.map(D=>`<div class="srow"><button class="go" data-song="${D.k}"><b>${D.n}</b><span>${D.d} · ${tlFmt(D.dur)}${D.k==='lofi'?'':' · drop at '+tlFmt(D.drop)}</span></button><button class="mini" data-listen="${D.k}">Listen</button></div>`).join('')+`<div class="lab">Or your own music</div><button class="mini" data-own="1" style="width:100%">Use a song file from my computer…</button>`;
   m.hidden=false;const r=$('ceaddmus').getBoundingClientRect();m.style.left=clamp(r.left-60,8,innerWidth-m.offsetWidth-8)+'px';m.style.top=Math.max(8,r.top-m.offsetHeight-8)+'px';}
 function ceLibAdd(k){ceSongMenu(false);ceHint('Making the song…',15000);ceLibGet(k).then(S=>{if(!CE.open||!CE.P)return;const sid='lib:'+k;CE.songs.set(sid,S);cePush();const old=CE.P.music,a0=ceT0(),a1=ceT1();
-    CE.P.music={sid,t:clamp(CE.t-S.drop,a0-S.buf.duration+.2,a1-.2),vol:old?old.vol:.8};TL.waveKey='';ceMusicSync(true);ceSel('mus',0);sfx0('ding',.4);ceHint(k==='lofi'?S.name+' added. Slide it on the timeline to where you want it.':S.name+' added with the drop on the white line. Slide the song on the timeline to move it.',6000);})
+    ceCutsNow();CE.P.music={sid,t:clamp(ceTapeOf(ceOut(CE.t)-S.drop),a0-S.buf.duration+.2,a1-.2),vol:old?old.vol:.8};TL.waveKey='';ceMusicSync(true);ceSel('mus',0);sfx0('ding',.4);ceHint(k==='lofi'?S.name+' added. Slide it on the timeline to where you want it.':S.name+' added with the drop on the white line. Slide the song on the timeline to move it.',6000);})
   .catch(e=>{console.warn('song',e);ceHint('That song could not be made on this browser. You can still use a song file from your computer.');sfx0('error',.4);});}
 function ceSongWire(){const m=$('cesongmenu');m.addEventListener('click',e=>{if(CE.exp)return;const l=e.target.closest('[data-listen]');if(l){cePrevPlay(l.dataset.listen,l);return;}const s=e.target.closest('[data-song]');if(s){ceLibAdd(s.dataset.song);return;}if(e.target.closest('[data-own]')){ceSongMenu(false);$('cefile').click();}});}
 
