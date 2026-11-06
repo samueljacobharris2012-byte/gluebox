@@ -484,6 +484,17 @@ body.clip-edit #view{cursor:default;touch-action:none}
 #cefxmenu button{text-align:left;padding:7px 9px;background:rgba(238,231,215,.06);border:1px solid var(--edge);border-radius:4px;color:var(--ink);cursor:pointer;font:600 13.5px var(--f-body);border-left-width:5px}
 #cefxmenu button:hover{background:rgba(238,231,215,.14)}
 #cefxmenu button span{display:block;font-weight:400;font-size:11.5px;color:var(--dim);margin-top:1px;line-height:1.25}
+#cesongmenu{position:fixed;z-index:30;width:min(400px,94vw);max-height:80vh;overflow:auto;background:var(--panel-solid);border:1px solid var(--edge);border-radius:6px;padding:10px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+#cesongmenu[hidden]{display:none}
+#cesongmenu .lab{font:700 10.5px var(--f-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--dim);margin:2px 0 6px}
+#cesongmenu .lab+.mini{margin-top:0}
+#cesongmenu .srow{display:flex;gap:5px;margin-bottom:5px;align-items:stretch}
+#cesongmenu .srow+.lab{margin-top:10px}
+#cesongmenu .go{flex:1;text-align:left;padding:6px 9px;background:rgba(238,231,215,.06);border:1px solid var(--edge);border-left:5px solid var(--glue);border-radius:4px;color:var(--ink);cursor:pointer;font:600 13.5px var(--f-body)}
+#cesongmenu .go:hover{background:rgba(238,231,215,.14)}
+#cesongmenu .go b{display:block;font-weight:700}
+#cesongmenu .go span{display:block;font-weight:400;font-size:11.5px;color:var(--dim);margin-top:1px}
+#cesongmenu .srow .mini{min-width:58px}
 #cemodal{position:fixed;inset:0;z-index:31;display:flex;align-items:center;justify-content:center;background:rgba(14,12,10,.72);padding:16px}
 #cemodal[hidden]{display:none}
 #cemodal.clear{background:none;align-items:flex-end;pointer-events:none}
@@ -863,14 +874,16 @@ body.clip-edit #view{cursor:default;touch-action:none}
   <div id="ceside"></div>
   <div id="cebar"><button class="mini" id="ceplay">Play <kbd>Space</kbd></button><span id="cetime"></span>
     <button class="mini" id="ceaddkf" title="Put a camera keyframe at the white line, looking where the free cam looks">+ Camera keyframe <kbd>K</kbd></button>
+    <button class="mini" id="ceaddkh" title="Adds a keyframe that is automatically what the camera already is at the white line. Add another keyframe later and the camera glides from this view to the new one. (Shift+K)">+ Keyframe as it is now</button>
     <button class="mini" id="ceaddfol" title="Lock the camera onto your character or vehicle for a while">+ Follow cam</button>
-    <button class="mini" id="ceaddfx">+ Effect</button><button class="mini" id="ceaddmus">+ Song</button>
+    <button class="mini" id="ceaddfx">+ Effect</button><button class="mini" id="ceaddmus" title="Add music: pick a built-in song or use your own file">+ Song</button>
     <span class="cegap"></span>
     <button class="mini" id="cetrimin" title="Start the clip at the white line (I)">Start here <kbd>I</kbd></button><button class="mini" id="cetrimout" title="End the clip at the white line (O)">End here <kbd>O</kbd></button>
     <button class="mini on" id="cesnap" title="Things snap to the white line, the clip edges and each other. Hold Alt to turn it off for a moment.">Snap: on</button>
     <button class="mini" id="cezout" title="Zoom the timeline out">−</button><button class="mini" id="cezin" title="Zoom the timeline in">+</button><button class="mini" id="cefit" title="Show the whole 5 minutes">Fit</button></div>
   <div id="cetl"><canvas id="cetlcv"></canvas></div>
   <div id="cefxmenu" hidden></div>
+  <div id="cesongmenu" hidden></div>
   <div id="cemodal" hidden><div class="box" id="cemodalbox"></div></div>
   <input type="file" id="cefile" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" hidden>
 </div>
@@ -8165,7 +8178,7 @@ function idCss(id){return `hsl(${hue(id)},70%,70%)`;}
 async function sbClient(){if(NET.sb)return NET.sb;const m=await import(SB_LIB);NET.sb=m.createClient(SB_URL,SB_KEY,{realtime:{params:{eventsPerSecond:40},worker:true,heartbeatIntervalMs:15000},auth:{persistSession:false,autoRefreshToken:false}});return NET.sb;}
 async function freshChannel(name,opts){const sb=await sbClient();try{for(const c of (sb.getChannels?sb.getChannels():[]))if(c.topic==='realtime:'+name||c.subTopic===name)await sb.removeChannel(c);}catch(e){console.warn(e);}return sb.channel(name,opts);}
 function subscribeCh(ch){return new Promise((res,rej)=>{let done=false;const to=setTimeout(()=>{if(!done){done=true;rej(new Error('timeout'));}},10000);ch.subscribe((st,err)=>{const tn=String(ch.topic||'').replace('realtime:','').replace(/^gw-/,'').slice(0,22);if(st!=='SUBSCRIBED'||!done||ch._gwErr)netLog(`${tn}: ${st}${st==='SUBSCRIBED'&&ch._gwErr?' again (reconnected)':''}${err?' '+(err.message||err):''}`);ch._gwErr=st!=='SUBSCRIBED';if(done)return;if(st==='SUBSCRIBED'){done=true;clearTimeout(to);res(ch);}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED'){done=true;clearTimeout(to);rej(new Error(st));}});});}
-const GAME_VERSION='396';const UPDATE_NAME='The Random Fun Update';
+const GAME_VERSION='397';const UPDATE_NAME='The Random Fun Update';
 const NETLOG=[];function netLog(m){const t=new Date();NETLOG.push(`${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')} ${m}`);if(NETLOG.length>14)NETLOG.shift();for(const id of ['netlog','netlog2']){const el=document.getElementById(id);if(el)el.textContent=NETLOG.join('\n');}}
 function bsend0(ch,ev,payload){if(!ch)return;try{const r=ch.send({type:'broadcast',event:ev,payload});if(r&&r.then)r.then(res=>{if(res&&res!=='ok'&&ev!=='s'&&ev!=='st')netLog(`send ${ev} → ${res}`);}).catch(e=>netLog(`send ${ev} failed ${e&&e.message||e}`));}catch(e){netLog(`send ${ev} threw ${e&&e.message||e}`);}}
 let CK_SEQ=0;
@@ -9534,7 +9547,7 @@ function ceT0(){return tapeT0();}
 function ceT1(){const S=TAPE.S;return S.length?S[S.length-1][0]:0;}
 function ceF(T){return tapeFrameAt(T-tapeT0());}
 function ceId(){return CE.P.nid++;}
-function ceNew(){const a=ceT0(),b=ceT1();CE.P={in:a,out:b,kf:[],fol:[],fx:[],music:null,sfxVol:1,res:720,nid:1,done:false};CE.sel=null;CE.undo.length=0;CE.redo.length=0;CE.t=Math.max(a,b-8);CE.nodes.clear();CE.songs.clear();ceTlFit();}
+function ceNew(){const a=ceT0(),b=ceT1();CE.P={in:a,out:b,kf:[],fol:[],fx:[],music:null,sfxVol:1,res:720,nid:1,done:false};CE.sel=null;CE.undo.length=0;CE.redo.length=0;CE.t=Math.max(a,b-8);CE.nodes.clear();for(const k of [...CE.songs.keys()])if(typeof k!=='string')CE.songs.delete(k);ceTlFit();}
 function cePush(){CE.undo.push(JSON.stringify(CE.P));if(CE.undo.length>80)CE.undo.shift();CE.redo.length=0;CE.P.done=false;}
 function ceUndo(redo){const from=redo?CE.redo:CE.undo,to=redo?CE.undo:CE.redo;if(!from.length){sfx0('error',.3);return;}to.push(JSON.stringify(CE.P));CE.P=JSON.parse(from.pop());ceSelFix();ceMusicSync(true);ceUi();sfx0('ui');}
 function ceSelFix(){const s=CE.sel;if(s&&!ceItem(s))CE.sel=null;}
@@ -9546,7 +9559,7 @@ function ceSeek(T,keep){CE.t=ceClampT(T);CE.uiT=0;if(CE.playing&&!keep)cePlay(fa
 /* ---- cameras ---- */
 function tapeCamQ(ff,out){const S=TAPE.S,n=S.length;if(!n)return out.identity();const x=clamp(ff-TAPE.f0,0,n-1),i=Math.floor(x),a=x-i,A=S[i];out.set(A[9],A[10],A[11],A[12]);if(a>0&&i+1<n){const B=S[i+1];_cq2.set(B[9],B[10],B[11],B[12]);out.slerp(_cq2,a);}return out.normalize();}
 function ceKeyCam(T,out){const K=CE.P.kf,n=K.length;if(!n)return false;let A,B=null,u=0,i=0;
-  if(T<=K[0].t)A=K[0];else if(T>=K[n-1].t)A=K[n-1];else{while(i+1<n&&K[i+1].t<=T)i++;A=K[i];B=K[i+1];u=(T-A.t)/Math.max(1e-6,B.t-A.t);}
+  if(T<=K[0].t){if(K[0].auto&&T<K[0].t)return false;A=K[0];}else if(T>=K[n-1].t){if(K[n-1].auto&&T>K[n-1].t)return false;A=K[n-1];}else{while(i+1<n&&K[i+1].t<=T)i++;A=K[i];B=K[i+1];u=(T-A.t)/Math.max(1e-6,B.t-A.t);}
   if(!B||B.ease==='cut'){out.p.fromArray(A.p);out.q.fromArray(A.q);out.fov=A.fov;return true;}
   if(B.ease==='glide'){const P0=K[i-1]||A,P3=K[i+2]||B,u2=u*u,u3=u2*u;for(let k=0;k<3;k++){const p0=P0.p[k],p1=A.p[k],p2=B.p[k],p3=P3.p[k];_cv1.setComponent(k,.5*((2*p1)+(-p0+p2)*u+(2*p0-5*p1+4*p2-p3)*u2+(-p0+3*p1-3*p2+p3)*u3));}out.p.copy(_cv1);
     out.q.fromArray(A.q).slerp(_cq1.fromArray(B.q),u);out.fov=lerp(A.fov,B.fov,u);return true;}
@@ -9564,6 +9577,10 @@ function ceAutoCam(T,out){const ff=ceF(T),me=tapeRefAt(TAPE.me,ff),seat=tapeRefA
   if(me&&me.parent){ceNodePose(me,_cv1,_cq2);_cv1.y+=seat?1.3:1.35;}else _cv1.set(tapeScalar(ff,6),tapeScalar(ff,7),tapeScalar(ff,8));
   _cv2.y=clamp(_cv2.y,-.55,.3);_cv2.normalize();const d=seat?7.5:4.4;out.p.copy(_cv1).addScaledVector(_cv2,-d);out.p.y+=seat?1.6:.7;
   try{const g=heightAt(out.p.x,out.p.z)+.35;if(out.p.y<g)out.p.y=g;}catch(e){}ceLookQ(out.p,_cv1,out.q);out.fov=72;return true;}
+function ceBaseCam(T,out){const c=ceFolAt(T);if(!(c&&ceFolCam(c,T,out)))ceAutoCam(T,out);return out;}
+function ceAutoDirty(){if(CE.P)for(const k of CE.P.kf)if(k.auto)k.dirty=true;}
+/* "as it is" keyframes copy whatever the camera was already doing at their moment; look that moment up again whenever something changed */
+function ceAutoFix(){const o=CE.tmpCam||(CE.tmpCam={p:new THREE.Vector3(),q:new THREE.Quaternion(),fov:72});for(const k of CE.P.kf){if(!k.auto||!k.dirty)continue;k.dirty=false;tapeApply(ceF(k.t));try{ceBaseCam(k.t,o);k.p=o.p.toArray();k.q=o.q.toArray();k.fov=Math.round(o.fov);}catch(e){}finally{tapeRestore();}}}
 function ceCamAt(T,out,raw){let ok=false;const c=ceFolAt(T);if(c)ok=ceFolCam(c,T,out);if(!ok)ok=ceKeyCam(T,out);if(!ok)ceAutoCam(T,out);if(raw)return out;
   const W=CE.fxw;if(W.shake>0){const a=W.shake,t=T*31;out.p.x+=Math.sin(t*1.3)*Math.sin(t*.71+1)*.07*a;out.p.y+=Math.sin(t*1.7+2)*Math.sin(t*.53)*.07*a;
     _ce1.set(Math.sin(t*1.9)*Math.sin(t*.47+.6)*.03*a,Math.sin(t*1.5+1.4)*Math.sin(t*.61)*.03*a,Math.sin(t*2.3+.3)*Math.sin(t*.37+2)*.035*a);out.q.multiply(_cq2.setFromEuler(_ce1));}
@@ -9608,7 +9625,7 @@ function ceSetCam(p,q,fov){camera.position.copy(p);camera.quaternion.copy(q);cam
 function clipFrame(dt){const P=CE.P;if(!P){renderer.render(scene,camera);return;}
   ceLayout();ceFly(dt);cePlayTick();const T=CE.t=ceClampT(CE.t),ff=ceF(T);
   const sv={dayT,time,sk:storm.k,ls:lastSunY,et:envTimer,gt:grassU.uTime.value,exp:renderer.toneMappingExposure,fog:scene.fog.density,sm:renderer.shadowMap.autoUpdate};const kids=[];for(const c of camera.children)if(c.visible){kids.push(c);c.visible=false;}
-  tapeSkips();tapeApply(ff);
+  tapeSkips();try{ceAutoFix();}catch(e){}tapeApply(ff);
   try{if(CE.todo.length){const L=CE.todo.splice(0);for(const f of L)try{f();}catch(e){console.warn(e);}}
     ceFxAt(T);const clipView=CE.view==='clip'||!!CE.exp;ceCamAt(T,CE.cam);
     if(clipView)ceSetCam(CE.cam.p,CE.cam.q,CE.cam.fov);else ceSetCam(CE.fc.p,ceFcQuat(_cq1),CE.fc.fov);
@@ -9637,7 +9654,7 @@ function clipOpen(){if(CE.open)return;if(!started){return;}if(CR.edit){toast('Le
   {const d=_cv1.set(0,0,-1).applyQuaternion(camera.quaternion);CE.fc.p.copy(camera.position).addScaledVector(d,-5);CE.fc.p.y+=1.6;try{CE.fc.p.y=Math.max(CE.fc.p.y,heightAt(CE.fc.p.x,CE.fc.p.z)+.6);}catch(e){}_ce1.setFromQuaternion(camera.quaternion,'YXZ');CE.fc.yaw=_ce1.y;CE.fc.pitch=clamp(_ce1.x-.12,-1.5,1.5);CE.fc.fov=72;}
   ceAudioOn();ceMusicSync();ceBuildOnce();ceTlFit();ceUi();canvas.focus();
   if(!CE.seen){CE.seen=true;ceHint(TOUCH?'This is the last 5 minutes. Drag the white line to find your best moment. Drag to look around, two fingers to move.':'This is the last 5 minutes. Drag the white line to find your best moment, and fly the camera with right mouse + W A S D.',7000);}}
-function clipClose(){if(!CE.open)return;if(CE.exp)ceExportCancel();cePlay(false);CE.open=false;CE.keys.clear();CE.drag=null;document.body.classList.remove('clip-edit');$('clipui').hidden=true;ceAudioOff();tapeFreeRevived();
+function clipClose(){if(!CE.open)return;if(CE.exp)ceExportCancel();cePlay(false);try{ceSongMenu(false);}catch(e){}CE.open=false;CE.keys.clear();CE.drag=null;document.body.classList.remove('clip-edit');$('clipui').hidden=true;ceAudioOff();tapeFreeRevived();
   const st=canvas.style;st.left=st.top=st.width=st.height=st.right=st.bottom='';renderer.setPixelRatio(Math.min(devicePixelRatio,TOUCH?1.25:1.5));renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.fov=72;camera.updateProjectionMatrix();
   CE.vw=0;canvas.style.cursor='';try{if(CE.envGen||CE.envDirty)lastSunY=-9;CE.envGen=CE.envDirty=false;updateSky(0);}catch(e){}
   $('pause').hidden=false;resumeGame();} // if the browser will not lock the mouse again right away, the pause menu is there to click Resume
@@ -9665,7 +9682,7 @@ function ceOvBuild(){if(CE3.ov)return;const S=CE3.ov=new THREE.Scene();
   CE3.fIcon=ceCamIcon(0x4ad0ff);CE3.fIcon.userData.sel={k:'fol',id:0};S.add(CE3.fIcon);}
 /* what the gizmo is holding: {rot:bool, get(p,q), set(p,q)} */
 function ceGizTarget(){const s=CE.sel,it=ceItem(s);if(!it||CE.view!=='free'||CE.exp)return null;
-  if(s.k==='kf')return {rot:true,get(p,q){p.fromArray(it.p);q.fromArray(it.q);},set(p,q){p.toArray(it.p);q.toArray(it.q);}};
+  if(s.k==='kf')return {rot:true,get(p,q){p.fromArray(it.p);q.fromArray(it.q);},set(p,q){p.toArray(it.p);q.toArray(it.q);it.auto=false;}};
   if(s.k==='fol'){if(!CE3.fpose.ok||CE.t<it.t0||CE.t>it.t1)return null;const R=CE3.ref;
     if(it.mode==='watch')return {rot:false,get(p,q){p.fromArray(it.off);q.copy(CE3.fpose.q);},set(p){p.toArray(it.off);}};
     return {rot:true,get(p,q){p.copy(CE3.fpose.p);q.copy(CE3.fpose.q);},set(p,q){const iq=_cq2.copy(R.q).invert();_cv4.copy(p).sub(R.p).applyQuaternion(iq).toArray(it.off);iq.multiply(q).normalize().toArray(it.rot);}};}
@@ -9858,7 +9875,7 @@ function ceTlDraw(){const cv=TL.cv;if(!cv||!CE.P)return;const r=cv.getBoundingCl
   // camera keyframes
   {const [y,hh]=R.cam,my=y+hh/2,K=P.kf;x.lineWidth=2;for(let i=0;i+1<K.length;i++){const A=tlX(K[i].t),B=tlX(K[i+1].t);if(B<G||A>w)continue;const cut=K[i+1].ease==='cut';x.strokeStyle=cut?'rgba(242,169,59,.3)':'rgba(242,169,59,.75)';x.setLineDash(cut?[3,4]:[]);x.beginPath();x.moveTo(A,my);x.lineTo(B,my);x.stroke();x.setLineDash([]);
       if(B-A>64){x.fillStyle=TL_C.dim;x.font='500 10px "IBM Plex Sans Condensed",system-ui,sans-serif';x.textAlign='center';const nm=(CE_EASES.find(e=>e[0]===K[i+1].ease)||['','?'])[1];x.fillText(nm,(A+B)/2,y+hh-5);x.textAlign='left';}}
-    for(const k of K){const X=tlX(k.t);if(X<G-10||X>w+10)continue;const sel=CE.sel&&CE.sel.k==='kf'&&CE.sel.id===k.id,on=isH('kf',k.id);const s=sel?8:7;x.beginPath();x.moveTo(X,my-s-2);x.lineTo(X+s,my-2);x.lineTo(X,my+s-2);x.lineTo(X-s,my-2);x.closePath();x.fillStyle=sel?'#fff3c8':on?'#ffe38a':TL_C.glue;x.fill();if(sel){x.strokeStyle='#fff';x.lineWidth=1.5;x.stroke();}
+    for(const k of K){const X=tlX(k.t);if(X<G-10||X>w+10)continue;const sel=CE.sel&&CE.sel.k==='kf'&&CE.sel.id===k.id,on=isH('kf',k.id);const s=sel?8:7;x.beginPath();x.moveTo(X,my-s-2);x.lineTo(X+s,my-2);x.lineTo(X,my+s-2);x.lineTo(X-s,my-2);x.closePath();x.fillStyle=k.auto?TL_C.bg:sel?'#fff3c8':on?'#ffe38a':TL_C.glue;x.fill();if(sel||k.auto){x.strokeStyle=sel?'#fff':on?'#ffe38a':TL_C.glue;x.lineWidth=k.auto?2:1.5;x.stroke();}
       H.push({k:'kf',id:k.id,x0:X-9,x1:X+9,y0:y,y1:y+hh,part:'body',cur:'ew-resize'});}
     if(!K.length){x.fillStyle='rgba(143,135,118,.8)';x.font='500 11px "IBM Plex Sans Condensed",system-ui,sans-serif';x.fillText('No keyframes yet, so the camera follows behind you. Fly somewhere and press K to make your own shot.',Math.max(G+8,xi+8),my);}}
   // clips: follow cams, effects, music
@@ -9872,8 +9889,9 @@ function ceTlDraw(){const cv=TL.cv;if(!cv||!CE.P)return;const r=cv.getBoundingCl
   {const [y,hh]=R.mus,M=P.music,S=M&&CE.songs.get(M.sid);if(S){const A=tlX(M.t),B=tlX(M.t+S.buf.duration);const sel=CE.sel&&CE.sel.k==='mus',on=isH('mus',0);tlRR(x,A,y+2,B-A,hh-4,4);x.fillStyle=sel?'rgba(242,169,59,.26)':on?'rgba(242,169,59,.2)':'rgba(242,169,59,.13)';x.fill();x.strokeStyle=sel?'#fff':'rgba(242,169,59,.6)';x.lineWidth=sel?1.5:1;x.stroke();
       const wv=tlWave(G,w-G,hh-8);if(wv){x.save();x.beginPath();x.rect(Math.max(G,A),y+2,Math.min(w,B)-Math.max(G,A),hh-4);x.clip();x.globalAlpha=.95;x.drawImage(wv,G,y+4,w-G,hh-8);x.restore();}
       x.fillStyle=TL_C.ink;x.font='700 11px "IBM Plex Sans Condensed",system-ui,sans-serif';x.save();x.beginPath();x.rect(Math.max(G,A),y,Math.min(w,B)-Math.max(G,A),hh);x.clip();x.shadowColor='#000';x.shadowBlur=4;x.fillText(S.name,Math.max(A+7,G+6),y+11);x.restore();
+      if(S.drop!=null&&S.lib!=='lofi'){const X=Math.round(tlX(M.t+S.drop));if(X>G&&X<w){x.fillStyle='#fff';x.fillRect(X,y+2,1.5,hh-4);x.beginPath();x.moveTo(X+1,y+hh-13);x.lineTo(X+33,y+hh-13);x.lineTo(X+33,y+hh-3);x.lineTo(X+1,y+hh-3);x.closePath();x.fill();x.fillStyle='#1a1206';x.font='700 9px "IBM Plex Mono",ui-monospace,monospace';x.fillText('DROP',X+5,y+hh-7.5);}}
       H.push({k:'mus',id:0,x0:A,x1:B,y0:y,y1:y+hh,part:'body',cur:'grab'});}
-    else{x.fillStyle='rgba(143,135,118,.6)';x.font='500 11px "IBM Plex Sans Condensed",system-ui,sans-serif';x.fillText('Add a song, then slide it so the drop lands on your best moment',Math.max(G+8,xi+8),y+hh/2);}}
+    else{x.fillStyle='rgba(143,135,118,.6)';x.font='500 11px "IBM Plex Sans Condensed",system-ui,sans-serif';x.fillText('Press + Song to pick one of the built-in songs (or your own file), then slide it so the drop lands on your best moment',Math.max(G+8,xi+8),y+hh/2);}}
   // snap guide + playhead
   if(dg&&dg.snapX!=null){x.strokeStyle='rgba(255,255,255,.5)';x.setLineDash([2,3]);x.beginPath();x.moveTo(dg.snapX+.5,22);x.lineTo(dg.snapX+.5,h);x.stroke();x.setLineDash([]);}
   {const X=Math.round(tlX(CE.t))+.5;x.strokeStyle='#fff';x.lineWidth=1;x.beginPath();x.moveTo(X,0);x.lineTo(X,h-R.sb[1]);x.stroke();x.fillStyle='#fff';x.beginPath();x.moveTo(X-6,0);x.lineTo(X+6,0);x.lineTo(X+6,7);x.lineTo(X,13);x.lineTo(X-6,7);x.closePath();x.fill();}
@@ -9902,12 +9920,12 @@ function tlMove(e){const [px,py]=tlPos(e);TL.ptr.x=px;TL.ptr.y=py;TL.alt=e.altKe
   const dT=tlT(px)-D.grab,a0=ceT0(),a1=ceT1();
   if(D.k==='trim'){let T=tlSnap(clamp(tlT(px),a0,a1),null);if(D.id==='in')P.in=Math.min(T,P.out-.25);else P.out=Math.max(T,P.in+.25);return;}
   const it=ceItem(D.k==='mus'?{k:'mus'}:D);if(!it)return;
-  if(D.k==='kf'){it.t=clamp(tlSnap(D.o.t+dT,D),a0,a1);for(const k of P.kf)if(k!==it&&Math.abs(k.t-it.t)<.02)it.t=k.t+.02;P.kf.sort((a,b)=>a.t-b.t);return;}
-  if(D.k==='mus'){const S=CE.songs.get(it.sid),dur=S?S.buf.duration:0;let T=D.o.t+dT;const s=tlSnap(T,D);if(s!==T)T=s;it.t=clamp(T,a0-dur+.2,a1-.2);ceMusicSync(true);return;}
+  if(D.k==='kf'){if(it.auto)it.dirty=true;it.t=clamp(tlSnap(D.o.t+dT,D),a0,a1);for(const k of P.kf)if(k!==it&&Math.abs(k.t-it.t)<.02)it.t=k.t+.02;P.kf.sort((a,b)=>a.t-b.t);return;}
+  if(D.k==='mus'){const S=CE.songs.get(it.sid),dur=S?S.buf.duration:0;let T=D.o.t+dT;const dp=S&&S.drop!=null?S.drop:null;const sd=dp!=null?tlSnap(T+dp,D):T+(dp||0);if(dp!=null&&sd!==T+dp)T=sd-dp;else{const s=tlSnap(T,D);if(s!==T)T=s;}it.t=clamp(T,a0-dur+.2,a1-.2);ceMusicSync(true);return;}
   const len=D.o.t1-D.o.t0;
   if(D.part==='l'){it.t0=clamp(tlSnap(D.o.t0+dT,D),a0,it.t1-.1);}else if(D.part==='r'){it.t1=clamp(tlSnap(D.o.t1+dT,D),it.t0+.1,a1);}
   else{let T=D.o.t0+dT;const s0=tlSnap(T,D);if(s0!==T)T=s0;else{const s1=tlSnap(T+len,D);if(s1!==T+len)T=s1-len;}T=clamp(T,a0,a1-len);it.t0=T;it.t1=T+len;}}
-function tlUp(e){const D=TL.drag;TL.drag=null;try{TL.cv.releasePointerCapture(e.pointerId);}catch(er){}TL.cv.style.cursor='';if(D&&D.moved)ceUi();}
+function tlUp(e){const D=TL.drag;TL.drag=null;if(D&&D.moved)ceAutoDirty();try{TL.cv.releasePointerCapture(e.pointerId);}catch(er){}TL.cv.style.cursor='';if(D&&D.moved)ceUi();}
 function tlAuto(){const D=TL.drag;if(!D||D.k==='pan'||D.k==='sb'||(D.k!=='scrub'&&!D.moved))return;const x=TL.ptr.x,m=28;let v=0;if(x>TL.w-m)v=(x-(TL.w-m))/m;else if(x<TL.gut+m)v=-((TL.gut+m)-x)/m;if(!v)return;const t0=CE.tl.t0;CE.tl.t0+=clamp(v,-2,2)*14/CE.tl.pps;tlClampView();if(D.grab!=null)D.grab-=0;}
 function tlInit(cv){TL.cv=cv;TL.x=cv.getContext('2d');cv.addEventListener('pointerdown',e=>{e.preventDefault();tlDown(e);});cv.addEventListener('pointermove',tlMove);cv.addEventListener('pointerup',tlUp);cv.addEventListener('pointercancel',tlUp);cv.addEventListener('pointerleave',()=>{if(!TL.drag){TL.hover=null;}});cv.addEventListener('contextmenu',e=>e.preventDefault());
   cv.addEventListener('wheel',e=>{e.preventDefault();const [px]=tlPos(e);if(e.shiftKey||Math.abs(e.deltaX)>Math.abs(e.deltaY)){CE.tl.t0+=(e.deltaX||e.deltaY)/CE.tl.pps;tlClampView();}else tlZoom(Math.exp(-e.deltaY*.0022),Math.max(TL.gut,px));},{passive:false});
@@ -9919,8 +9937,9 @@ function ceModalClose(){$('cemodal').hidden=true;CE.modalOk=null;}
 function ceFovOf(v){return Math.round(110-v*.95);}function ceFovTo(f){return clamp(Math.round((110-f)/.95),0,100);}
 function ceEaseSvg(k){const f=CE_EASE[k];let d='';if(k==='cut')d='M2 17H16V4H28';else for(let i=0;i<=20;i++){const u=i/20,e=clamp(f(u),-.25,1.25);d+=(i?'L':'M')+(2+u*26).toFixed(1)+' '+(17-e*13).toFixed(1);}return `<svg viewBox="0 0 30 20"><path d="${d}"/></svg>`;}
 function ceRow(lab,key,min,max,step,val,txt){return `<div class="lab">${lab}</div><div class="row"><input type="range" class="slider" data-rng="${key}" min="${min}" max="${max}" step="${step}" value="${val}"><b data-rv="${key}">${txt}</b></div>`;}
-function ceUi(){if(!CE.open||!CE.P)return;const P=CE.P,s=CE.sel,it=ceItem(s),el=$('ceside');let h='';
+function ceUi(){if(!CE.open||!CE.P)return;ceAutoDirty();const P=CE.P,s=CE.sel,it=ceItem(s),el=$('ceside');let h='';
   if(it&&s.k==='kf'){const i=P.kf.indexOf(it);h=`<h3>Camera keyframe</h3><p class="sub">Shot ${i+1} of ${P.kf.length}. Drag the arrows and rings in the world to move and turn it, or drag its diamond on the timeline to change when it happens.</p>`;
+    if(it.auto)h+=`<p class="tip" style="margin:0 0 8px;color:var(--glue)">This keyframe copies the camera as it already was at this moment (it follows along if you drag it). ${i===0?'Before it, the camera carries on as normal. After it, the camera glides to your next keyframe.':i===P.kf.length-1?'After it, the camera carries on as normal.':''} Move it with the arrows and it becomes a normal keyframe.</p>`;
     h+=`<div class="lab">How the camera gets here</div>`+(i===0?`<p class="tip" style="margin-top:0">This is the first shot, so the camera just starts here. The style matters from the second keyframe on.</p>`:'')+`<div class="eases">`+CE_EASES.map(e=>`<button data-act="ease" data-v="${e[0]}" aria-pressed="${it.ease===e[0]}" title="${e[2]}">${ceEaseSvg(e[0])}${e[1]}</button>`).join('')+`</div>`;
     h+=ceRow('Zoom','kfov',0,100,1,ceFovTo(it.fov),it.fov+'°')+`<div class="btns"><button class="mini" data-act="kfview" title="Move this keyframe to where the free cam is right now">Use my view</button><button class="mini" data-act="kfgo" title="Fly the free cam to this shot">Look through it</button><button class="mini danger" data-act="del">Delete</button></div>`;}
   else if(it&&s.k==='fol'){h=`<h3>Follow cam</h3><p class="sub">Locks the camera onto something for this part of the clip. Drag its ends on the timeline to choose the part.</p><div class="lab">Sticks to</div><div class="seg">${[['me','Me'],['seat','My vehicle'],['pick',it.target==='pick'&&it.nm?esc(it.nm):'Pick…']].map(t=>`<button data-act="ftarget" data-v="${t[0]}" aria-pressed="${it.target===t[0]}">${t[1]}</button>`).join('')}</div>`
@@ -9933,7 +9952,7 @@ function ceUi(){if(!CE.open||!CE.P)return;const P=CE.P,s=CE.sel,it=ceItem(s),el=
     if(D.cam)h+=`<p class="tip">This one moves the camera itself, so it works with keyframes and follow cams.</p>`;
     h+=`<div class="btns"><button class="mini danger" data-act="del">Delete</button></div>`;}
   else if(it&&s.k==='mus'){const S=CE.songs.get(it.sid);h=`<h3>Song</h3><p class="sub">${S?esc(S.name):''}</p><p class="tip" style="margin-top:0">Drag the song left and right on the timeline. Line up the big part of the waveform (the drop) with the white line, where your best moment is.</p>`
-      +ceRow('Song volume','mvol',0,1.5,.05,it.vol,Math.round(it.vol*100)+'%')+ceRow('Game sounds','svol',0,1.5,.05,P.sfxVol,Math.round(P.sfxVol*100)+'%')+`<div class="btns"><button class="mini" data-act="musnew">Change song</button><button class="mini danger" data-act="del">Remove</button></div>`;}
+      +ceRow('Song volume','mvol',0,1.5,.05,it.vol,Math.round(it.vol*100)+'%')+ceRow('Game sounds','svol',0,1.5,.05,P.sfxVol,Math.round(P.sfxVol*100)+'%')+(S&&S.drop!=null&&S.lib!=='lofi'?`<p class="tip">The little DROP flag on the song shows where the drop is.</p>`:'')+`<div class="btns">`+(S&&S.drop!=null&&S.lib!=='lofi'?`<button class="mini" data-act="musdrop" title="Slide the song so its drop happens at the white line">Put the drop on the white line</button>`:'')+`<button class="mini" data-act="musnew">Change song</button><button class="mini danger" data-act="del">Remove</button></div>`;}
   else{h=`<h3>Your clip</h3><p class="sub">Clip length <b data-rv="len" style="color:var(--ink)"></b>. The game remembered the last <b style="color:var(--ink)">${tlFmt(tapeDur())}</b>.</p>`+ceRow('Game sounds','svol',0,1.5,.05,P.sfxVol,Math.round(P.sfxVol*100)+'%')
       +`<div class="lab">Video quality</div><div class="seg">${[[720,'720p'],[1080,'1080p']].map(t=>`<button data-act="res" data-v="${t[0]}" aria-pressed="${P.res===t[0]}">${t[1]}</button>`).join('')}</div>`
       +`<ul class="tips"><li><b>Trim:</b> drag the orange brackets on the REPLAY row, or press I and O at the white line.</li><li><b>Camera:</b> fly somewhere, then press K to drop a keyframe. The camera moves from one keyframe to the next.</li><li><b>Follow cam, effects, song:</b> add them with the + buttons, then drag them on the timeline.</li><li><b>Click</b> anything to select it. Delete removes it. Ctrl+Z undoes.</li><li><b>Save clip</b> makes the video and puts it in the Photos app on your laptop or Gaming PC.</li></ul>`;}
@@ -9949,8 +9968,12 @@ function ceUiTick(){if(!CE.open||!CE.P)return;const P=CE.P,free=CE.view==='free'
 /* ---- adding and removing things ---- */
 function ceRoom(t0,d){const a=ceT0(),b=ceT1();let s=clamp(t0,a,Math.max(a,b-.2));let e=Math.min(b,s+d);if(e-s<Math.min(d,.5)){s=Math.max(a,e-d);}return [s,e];}
 function ceAddKey(){const P=CE.P;cePush();let p,q,fov;if(CE.view==='free'){p=CE.fc.p.toArray();q=ceFcQuat(new THREE.Quaternion()).toArray();fov=CE.fc.fov;}else{p=CE.cam.p.toArray();q=CE.cam.q.toArray();fov=Math.round(CE.cam.fov);}
-  let k=P.kf.find(k=>Math.abs(k.t-CE.t)<.04);if(k){k.p=p;k.q=q;k.fov=fov;ceHint('Keyframe updated to this view.');}else{k={id:ceId(),t:CE.t,p,q,fov,ease:'smooth'};P.kf.push(k);P.kf.sort((a,b)=>a.t-b.t);ceHint(P.kf.length===1?'First keyframe. Move the white line, fly somewhere else and press K again: the camera will travel between them.':'Keyframe added. Pick how the camera gets here in the panel on the right.');}
+  let k=P.kf.find(k=>Math.abs(k.t-CE.t)<.04);if(k){k.p=p;k.q=q;k.fov=fov;k.auto=false;ceHint('Keyframe updated to this view.');}else{k={id:ceId(),t:CE.t,p,q,fov,ease:'smooth'};P.kf.push(k);P.kf.sort((a,b)=>a.t-b.t);ceHint(P.kf.length===1?'First keyframe. Move the white line, fly somewhere else and press K again: the camera will travel between them.':'Keyframe added. Pick how the camera gets here in the panel on the right.');}
   sfx0('snap',.5);ceSel('kf',k.id);}
+/* a keyframe that is automatically what the camera already is at the white line, so the camera can glide from that view into your next keyframe */
+function ceAddKeyHere(){cePush();CE.todo.push(()=>{const P=CE.P,K=P.kf,T=CE.t,o={p:new THREE.Vector3(),q:new THREE.Quaternion(),fov:72};ceCamAt(T,o,true);const inside=K.length>1&&T>K[0].t+.04&&T<K[K.length-1].t-.04;
+    let k=K.find(k=>Math.abs(k.t-T)<.04);if(!k){k={id:ceId(),t:T,ease:'smooth'};K.push(k);}else if(!k.auto){ceHint('There is already a keyframe here.');ceSel('kf',k.id);return;}k.p=o.p.toArray();k.q=o.q.toArray();k.fov=Math.round(o.fov);k.auto=!inside;k.dirty=false;K.sort((a,b)=>a.t-b.t);sfx0('snap',.5);ceSel('kf',k.id);
+    ceHint(inside?'Keyframe added right where the camera already was.':'Keyframe added that copies the camera as it is here. Now move the white line, fly to a new view and press K: the camera will glide from this view to that one.',7000);});}
 function ceFolFromView(c){const n=ceFolNode(c,CE.t);if(!n)return;ceNodePose(n,_cv1,_cq1);if(c.mode==='watch'){c.off=CE.fc.p.toArray();c.fov=CE.fc.fov;return;}if(c.mode==='level')ceLevelQ(_cq1);const iq=_cq1.clone().invert();c.off=CE.fc.p.clone().sub(_cv1).applyQuaternion(iq).toArray();c.rot=iq.multiply(ceFcQuat(new THREE.Quaternion())).normalize().toArray();c.fov=CE.fc.fov;}
 function ceAddFol(){const P=CE.P;cePush();const [t0,t1]=ceRoom(CE.t,4);const c={id:ceId(),t0,t1,target:'me',mode:'stuck',off:[1.5,1.5,3.4],rot:new THREE.Quaternion().setFromEuler(new THREE.Euler(-.2,.38,0,'YXZ')).toArray(),fov:72,aim:1};P.fol.push(c);if(CE.t<t0||CE.t>t1)CE.t=t0;
   CE.todo.push(()=>{const ff=ceF(CE.t);if(tapeRefAt(TAPE.seat,ff)){c.target='seat';c.off=[2.2,.9,3.2];c.rot=new THREE.Quaternion().setFromEuler(new THREE.Euler(-.08,.5,0,'YXZ')).toArray();}const n=ceFolNode(c,CE.t);if(n&&CE.view==='free'){ceNodePose(n,_cv1,_cq1);if(CE.fc.p.distanceTo(_cv1)<40)ceFolFromView(c);}ceUi();});
@@ -9971,11 +9994,11 @@ async function ceLoadSong(file){if(!file)return;if(!AC){ceHint('Sound is not rea
   catch(e){console.warn('song',e);ceHint('That file could not be opened as a song. Try an MP3, WAV, OGG or M4A file.');sfx0('error',.4);}}
 /* ---- wiring (once) ---- */
 function ceBuildOnce(){if(CE.built)return;CE.built=true;CE.todo=CE.todo||[];tlInit($('cetlcv'));const on=(id,fn)=>$(id).addEventListener('click',e=>{if(CE.exp)return;fn(e);});
-  $('clipui').addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button');if(b)b.blur();if(!$('cefxmenu').hidden&&!e.target.closest('#cefxmenu')&&!e.target.closest('#ceaddfx'))$('cefxmenu').hidden=true;});
+  $('clipui').addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button');if(b)b.blur();if(!$('cefxmenu').hidden&&!e.target.closest('#cefxmenu')&&!e.target.closest('#ceaddfx'))$('cefxmenu').hidden=true;if(!$('cesongmenu').hidden&&!e.target.closest('#cesongmenu')&&!e.target.closest('#ceaddmus')&&!e.target.closest('[data-act="musnew"]'))ceSongMenu(false);});
   $('ceviewseg').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&!CE.exp)ceView(b.dataset.v);});
   on('ceundo',()=>ceUndo(false));on('ceredo',()=>ceUndo(true));on('ceclose',()=>clipClose());on('cesave',()=>ceExportAsk());on('cehelpb',()=>ceHelp());
   on('cenew',()=>{const P=CE.P;if(!P.kf.length&&!P.fol.length&&!P.fx.length&&!P.music){ceNew();ceUi();return;}ceModal(`<h2>Start over?</h2><p>This throws away your keyframes, follow cams, effects and song, and starts a fresh clip from the last 5 minutes.</p><div class="btns"><button class="mini" data-m="x">Keep editing</button><button class="mini danger" data-m="ok">Start over</button></div>`);CE.modalOk=()=>{ceNew();ceUi();};});
-  on('ceplay',()=>cePlay(!CE.playing));on('ceaddkf',ceAddKey);on('ceaddfol',ceAddFol);on('ceaddmus',()=>$('cefile').click());
+  on('ceplay',()=>cePlay(!CE.playing));on('ceaddkf',ceAddKey);on('ceaddkh',ceAddKeyHere);on('ceaddfol',ceAddFol);on('ceaddmus',()=>ceSongMenu());ceSongWire();
   on('ceaddfx',()=>{const m=$('cefxmenu');if(!m.innerHTML)m.innerHTML=Object.entries(CE_FX).map(([k,D])=>`<button data-fx="${k}" style="border-left-color:${D.c}">${D.n}<span>${D.tip}</span></button>`).join('');m.hidden=!m.hidden;if(!m.hidden){const r=$('ceaddfx').getBoundingClientRect();m.style.left=clamp(r.left-120,8,innerWidth-m.offsetWidth-8)+'px';m.style.top=Math.max(8,r.top-m.offsetHeight-8)+'px';}});
   $('cefxmenu').addEventListener('click',e=>{const b=e.target.closest('[data-fx]');if(!b)return;$('cefxmenu').hidden=true;ceAddFx(b.dataset.fx);});
   $('cefile').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];e.target.value='';ceLoadSong(f);});
@@ -9988,12 +10011,12 @@ function ceBuildOnce(){if(CE.built)return;CE.built=true;CE.todo=CE.todo||[];tlIn
 function ceTrim(k){const P=CE.P;cePush();if(k==='in'){P.in=Math.min(CE.t,ceT1()-.25);if(P.out<P.in+.25)P.out=ceT1();}else{P.out=Math.max(CE.t,ceT0()+.25);if(P.in>P.out-.25)P.in=ceT0();}sfx0('ui');ceUi();}
 function ceRange(k,v){const P=CE.P,it=ceItem(CE.sel);const set=t=>{const b=$('ceside').querySelector(`[data-rv="${k}"]`);if(b)b.textContent=t;};
   if(k==='svol'){P.sfxVol=v;ceMusicSync();set(Math.round(v*100)+'%');return;}if(!it)return;
-  if(k==='kfov'||k==='ffov'){it.fov=ceFovOf(v);set(it.fov+'°');}else if(k==='amt'){it.amt=v;set(Math.round(v*100)+'%');}else if(k==='shsize'){it.size=v;set(Math.round(v*100)+'%');}else if(k==='mvol'){it.vol=v;ceMusicSync();set(Math.round(v*100)+'%');}}
+  if(k==='kfov'||k==='ffov'){it.fov=ceFovOf(v);if(k==='kfov')it.auto=false;set(it.fov+'°');}else if(k==='amt'){it.amt=v;set(Math.round(v*100)+'%');}else if(k==='shsize'){it.size=v;set(Math.round(v*100)+'%');}else if(k==='mvol'){it.vol=v;ceMusicSync();set(Math.round(v*100)+'%');}}
 function ceAct(a,v){const P=CE.P,s=CE.sel,it=ceItem(s);
   if(a==='res'){P.res=+v;ceUi();return;}if(!it)return;
   if(a==='del'){ceDel();return;}
   if(a==='ease'){cePush();it.ease=v;sfx0('ui');ceUi();return;}
-  if(a==='kfview'){cePush();it.p=CE.fc.p.toArray();it.q=ceFcQuat(new THREE.Quaternion()).toArray();it.fov=CE.fc.fov;if(CE.view!=='free')ceView('free');ceHint('Keyframe moved to your view.');ceUi();return;}
+  if(a==='kfview'){cePush();it.auto=false;it.p=CE.fc.p.toArray();it.q=ceFcQuat(new THREE.Quaternion()).toArray();it.fov=CE.fc.fov;if(CE.view!=='free')ceView('free');ceHint('Keyframe moved to your view.');ceUi();return;}
   if(a==='kfgo'){ceFcFrom(_cv1.fromArray(it.p),_cq1.fromArray(it.q),it.fov);ceSeek(it.t);if(CE.view!=='free')ceView('free');return;}
   if(a==='ftarget'){if(v==='pick'){CE.pickMode=true;if(CE.view!=='free')ceView('free');if(CE.t<it.t0||CE.t>it.t1)ceSeek(it.t0+.01);ceHint('Click a part, vehicle, creature or player in the world to follow it.',7000);ceUi();return;}cePush();CE.pickMode=false;
       CE.todo.push(()=>{const o={p:new THREE.Vector3(),q:new THREE.Quaternion(),fov:0};const had=ceFolCam(it,CE.t,o);it.target=v;const n=ceFolNode(it,CE.t);if(had&&n&&it.mode!=='watch'){ceNodePose(n,_cv1,_cq1);if(it.mode==='level')ceLevelQ(_cq1);const iq=_cq1.clone().invert();if(o.p.distanceTo(_cv1)<60){o.p.sub(_cv1).applyQuaternion(iq).toArray(it.off);iq.multiply(o.q).normalize().toArray(it.rot);}}ceUi();});return;}
@@ -10001,7 +10024,8 @@ function ceAct(a,v){const P=CE.P,s=CE.sel,it=ceItem(s);
   if(a==='fview'){cePush();if(CE.t<it.t0||CE.t>it.t1)ceSeek(it.t0+.01);if(CE.view!=='free')ceView('free');CE.todo.push(()=>{ceFolFromView(it);ceUi();});ceHint('Follow cam set to your view.');return;}
   if(a==='fgo'){if(CE.t<it.t0||CE.t>it.t1)ceSeek(it.t0+.01);CE.todo.push(()=>{const o={p:new THREE.Vector3(),q:new THREE.Quaternion(),fov:0};if(ceFolCam(it,CE.t,o))ceFcFrom(o.p,o.q,it.fov);});if(CE.view!=='free')ceView('free');return;}
   if(a==='shreset'){cePush();delete it.off;delete it.rot;it.size=1;ceUi();return;}
-  if(a==='musnew'){$('cefile').click();return;}}
+  if(a==='musnew'){ceSongMenu(true);return;}
+  if(a==='musdrop'){const S=CE.songs.get(it.sid);if(S&&S.drop!=null){cePush();it.t=clamp(CE.t-S.drop,ceT0()-S.buf.duration+.2,ceT1()-.2);ceMusicSync(true);sfx0('snap',.5);ceHint('The drop now lands on the white line.');}return;}}
 function ceHelp(){ceModal(`<h2>How it works</h2><ul><li><b>The replay.</b> The game always remembers the last 5 minutes. It remembers where everything was, not a video, so you can film it again from any angle.</li><li><b>Trim.</b> Drag the orange brackets on the REPLAY row to pick the part you want. The orange hills show how fast you were going, and the tall orange lines are explosions.</li><li><b>Free cam.</b> Hold the right mouse button and drag to look. W A S D to fly, Q and E for down and up, Shift to go faster.</li><li><b>Keyframes.</b> Fly to a nice spot and press K. Move the white line, fly somewhere else, press K again. The camera travels between them. Click a keyframe to pick how it moves: smooth, bounce, cut and more.</li><li><b>Follow cam.</b> A clip that sticks the camera to you or your vehicle. Drag the arrows on the blue camera to choose the spot.</li><li><b>Effects and song.</b> Add them with the + buttons and drag them on the timeline.</li><li><b>Clip cam</b> (press C) shows exactly what the video will look like.</li><li><b>Save clip</b> makes the video. Watch it in the Photos app on a laptop or Gaming PC, under Clips.</li></ul><div class="btns"><button class="mini on" data-m="x">Got it</button></div>`);}
 /* ---- keys ---- */
 addEventListener('keydown',e=>{if(e.code==='F8'&&!e.repeat&&started&&!(e.target&&e.target.tagName==='INPUT'&&!CE.open)){if(CE.open){e.preventDefault();e.stopImmediatePropagation();if(!CE.exp)clipClose();return;}if(!chatOpen&&(!invOpen||paused)&&!CR.edit&&!NET.poss){e.preventDefault();e.stopImmediatePropagation();clipOpen();return;}}
@@ -10013,9 +10037,9 @@ addEventListener('keydown',e=>{if(e.code==='F8'&&!e.repeat&&started&&!(e.target&
   if(['KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE','ShiftLeft','ShiftRight','AltLeft'].includes(c)){CE.keys.add(c);e.preventDefault();return;}
   if(['Tab','Space','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','Backspace','F5','F9'].includes(c))e.preventDefault();
   if(c==='ArrowLeft'||c==='ArrowRight'){ceSeek(CE.t+(c==='ArrowLeft'?-1:1)*(e.shiftKey?1:1/30));return;}if(e.repeat)return;
-  if(c==='Space')cePlay(!CE.playing);else if(c==='KeyK')ceAddKey();else if(c==='KeyC')ceView(CE.view==='free'?'clip':'free');else if(c==='KeyF')ceFind();else if(c==='KeyI')ceTrim('in');else if(c==='KeyO')ceTrim('out');
+  if(c==='Space')cePlay(!CE.playing);else if(c==='KeyK'){if(e.shiftKey)ceAddKeyHere();else ceAddKey();}else if(c==='KeyC')ceView(CE.view==='free'?'clip':'free');else if(c==='KeyF')ceFind();else if(c==='KeyI')ceTrim('in');else if(c==='KeyO')ceTrim('out');
   else if(c==='Delete'||c==='Backspace')ceDel();else if(c==='Home')ceSeek(CE.P.in);else if(c==='End')ceSeek(CE.P.out);
-  else if(c==='Escape'){if(!$('cefxmenu').hidden)$('cefxmenu').hidden=true;else if(CE.pickMode){CE.pickMode=false;ceUi();}else if(CE.sel)ceSel(null);}},true);
+  else if(c==='Escape'){if(!$('cesongmenu').hidden)ceSongMenu(false);else if(!$('cefxmenu').hidden)$('cefxmenu').hidden=true;else if(CE.pickMode){CE.pickMode=false;ceUi();}else if(CE.sel)ceSel(null);}},true);
 addEventListener('keyup',e=>{if(!CE.open)return;CE.keys.delete(e.code);e.stopImmediatePropagation();},true);
 addEventListener('blur',()=>{CE.keys.clear();});
 $('clipbtn').addEventListener('click',()=>clipOpen());
@@ -10054,7 +10078,7 @@ function ceExportAsk(){if(CE.exp)return;const P=CE.P,len=P.out-P.in;cePlay(false
 function ceFrames(n){return new Promise(r=>{const f=()=>{if(--n<=0)r();else requestAnimationFrame(f);};requestAnimationFrame(f);});}
 async function ceExportStart(){const P=CE.P,mime=ceMime();if(CE.exp||!mime)return;const h=P.res===1080?1080:720,w=h*16/9;const before=CE.t;
   const E=CE.exp={w,h,mime,chunks:[],state:'prep',len:P.out-P.in,thumbT:(before>P.in+.2&&before<P.out-.2)?before:P.in+(P.out-P.in)*.4,thumb:'',rec:null,dest:null,stream:null,cancel:false,view0:CE.view,t0:before};
-  CE.sel=null;$('cefxmenu').hidden=true;ceUi();ceModal(`<h2>Making your video</h2><p id="ceexpmsg">Getting ready…</p><div class="bar"><i id="ceexpbar"></i></div><p class="dimp">Keep this tab open and in front until it finishes. It takes as long as the clip.</p><div class="btns"><button class="mini" data-m="cancel">Cancel</button></div>`,true);CE.modalAct=k=>{if(k==='cancel')ceExportCancel();};
+  CE.sel=null;$('cefxmenu').hidden=true;ceSongMenu(false);ceUi();ceModal(`<h2>Making your video</h2><p id="ceexpmsg">Getting ready…</p><div class="bar"><i id="ceexpbar"></i></div><p class="dimp">Keep this tab open and in front until it finishes. It takes as long as the clip.</p><div class="btns"><button class="mini" data-m="cancel">Cancel</button></div>`,true);CE.modalAct=k=>{if(k==='cancel')ceExportCancel();};
   try{CE.t=P.in;await ceFrames(3);if(E.cancel)return;if(AC&&AC.state==='suspended')try{await AC.resume();}catch(e){}
     const vs=canvas.captureStream(60);const tracks=[...vs.getVideoTracks()];E.stream=vs;if(AC&&CE.mix){E.dest=AC.createMediaStreamDestination();E.pre=AC.createGain();E.pre.gain.value=.8;E.lim=AC.createDynamicsCompressor();E.lim.threshold.value=-8;E.lim.knee.value=6;E.lim.ratio.value=14;E.lim.attack.value=.003;E.lim.release.value=.2;CE.mix.connect(E.pre);E.pre.connect(E.lim);E.lim.connect(E.dest);tracks.push(...E.dest.stream.getAudioTracks());} // a limiter keeps loud explosions plus music from crackling
     const rec=E.rec=new MediaRecorder(new MediaStream(tracks),{mimeType:mime,videoBitsPerSecond:h>=1080?14e6:8e6,audioBitsPerSecond:160000});
@@ -10129,6 +10153,127 @@ function clipWhen(t){const d=new Date(t);return d.toLocaleDateString(undefined,{
       const d=clipVDur(),ct=el?Math.min(d,el.currentTime||0):0,playing=el&&!el.paused&&!el.ended;lrr(x,20,396,64,30,8);x.fillStyle='rgba(255,255,255,.14)';x.fill();ltx(x,playing?'Pause':'Play',52,411,13,'#fff','center',800);
       lrr(x,96,407,444,8,4);x.fillStyle='rgba(255,255,255,.16)';x.fill();if(d>0){lrr(x,96,407,Math.max(8,444*ct/d),8,4);x.fillStyle='#f2a93b';x.fill();x.fillStyle='#fff';x.beginPath();x.arc(96+444*ct/d,411,7,0,7);x.fill();}
       ltx(x,tlFmt(ct)+' / '+tlFmt(d),LW-20,411,12,'#cfd6dc','right',700);}};}
+/* ---- clip editor: built-in songs. They are made by code (a small synthesizer), so the game needs no sound files. ---- */
+function ceSynth(dur,bpm,build){const OC=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!OC)return Promise.reject(new Error('This browser cannot make songs.'));
+  const sr=44100,c=new OC(2,Math.ceil(dur*sr),sr),b=60/bpm;
+  const out=c.createGain();out.gain.value=.8;const cmp=c.createDynamicsCompressor();cmp.threshold.value=-12;cmp.knee.value=10;cmp.ratio.value=5;cmp.attack.value=.005;cmp.release.value=.2;cmp.connect(out);out.connect(c.destination);
+  const mix=c.createGain();mix.connect(cmp);const duck=c.createGain();duck.gain.setValueAtTime(1,0);duck.connect(mix);
+  const rnd=(()=>{let s=1234567;return()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};})();
+  const nb=c.createBuffer(1,sr*2,sr);{const d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=rnd()*2-1;}
+  const ir=c.createBuffer(2,Math.floor(sr*1.9),sr);for(let ch=0;ch<2;ch++){const d=ir.getChannelData(ch),n=d.length;for(let i=0;i<n;i++)d[i]=(rnd()*2-1)*Math.pow(1-i/n,2.8);}
+  const rv=c.createConvolver();rv.buffer=ir;const wet=c.createGain();wet.gain.value=.5;const rvo=c.createGain();rvo.gain.value=.3;wet.connect(rv);rv.connect(rvo);rvo.connect(mix);
+  const dl=c.createDelay(1.5);dl.delayTime.value=b*.75;const fb=c.createGain();fb.gain.value=.34;const ech=c.createGain();ech.gain.value=.45;const dlo=c.createGain();dlo.gain.value=.5;ech.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(dlo);dlo.connect(mix);
+  const curve=new Float32Array(1024);for(let i=0;i<1024;i++)curve[i]=Math.tanh((i/511.5-1)*2.6);
+  const S={c,b,B:4*b,mix,duck,rnd,N:n=>440*Math.pow(2,(n-69)/12),T:(br,bt)=>.06+(br*4+(bt||0))*b};
+  // one oscillator note. o: a attack, r release, dec (fade away like a plucked string), to/st pitch slide, det detune, lp/lpTo/lt/q low-pass filter, rv reverb, ec echo, dest
+  S.o=(type,f,t,d,v,o)=>{o=o||{};const os=c.createOscillator();os.type=type;os.frequency.setValueAtTime(f,t);if(o.to)os.frequency.exponentialRampToValueAtTime(o.to,t+(o.st||d));if(o.det)os.detune.value=o.det;
+    const g=c.createGain(),a=Math.min(o.a||.004,d*.5);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+a);
+    if(o.dec)g.gain.exponentialRampToValueAtTime(.0006,t+d);else{const r=Math.min(o.r||.06,d*.45);g.gain.setValueAtTime(v,Math.max(t+a,t+d-r));g.gain.linearRampToValueAtTime(0,t+d);}
+    let n=os;if(o.lp){const fl=c.createBiquadFilter();fl.type='lowpass';fl.frequency.setValueAtTime(o.lp,t);if(o.lpTo)fl.frequency.exponentialRampToValueAtTime(o.lpTo,t+(o.lt||d));fl.Q.value=o.q||.7;os.connect(fl);n=fl;}
+    n.connect(g);g.connect(o.dest||mix);if(o.rv)g.connect(wet);if(o.ec)g.connect(ech);os.start(t);os.stop(t+d+.02);};
+  // a burst of filtered noise. o: q, to (filter sweep), rise (swell up), flat (steady), rv, dest
+  S.n=(t,d,v,type,f,o)=>{o=o||{};const s=c.createBufferSource();s.buffer=nb;s.loop=true;const fl=c.createBiquadFilter();fl.type=type;fl.frequency.setValueAtTime(f,t);if(o.to)fl.frequency.exponentialRampToValueAtTime(o.to,t+d);fl.Q.value=o.q||.7;
+    const g=c.createGain();if(o.rise){g.gain.setValueAtTime(.0008,t);g.gain.exponentialRampToValueAtTime(v,t+d-.03);g.gain.linearRampToValueAtTime(0,t+d);}else if(o.flat){g.gain.setValueAtTime(v,t);g.gain.setValueAtTime(v,t+d-.05);g.gain.linearRampToValueAtTime(0,t+d);}else{g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0006,t+d);}
+    s.connect(fl);fl.connect(g);g.connect(o.dest||mix);if(o.rv)g.connect(wet);s.start(t,rnd()*1.5);s.stop(t+d+.02);};
+  S.kick=(t,v)=>{S.o('sine',150,t,.32,v*.95,{to:42,st:.1,a:.002,dec:1});S.n(t,.015,v*.2,'highpass',3000);if(v>.7){duck.gain.setValueAtTime(.3,t);duck.gain.linearRampToValueAtTime(1,t+b*.5);}};
+  S.snare=(t,v)=>{S.n(t,.18,v*.5,'bandpass',1900,{q:.8});S.n(t,.12,v*.3,'highpass',5000);S.o('triangle',190,t,.12,v*.35,{to:130,dec:1});};
+  S.clap=(t,v)=>{for(const dt of [0,.012,.024])S.n(t+dt,.03,v*.35,'bandpass',1500,{q:1.2});S.n(t+.03,.16,v*.4,'bandpass',1400,{q:.9,rv:1});};
+  S.hat=(t,v,open)=>S.n(t,open?.22:.045,v*.2,'highpass',open?6500:8000);
+  S.tom=(t,f,v)=>{S.o('sine',f*1.6,t,.55,v*.8,{to:f,st:.08,dec:1});S.n(t,.1,v*.28,'lowpass',420);};
+  S.boom=(t,v)=>{S.o('sine',70,t,2.4,v*.9,{to:30,st:1.2,dec:1});S.n(t,1.6,v*.5,'lowpass',700,{to:90,rv:1});S.n(t,1.3,v*.22,'highpass',4000,{rv:1});};
+  S.rise=(t,d,v)=>{S.n(t,d,v*.34,'bandpass',400,{to:9000,rise:1,q:1.4});S.o('sawtooth',110,t,d,v*.07,{to:880,st:d,a:d*.9,r:.02,lp:3000});};
+  S.sub=(f,t,d,v,to)=>{S.o('sine',f,t,d,v,{to:to||0,st:d*.5,a:.006,r:d*.45});S.o('triangle',f*2,t,d*.6,v*.16,{dec:1});};
+  S.saw3=(f,t,d,v,o)=>{for(const det of [-10,10])S.o('sawtooth',f,t,d,v/1.8,Object.assign({},o,{det}));};
+  S.bus=(hz,dest)=>{const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=hz;f.connect(dest||mix);return f;}; // one shared filter instead of one per note (much faster to make)
+  S.pluck=(f,t,d,v,o)=>{o=o||{};S.o(o.w||'sawtooth',f,t,d,v,Object.assign({dec:1,lp:3200,lpTo:500,lt:d*.8,q:2},o));};
+  S.pad=(fs,t,d,v,o)=>{o=o||{};for(const f of fs)for(const det of [-8,8])S.o('sawtooth',f,t,d,v/fs.length/1.4,{a:o.a||d*.3,r:o.r||d*.3,det,lp:o.lp||1400,rv:det>0,dest:o.dest});};
+  // dubstep wobble: buzzy waves through a filter that an LFO opens and closes
+  S.wob=(f,t,d,rate,v)=>{const fl=c.createBiquadFilter();fl.type='lowpass';fl.Q.value=7;fl.frequency.value=1100;const l=c.createOscillator();l.frequency.value=rate;const lg=c.createGain();lg.gain.value=980;l.connect(lg);lg.connect(fl.frequency);
+    const ws=c.createWaveShaper();ws.curve=curve;const g=c.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.008);g.gain.setValueAtTime(v,t+d-.02);g.gain.linearRampToValueAtTime(0,t+d);fl.connect(ws);ws.connect(g);g.connect(duck);
+    for(const [ty,m,gv] of [['sawtooth',1,.6],['square',1.003,.4],['sawtooth',2.005,.25]]){const os=c.createOscillator();os.type=ty;os.frequency.value=f*m;const og=c.createGain();og.gain.value=gv;os.connect(og);og.connect(fl);os.start(t);os.stop(t+d+.02);}l.start(t);l.stop(t+d+.02);};
+  // the classic four bars before a drop: kick, a drum roll that gets faster, a rising whoosh, then one beat of silence
+  S.build=(br)=>{for(let k=0;k<4;k++){const n=k===0?4:k===1?8:16;for(let i=0;i<n;i++){const bt=i*4/n;if(k===3&&bt>=3)break;S.snare(S.T(br+k,bt),.3+.1*k+.2*bt/4);if(k===3&&bt>=2)S.snare(S.T(br+k,bt+.125),.5);}if(k<3)for(let i=0;i<4;i++)S.kick(S.T(br+k,i),.75);}S.rise(S.T(br,0),4*S.B-b,1);};
+  build(S);
+  return new Promise((res,rej)=>{c.oncomplete=e=>res(e.renderedBuffer);try{const p=c.startRendering();if(p&&p.then)p.then(res,rej);}catch(e){rej(e);}}).then(buf=>{let mx=0;for(let ch=0;ch<buf.numberOfChannels;ch++){const d=buf.getChannelData(ch);for(let i=0;i<d.length;i++){const a=d[i]<0?-d[i]:d[i];if(a>mx)mx=a;}}
+    if(mx>0){const k=.9/mx;for(let ch=0;ch<buf.numberOfChannels;ch++){const d=buf.getChannelData(ch);for(let i=0;i<d.length;i++)d[i]*=k;}}return buf;});}
+const CE_SONGS=[
+  {k:'edm',n:'Launch Code',d:'Festival build-up and a huge drop',bpm:128,dur:51,drop:15.06,make(S){const {N,T,b,B}=S,CH=[[45,[57,60,64]],[41,[57,60,65]],[48,[55,60,64]],[43,[55,59,62]]];
+    const MEL=[[0,76,.75],[.75,76,.75],[1.5,74,.5],[2,72,1],[3,69,1],[4,72,.75],[4.75,72,.75],[5.5,74,.5],[6,76,1],[7,77,1],[8,79,.75],[8.75,76,.75],[9.5,72,.5],[10,76,1],[11,79,1],[12,74,.75],[12.75,74,.75],[13.5,76,.5],[14,74,1],[15,71,1]];
+    for(let br=0;br<8;br++){const c=CH[br%4][1];for(let i=0;i<16;i++)S.pluck(N(c[[0,1,2,1][i%4]]+12+(i%8>3?12:0)),T(br,i/4),b*.42,.13+.012*br,{lp:900+br*450,rv:1});
+      S.pad(c.map(N),T(br,0),B,.1+br*.014,{lp:600+br*260,dest:S.duck});if(br>1&&br<7)for(let i=0;i<4;i++)S.hat(T(br,i+.5),.8);}
+    S.build(4);const sb=S.bus(5200,S.duck);
+    for(let k=0;k<16;k++){const br=8+k,[root,c]=CH[k%4];if(k%8===0)S.boom(T(br,0),1);
+      for(let i=0;i<4;i++){S.kick(T(br,i),1);if(i%2)S.clap(T(br,i),.9);S.hat(T(br,i+.5),1,1);S.o('sawtooth',N(root-12),T(br,i+.5),b*.44,.3,{lp:480,q:3,dest:S.duck});S.o('sine',N(root-12),T(br,i+.5),b*.44,.34,{dest:S.duck});}
+      if(k>=8)for(let i=0;i<16;i++)if(i%4!==2)S.hat(T(br,i/4),.55);
+      for(const p of [0,3,6,8,11,14])for(const n of c)S.saw3(N(n+12),T(br,p/4),b*.5,.17,{dest:sb,rv:1});}
+    for(let rep=0;rep<4;rep++)for(const [bt,n,l] of MEL){const t=T(8+rep*4,bt),d=l*b*.92;S.o('square',N(n),t,d,.1,{lp:4200,rv:1,ec:1});S.o('sawtooth',N(n),t,d,.08,{det:9,lp:5200});if(rep>1)S.o('sawtooth',N(n+12),t,d,.05,{lp:6000,rv:1});}
+    S.boom(T(24,0),1);S.pad(CH[0][1].map(N),T(24,0),2*B,.2,{lp:1500,a:.05,r:2.5});}},
+  {k:'dub',n:'Wub Machine',d:'Dubstep with wobbly bass',bpm:140,dur:46.8,drop:13.77,make(S){const {N,T,b,B}=S,PAD=[[52,55,59],[52,55,59],[48,52,55],[50,54,57]],RT=[[2,2,4,4],[2,4,8,4],[3,3,6,6],[2,2,8,16]],RO=[28,28,31,26];
+    const BEL=[[0,76],[1,79],[2,83],[3,81],[4,79],[5,76],[6.5,74],[7,76],[8,72],[9,76],[10,79],[11,76],[12,74],[13,78],[14,81],[15,78]],LD=[[0,76],[.75,79],[1.5,81],[2.5,83],[4,81],[4.75,79],[5.5,76],[6.5,74],[8,76],[8.75,79],[9.5,83],[10.5,86],[12,84],[12.75,83],[13.5,81],[14.5,78]];
+    for(let br=0;br<8;br++){S.pad(PAD[br%4].map(N),T(br,0),B,.16,{lp:500+br*180});if(br>1)for(let i=0;i<8;i++)S.hat(T(br,i/2),.5+(i%2)*.3);}
+    for(let rep=0;rep<2;rep++)for(const [bt,n] of BEL){S.o('triangle',N(n),T(rep*4,bt),b*1.4,rep?.16:.13,{dec:1,rv:1,ec:1});S.o('sine',N(n+12),T(rep*4,bt),b*.9,.05,{dec:1,rv:1});}
+    S.build(4);
+    for(let k=0;k<16;k++){const br=8+k,f=N(RO[k%4]);if(k%8===0)S.boom(T(br,0),1);
+      S.kick(T(br,0),1);S.snare(T(br,2),1);S.clap(T(br,2),.8);if(k%2)S.kick(T(br,1.5),.85);if(k%4===1||k%4===3)S.kick(T(br,3.5),.8);
+      for(let i=0;i<8;i++)S.hat(T(br,i/2),i%2?.9:.6,i===7&&k%2===1);
+      for(let bt=0;bt<4;bt++){if(k%4===3&&bt===3){for(let i=0;i<4;i++){S.snare(T(br,3+i/4),.5+i*.12);S.wob(f*2,T(br,3+i/4),b*.2,16/b,.4);}break;}S.wob(f,T(br,bt),b*.97,RT[k%4][bt]/b,.5);S.o('sine',f,T(br,bt),b*.97,.3,{dest:S.duck});}}
+    for(let rep=0;rep<2;rep++)for(const [bt,n] of LD)S.pluck(N(n),T(16+rep*4,bt),b*.7,.13,{lp:4500,lpTo:900,rv:1,ec:1});
+    S.boom(T(24,0),1);S.pad(PAD[0].map(N),T(24,0),2*B,.22,{lp:900,a:.05,r:2.6});}},
+  {k:'trap',n:'Trap Flip',d:'Booming 808s and fast hi-hats',bpm:140,dur:39.6,drop:6.92,make(S){const {N,T,b,B}=S,RO=[29,29,25,27],CM=[[65,68,72,70,68],[65,68,72,70,68],[61,65,68,67,65],[63,67,70,68,67]];
+    const BEL=[[0,77],[.75,80],[1.5,84],[2.5,82],[3,80],[4,77],[5,75],[5.5,77],[7,72],[8,73],[8.75,77],[9.5,80],[10.5,77],[11,73],[12,75],[13,79],[13.5,82],[15,79]];
+    const bell=(n,t,v)=>{S.o('sine',N(n),t,b*1.6,v,{dec:1,rv:1,ec:1});S.o('triangle',N(n+12),t,b*.7,v*.3,{dec:1,rv:1});};
+    for(let rep=0;rep<5;rep++)for(const [bt,n] of BEL)bell(n,T(rep*4,bt),rep?.15:.17);
+    for(let br=0;br<4;br++){S.pad([53,56,60].map(N),T(br,0),B,.1,{lp:700+br*200});if(br>1)for(let i=0;i<8;i++)S.hat(T(br,i/2),.6);}
+    for(let i=0;i<4;i++)S.snare(T(3,2+i/4),.35+i*.06);for(let i=0;i<6;i++)S.snare(T(3,3+i/8),.55+i*.05);S.rise(T(3,0),B-b*.25,.7);
+    for(let k=0;k<16;k++){const br=4+k,f=N(RO[k%4]);if(k%8===0)S.boom(T(br,0),.9);
+      for(const [bt,l,sl] of (k%2?[[0,2,0],[2.75,.7,3],[3.5,.5,0]]:[[0,1.4,0],[2.5,.9,0],[3.5,.5,0]])){S.sub(f,T(br,bt),l*b,.6,sl?f*Math.pow(2,sl/12):0);S.kick(T(br,bt),.9);}
+      S.snare(T(br,2),.9);S.clap(T(br,2),.9);for(let i=0;i<8;i++){if(k%2&&i>=6)continue;S.hat(T(br,i/2),i%2?.75:1);}
+      if(k%2)for(let i=0;i<8;i++)S.hat(T(br,3+i/8),.5+i*.06);if(k%4===2)for(let i=0;i<3;i++)S.hat(T(br,1+i/6),.7);S.hat(T(br,1.5),.8,1);
+      if(k>=8)[0,.5,1,2,3].forEach((bt,i)=>S.pluck(N(CM[k%4][i]),T(br,bt),b*.5,.1,{lp:2600,lpTo:700,rv:1}));}
+    S.boom(T(20,0),1);bell(77,T(20,0),.2);bell(65,T(20,0),.2);S.pad([53,56,60].map(N),T(20,0),2*B,.16,{lp:900,a:.05,r:2.6});}},
+  {k:'boss',n:'Final Boss',d:'Movie trailer drums and horns',bpm:100,dur:50.2,drop:14.46,make(S){const {N,T,b,B}=S,PR=[[38,[62,65,69]],[34,[58,62,65]],[41,[60,65,69]],[36,[60,64,67]]],HN=[[0,62,2],[2,65,2],[4,67,3],[7,65,1],[8,69,2],[10,72,2],[12,67,3],[15,64,1]];
+    const braam=(t,v)=>{for(const [n,det] of [[26,-14],[26,12],[38,-9],[38,10],[45,0]])S.o('sawtooth',N(n),t,2.6,v*.16,{a:.06,r:1.6,det,lp:180,lpTo:1700,lt:.7,q:2,rv:1});};
+    S.o('sawtooth',N(38),T(0,0),6*B-b,.05,{a:2,r:.3,lp:260,lpTo:1100,lt:6*B});S.o('sine',N(26),T(0,0),6*B-b,.06,{a:1.5,r:.3});const ob=S.bus(2600);
+    for(let br=0;br<6;br++){for(let i=0;i<8;i++)if(br<5||i<6)S.hat(T(br,i/2),.35+br*.08);for(const [bt,n] of (br%2?[[0,77],[1.5,74],[2,76],[3,72]]:[[0,74],[1.5,69],[2,72],[3,69]])){if(br===5&&bt>2)continue;S.o('sine',N(n),T(br,bt),b*1.8,.16,{dec:1,rv:1,ec:1});S.o('triangle',N(n),T(br,bt),b*1.2,.06,{dec:1,rv:1});}}
+    braam(T(2,0),.35);braam(T(4,0),.5);S.pad([50,53,57].map(N),T(4,0),B,.2,{lp:1200});S.pad([46,50,53].map(N),T(5,0),2*b,.24,{lp:1700});S.pad([48,52,55].map(N),T(5,2),b,.28,{lp:2400,a:.05,r:.1});
+    for(let i=0;i<4;i++){S.tom(T(4,i),72,.6+i*.05);S.tom(T(5,i/2),72,.7+i*.05);S.tom(T(5,2+i/4),90,.8+i*.05);}S.rise(T(4,0),2*B-b,.9);
+    for(let k=0;k<12;k++){const br=6+k,[root,c]=PR[k%4];if(k%4===0){S.boom(T(br,0),1);braam(T(br,0),k?.6:1);}
+      for(const bt of [0,1.5,2,3])S.tom(T(br,bt),68,1);for(const bt of [2.5,3.5])S.tom(T(br,bt),100,.75);for(let i=0;i<16;i++)S.hat(T(br,i/4),i%4?.3:.6);
+      S.o('sawtooth',N(root),T(br,0),B,.2,{lp:420,a:.03,r:.25});S.o('sine',N(root-12),T(br,0),B,.3,{a:.03,r:.25});
+      for(let i=0;i<8;i++)S.saw3(N(c[i%2?2:0]-(k>=8?0:12)),T(br,i/2),b*.3,.15,{dest:ob});S.pad(c.map(n=>N(n+12)),T(br,0),B,.1,{lp:2200,a:.2,r:.4});}
+    for(let rep=0;rep<3;rep++)for(const [bt,n,l] of HN){const t=T(6+rep*4,bt),m=n+(rep===2?12:0),d=l*b*.96;for(const det of [-7,7])S.o('sawtooth',N(m),t,d,.12,{a:.07,r:.14,det,lp:1500+rep*400,rv:1});S.o('sawtooth',N(m-12),t,d,.07,{a:.07,r:.14,lp:900});}
+    S.boom(T(18,0),1);braam(T(18,0),1);S.pad([50,57,62,65].map(N),T(18,0),2*B,.2,{lp:1300,a:.05,r:3.5});}},
+  {k:'chip',n:'Pixel Sprint',d:'Fast 8-bit video game tune',bpm:150,dur:36.6,drop:6.46,make(S){const {N,T,b}=S,CH=[[48,[60,64,67]],[43,[59,62,67]],[45,[57,60,64]],[41,[57,60,65]]],sq=(n,t,d,v)=>S.o('square',N(n),t,d,v,{lp:5200});
+    const MEL=[[0,76,.5],[.5,79,.5],[1,84,1],[2,83,.5],[2.5,84,.5],[3,79,1],[4,74,.5],[4.5,79,.5],[5,83,1],[6,81,.5],[6.5,83,.5],[7,86,1],[8,84,.5],[8.5,83,.5],[9,81,1],[10,76,.5],[10.5,81,.5],[11,84,1],[12,81,.5],[12.5,79,.5],[13,77,1],[14,81,.5],[14.5,84,.5],[15,86,.5],[15.5,88,.5]];
+    for(let br=0;br<20;br++){const [root,c]=CH[br%4];for(let i=0;i<16;i++)sq(c[i%3]+12+(i%6>2?12:0),T(br,i/4),b*.22,br<2?.045+br*.02:.07);
+      if(br>=2)for(let i=0;i<8;i++){S.o('triangle',N(root+(i%2?12:0)),T(br,i/2),b*.45,br<4?.1:.3);S.n(T(br,i/2),.03,br<4?.05:.1,'highpass',9000);}
+      if(br>=4)for(let i=0;i<4;i++){S.o('triangle',170,T(br,i),.13,.55,{to:48,dec:1});if(i%2)S.n(T(br,i),.11,.3,'highpass',2200);if(br%4===3&&i===3)for(let j=1;j<4;j++)S.n(T(br,3+j/4),.06,.24,'highpass',2500);}}
+    for(let i=0;i<8;i++){S.n(T(3,2+i/4),.06,.14+i*.02,'highpass',2500);sq(72+[0,2,4,5,7,9,11,12][i],T(3,2+i/4),b*.24,.1);}
+    for(let rep=0;rep<4;rep++)for(const [bt,n,l] of MEL){const t=T(4+rep*4,bt);sq(n,t,l*b*.9,.13);if(rep>1)sq(n-([4,9,11].includes(n%12)?4:3),t,l*b*.9,.06);}
+    for(let i=0;i<12;i++)sq([60,64,67,72,76,79,84,88,91,96,91,96][i],T(20,i/4),b*.24,.11);
+    for(const n of [72,76,79,84])sq(n,T(20,3),b*4,.07);S.o('triangle',N(36),T(20,3),b*4,.3,{dec:1});S.o('triangle',170,T(20,3),.13,.55,{to:48,dec:1});S.n(T(20,3),.3,.3,'highpass',2200);}},
+  {k:'lofi',n:'Sunday Drive',d:'Chill and mellow, no big drop',bpm:84,dur:47.4,drop:5.77,make(S){const {N,T,b,B}=S,CH=[[41,[53,57,60,64]],[40,[52,55,59,62]],[38,[50,53,57,60]],[36,[48,52,55,59]]],MEL=[[1,76],[2,79],[3,81],[4.5,79],[6,76],[7,74],[9,72],[10,74],[10.5,77],[12,76],[14,72]];
+    S.n(.06,16*B,.012,'highpass',2500,{flat:1});for(let i=0;i<70;i++)S.n(.2+S.rnd()*16*B,.012,.05+S.rnd()*.05,'highpass',3500);
+    for(let br=0;br<16;br++){const [root,c]=CH[br%4],sw=b*.09;
+      for(const [bt,v] of [[0,1],[2.5,.6]])for(const n of c){S.o('sine',N(n),T(br,bt),b*(bt?1.4:2.4),.1*v,{a:.012,r:b*.9,rv:1});S.o('triangle',N(n),T(br,bt),b*(bt?1.2:2.2),.035*v,{a:.01,r:b*.8,lp:1700});}
+      if(br>=2){S.o('sine',N(root),T(br,0),b*1.5,.3,{a:.01,r:.2});S.o('triangle',N(root),T(br,0),b*1.5,.08,{lp:500});S.o('sine',N(root),T(br,2.5),b,.26,{a:.01,r:.2});}
+      if(br>=2&&br<14){S.kick(T(br,0),.8);S.kick(T(br,2.5),.6);for(const bt of [1,3]){S.n(T(br,bt),.1,.26,'bandpass',2300,{q:1.2,rv:1});S.o('sine',330,T(br,bt),.05,.12,{dec:1});}for(let i=0;i<8;i++)S.hat(T(br,i/2)+(i%2?sw:0),i%2?.45:.65);}}
+    for(let rep=0;rep<3;rep++)for(const [bt,n] of MEL)S.o('sine',N(n),T(2+rep*4,bt),b*1.3,.13,{dec:1,rv:1,ec:1});}}];
+/* ---- picking a song ---- */
+const CE_LIB=new Map();
+function ceLibGet(k){const D=CE_SONGS.find(s=>s.k===k);if(!D)return Promise.reject(new Error('no song'));const e=CE_LIB.get(k);if(e)return e;
+  const p=ceSynth(D.dur,D.bpm,D.make).then(buf=>({buf,name:D.n,lods:cePeaks(buf),drop:D.drop,lib:k}));CE_LIB.set(k,p);p.catch(()=>CE_LIB.delete(k));return p;}
+function cePrevStop(){const P=CE.prev;CE.prev=null;if(P){clearTimeout(P.to);try{P.src.stop();}catch(e){}try{P.src.disconnect();P.g.disconnect();}catch(e){}}for(const b of document.querySelectorAll('#cesongmenu [data-listen]'))b.textContent='Listen';}
+function cePrevPlay(k,btn){const was=CE.prev&&CE.prev.k===k;cePrevStop();if(was||!AC)return;if(AC.state==='suspended')AC.resume().catch(()=>{});cePlay(false);btn.textContent='…';const tok=CE.prevTok=(CE.prevTok||0)+1;
+  ceLibGet(k).then(S=>{if(CE.prevTok!==tok||!CE.open||$('cesongmenu').hidden){btn.textContent='Listen';return;}const src=AC.createBufferSource();src.buffer=S.buf;const g=AC.createGain();g.gain.value=.75;src.connect(g);g.connect(CE.mix||AC.destination);const from=Math.max(0,S.drop-3.2);src.start(0,from,13);
+    CE.prev={k,src,g,to:setTimeout(()=>{if(CE.prev&&CE.prev.src===src)cePrevStop();},13000)};btn.textContent='Stop';}).catch(e=>{btn.textContent='Listen';ceHint('That song could not be made on this browser.');});}
+function ceSongMenu(show){const m=$('cesongmenu');if(show===false||(show==null&&!m.hidden)){m.hidden=true;cePrevStop();return;}
+  if(!m.innerHTML)m.innerHTML=`<div class="lab">Songs made for Gluebox</div>`+CE_SONGS.map(D=>`<div class="srow"><button class="go" data-song="${D.k}"><b>${D.n}</b><span>${D.d} · ${tlFmt(D.dur)}${D.k==='lofi'?'':' · drop at '+tlFmt(D.drop)}</span></button><button class="mini" data-listen="${D.k}">Listen</button></div>`).join('')+`<div class="lab">Or your own music</div><button class="mini" data-own="1" style="width:100%">Use a song file from my computer…</button>`;
+  m.hidden=false;const r=$('ceaddmus').getBoundingClientRect();m.style.left=clamp(r.left-60,8,innerWidth-m.offsetWidth-8)+'px';m.style.top=Math.max(8,r.top-m.offsetHeight-8)+'px';}
+function ceLibAdd(k){ceSongMenu(false);ceHint('Making the song…',15000);ceLibGet(k).then(S=>{if(!CE.open||!CE.P)return;const sid='lib:'+k;CE.songs.set(sid,S);cePush();const old=CE.P.music,a0=ceT0(),a1=ceT1();
+    CE.P.music={sid,t:clamp(CE.t-S.drop,a0-S.buf.duration+.2,a1-.2),vol:old?old.vol:.8};TL.waveKey='';ceMusicSync(true);ceSel('mus',0);sfx0('ding',.4);ceHint(k==='lofi'?S.name+' added. Slide it on the timeline to where you want it.':S.name+' added with the drop on the white line. Slide the song on the timeline to move it.',6000);})
+  .catch(e=>{console.warn('song',e);ceHint('That song could not be made on this browser. You can still use a song file from your computer.');sfx0('error',.4);});}
+function ceSongWire(){const m=$('cesongmenu');m.addEventListener('click',e=>{if(CE.exp)return;const l=e.target.closest('[data-listen]');if(l){cePrevPlay(l.dataset.listen,l);return;}const s=e.target.closest('[data-song]');if(s){ceLibAdd(s.dataset.song);return;}if(e.target.closest('[data-own]')){ceSongMenu(false);$('cefile').click();}});}
 
 requestAnimationFrame(frame);
 setTimeout(()=>{try{boot();}catch(e){console.error(e);$('play').textContent='Could not start';$('startnote').textContent='Something went wrong building the world: '+e.message;}},30);
