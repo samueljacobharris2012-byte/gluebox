@@ -5405,7 +5405,7 @@ function driveSeat(seat,th,st,boost,release,down){const grp=vehGroup(seat);const
     let M=0,vx=0,vz=0;for(const o of grp){const m=o.body.mass;M+=m;vx+=o.body.velocity.x*m;vz+=o.body.velocity.z*m;}vx/=M;vz/=M;const hs=Math.hypot(vx,vz),fl=Math.hypot(f.x,f.z)||1;const sg=(vx*f.x+vz*f.z)<0?-1:1;const nx=f.x/fl*hs*sg*.92,nz=f.z/fl*hs*sg*.92;
     for(const o of grp){if(o.frozen)continue;const v=o.body.velocity;v.x+=nx-vx;v.z+=nz-vz;}}}
   const slide=drift||!!seat.dV;if(!slide)seat.slip=0;
-  for(const o of grp){if(o.def.race){const dm=slide?mDrift:mRace;if(o.body.material!==dm)o.body.material=dm;const sl=slide?(seat.slip||0):0;if(sl>.12&&o.body.velocity.length()>3&&Math.random()<clamp(sl*1.1,.15,1)&&wheelOnGround(o)){const wp=tv3(o.body.position);wp.y-=.3;const n=1+Math.floor(sl*2.5),sz=.3+sl*.55;puff(wp,0xdedede,n,sz,.7+sl*.6,.5);if(NET.host&&time-(o.smT||0)>.12){o.smT=time;NET.fx.push(['pf',r2(wp.x),r2(wp.y),r2(wp.z),n,r2(sz),r2(.7+sl*.6)]);}}}if(o.type==='thruster'&&!o.key)o.boost=!!boost||(skis&&th>0&&!release);if(o.def.hover&&o.on&&o.hoverY!=null&&!release)o.hoverY+=((boost?1:0)-(down?1:0))*4*STEP;
+  for(const o of grp){if(o.def.race){const dm=slide||(!release&&!air&&Math.abs(st)>.01)?mDrift:mRace;if(o.body.material!==dm)o.body.material=dm;const sl=slide?(seat.slip||0):0;if(sl>.12&&o.body.velocity.length()>3&&Math.random()<clamp(sl*1.1,.15,1)&&wheelOnGround(o)){const wp=tv3(o.body.position);wp.y-=.3;const n=1+Math.floor(sl*2.5),sz=.3+sl*.55;puff(wp,0xdedede,n,sz,.7+sl*.6,.5);if(NET.host&&time-(o.smT||0)>.12){o.smT=time;NET.fx.push(['pf',r2(wp.x),r2(wp.y),r2(wp.z),n,r2(sz),r2(.7+sl*.6)]);}}}if(o.type==='thruster'&&!o.key)o.boost=!!boost||(skis&&th>0&&!release);if(o.def.hover&&o.on&&o.hoverY!=null&&!release)o.hoverY+=((boost?1:0)-(down?1:0))*4*STEP;
     for(const rec of o.recs){if(rec.kind!=='hinge'||rec.wheel!==o)continue;wheels++;
       if(release){rec.c.setMotorSpeed(0);rec.c.setMotorMaxForce(.02);if(o.def.race&&o.body.material!==mRace)o.body.material=mRace;if(o.mat0!==undefined&&o.body.material!==o.mat0)o.body.material=o.mat0;continue;}
       if(Math.abs(th)>.01)o.drvT=time;
@@ -5441,7 +5441,9 @@ function driveSeat(seat,th,st,boost,release,down){const grp=vehGroup(seat);const
   if(hv.length&&!release&&!grp.anchored){const fl=Math.hypot(f.x,f.z)||1,fx=f.x/fl,fz=f.z/fl,rx=-fz,rz=fx;let M=0,vx=0,vz=0;for(const o of grp){const m=o.frozen?0:o.body.mass;M+=m;vx+=o.body.velocity.x*m;vz+=o.body.velocity.z*m;}
     if(M>0){vx/=M;vz/=M;const vf=vx*fx+vz*fz,vl=vx*rx+vz*rz;const SKh=Math.max(...hv.map(o=>o.spdK||1));const tgt=brake?0:th*15*SKh*(hv[0].rev?-1:1);const nf=vf+(tgt-vf)*Math.min(1,(Math.abs(th)>.01?2.4:.9)*STEP),nl=vl*(1-Math.min(1,3*STEP));
       const dx=fx*(nf-vf)+rx*(nl-vl),dz=fz*(nf-vf)+rz*(nl-vl);const near=hv.some(o=>time-(o.hvG??-9)<.2);let jv=0;if(down&&!seat.hvJ&&near){jv=7;sfx('whoosh',.7,tv3(seat.body.position));for(const o of hv)puff(tv3(o.body.position),0x7ff6ff,4,.3,.5,-.5);}
-      for(const o of grp){if(o.frozen)continue;o.body.velocity.x+=dx;o.body.velocity.z+=dz;o.body.velocity.y+=jv;o.body.wakeUp();}}
+      let dvy=0;{let cx=0,cz=0,vy=0;for(const o of grp){const m=o.frozen?0:o.body.mass;cx+=o.body.position.x*m;cz+=o.body.position.z*m;vy+=o.body.velocity.y*m;}cx/=M;cz/=M;vy/=M;const sp=Math.hypot(vx,vz); // hills ahead: rise up the slope instead of bumping into it
+        if(sp>1.5){const ux=vx/sp,uz=vz/sp;const h0=heightAt(cx,cz),h1=heightAt(cx+ux*1.5,cz+uz*1.5),h2=heightAt(cx+ux*3,cz+uz*3);const sl=Math.max(h1-h0,(h2-h0)/2)/1.5;if(sl>.05){const want=sl*sp*1.1;if(vy<want)dvy=Math.min(want-vy,30*STEP);}}}
+      for(const o of grp){if(o.frozen)continue;o.body.velocity.x+=dx;o.body.velocity.z+=dz;o.body.velocity.y+=jv+dvy;o.body.wakeUp();}}
     seat.hvJ=!!down;}
   else if(hv.length)seat.hvJ=false;
   const stick=!release&&grp.some(o=>o.def.sticky&&o.on&&time-(o.stT??-9)<.25)&&u.y<.8;
@@ -5459,9 +5461,12 @@ function driveSeat(seat,th,st,boost,release,down){const grp=vehGroup(seat);const
   else if(!release&&Math.abs(st)>.01&&!grp.anchored){ // arcade steering: spin the whole vehicle about its center
     let M=0,cx=0,cy=0,cz=0,vx=0,vz=0,w0=0;for(const o of grp){const b=o.body,m=b.mass;M+=m;cx+=b.position.x*m;cy+=b.position.y*m;cz+=b.position.z*m;vx+=b.velocity.x*m;vz+=b.velocity.z*m;w0+=b.angularVelocity.y*m;}
     cx/=M;cz/=M;vx/=M;vz/=M;w0/=M;{const tp=grp.find(x=>x.def.turnpt&&x.alive);if(tp){const px=tp.body.position.x,pz=tp.body.position.z;vx-=w0*(cz-pz);vz+=w0*(cx-px);cx=px;cz=pz;}}const RW=grp.some(o=>o.def.race&&o.alive);const w=-st*(wingy?1.1:RW?5.1:3.4);const ang=w*STEP,ca=Math.cos(ang),sa=Math.sin(ang);const nvx=vx*ca+vz*sa,nvz=-vx*sa+vz*ca;vx=nvx;vz=nvz;
-    if(!RW&&!air&&!wingy&&grp.some(o=>o.def.pedal&&o.alive)){ // bikes: the tyres slide while steering, so grip and pedal power are done here
-      const fl=Math.hypot(f.x,f.z)||1,hx=f.x/fl,hz=f.z/fl;let vf=vx*hx+vz*hz,vl=-vx*hz+vz*hx;vl*=1-Math.min(1,8*STEP);const pw=grp.find(o=>o.def.pedal&&o.alive);const SK=(pw.spdK||1)*(pw.def.spd||1);const pf=seat.pfs||0;
-      if(pBrake)vf*=1-Math.min(1,3*STEP);else if(pf>.06){const tgt=((seat.pdir||1)<0?-.35:1)*7.1*SK*pf;if(Math.abs(tgt)>Math.abs(vf)||Math.sign(tgt)!==Math.sign(vf))vf+=(tgt-vf)*Math.min(1,1.6*STEP);}
+    if(!air&&!wingy&&(RW||grp.some(o=>o.def.pedal&&o.alive))&&(!RW||grp.some(o=>o.def.race&&o.alive&&wheelOnGround(o)))){ // bikes and race cars: the tyres slide while steering, so grip and drive are done here
+      const fl=Math.hypot(f.x,f.z)||1,hx=f.x/fl,hz=f.z/fl;let vf=vx*hx+vz*hz,vl=-vx*hz+vz*hx;vl*=1-Math.min(1,8*STEP);
+      if(RW){const rw=grp.filter(o=>o.def.race&&o.alive);const SK=Math.max(...rw.map(o=>(o.spdK||1)*(o.def.spd||1)))*(rw[0].rev?-1:1);const tgt=th*7.1*SK;
+        if(brake)vf*=1-Math.min(1,4*STEP);else if(Math.abs(th)>.01){if(Math.sign(th)!==Math.sign(vf)&&Math.abs(vf)>.5)vf+=Math.sign(th)*Math.min(Math.abs(vf),28*STEP);else if(Math.abs(tgt)>Math.abs(vf))vf+=(tgt-vf)*Math.min(1,.9*STEP);}else vf*=1-Math.min(1,.25*STEP);}
+      else{const pw=grp.find(o=>o.def.pedal&&o.alive);const SK=(pw.spdK||1)*(pw.def.spd||1);const pf=seat.pfs||0;
+      if(pBrake)vf*=1-Math.min(1,3*STEP);else if(pf>.06){const tgt=((seat.pdir||1)<0?-.35:1)*7.1*SK*pf;if(Math.abs(tgt)>Math.abs(vf)||Math.sign(tgt)!==Math.sign(vf))vf+=(tgt-vf)*Math.min(1,1.6*STEP);}}
       vx=hx*vf-hz*vl;vz=hz*vf+hx*vl;}
     for(const o of grp){const b=o.body;const rx=b.position.x-cx,rz=b.position.z-cz;b.velocity.x=vx+w*rz;b.velocity.z=vz-w*rx;const av=b.angularVelocity,ax=av.x,az=av.z;av.x=ax*ca+az*sa;av.z=-ax*sa+az*ca;av.y=w;b.wakeUp();}}
   else if(!release&&(air||wingy||wheels===0)&&!grp.anchored){ // no steering input: bleed off leftover spin so aircraft stop turning
@@ -6787,7 +6792,7 @@ function beltStep(o,h){if(!o.on||!o.alive||NET.client)return;const b=o.body;cons
 /* ---- special wheels ---- */
 const _hvFrom=new CANNON.Vec3(),_hvTo=new CANNON.Vec3();
 function hoverWStep(o,h){const b=o.body;if(o.heldBy||o.frozen)return;const g=groupOf(o);if(g.some(x=>x.frozen))return;let gm=0,n=0;for(const x of g){gm+=x.body.mass;if(x.def.hoverW&&x.alive)n++;}const m=gm/Math.max(1,n);
-  const p=b.position;let gy=heightAt(p.x,p.z);if(WL>gy)gy=WL-.1;const own=new Set(g.map(x=>x.body));_hvFrom.set(p.x,p.y,p.z);_hvTo.set(p.x,p.y-3.2,p.z);
+  const p=b.position;let gy=heightAt(p.x,p.z);{const v=b.velocity;for(const t of [.12,.25,.4]){const ha=heightAt(p.x+v.x*t,p.z+v.z*t)-.15;if(ha>gy)gy=ha;}}if(WL>gy)gy=WL-.1;const own=new Set(g.map(x=>x.body));_hvFrom.set(p.x,p.y,p.z);_hvTo.set(p.x,p.y-3.2,p.z);
   try{world.raycastAll(_hvFrom,_hvTo,{collisionFilterMask:G_STA|G_OBJ,skipBackfaces:true},r=>{if(own.has(r.body))return;const y=r.hitPointWorld.y;if(y>gy&&y<p.y)gy=y;});}catch(e){}
   const d=p.y-gy,T=.85;if(d<T+.45)o.hvG=time;if(d>T+1.6)return;const G=Math.abs(world.gravity.y)||9.82;
   const fy=clamp(m*G+(T-d)*m*30-b.velocity.y*m*5,0,m*G*5);const dr=g.some(x=>x.occupant)?0:m*.8;b.applyForce(V(-b.velocity.x*dr,fy,-b.velocity.z*dr));b.wakeUp();}
@@ -8062,7 +8067,7 @@ function idCss(id){return `hsl(${hue(id)},70%,70%)`;}
 async function sbClient(){if(NET.sb)return NET.sb;const m=await import(SB_LIB);NET.sb=m.createClient(SB_URL,SB_KEY,{realtime:{params:{eventsPerSecond:40},worker:true,heartbeatIntervalMs:15000},auth:{persistSession:false,autoRefreshToken:false}});return NET.sb;}
 async function freshChannel(name,opts){const sb=await sbClient();try{for(const c of (sb.getChannels?sb.getChannels():[]))if(c.topic==='realtime:'+name||c.subTopic===name)await sb.removeChannel(c);}catch(e){console.warn(e);}return sb.channel(name,opts);}
 function subscribeCh(ch){return new Promise((res,rej)=>{let done=false;const to=setTimeout(()=>{if(!done){done=true;rej(new Error('timeout'));}},10000);ch.subscribe((st,err)=>{const tn=String(ch.topic||'').replace('realtime:','').replace(/^gw-/,'').slice(0,22);if(st!=='SUBSCRIBED'||!done||ch._gwErr)netLog(`${tn}: ${st}${st==='SUBSCRIBED'&&ch._gwErr?' again (reconnected)':''}${err?' '+(err.message||err):''}`);ch._gwErr=st!=='SUBSCRIBED';if(done)return;if(st==='SUBSCRIBED'){done=true;clearTimeout(to);res(ch);}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED'){done=true;clearTimeout(to);rej(new Error(st));}});});}
-const GAME_VERSION='394';const UPDATE_NAME='The Random Fun Update';
+const GAME_VERSION='395';const UPDATE_NAME='The Random Fun Update';
 const NETLOG=[];function netLog(m){const t=new Date();NETLOG.push(`${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')} ${m}`);if(NETLOG.length>14)NETLOG.shift();for(const id of ['netlog','netlog2']){const el=document.getElementById(id);if(el)el.textContent=NETLOG.join('\n');}}
 function bsend0(ch,ev,payload){if(!ch)return;try{const r=ch.send({type:'broadcast',event:ev,payload});if(r&&r.then)r.then(res=>{if(res&&res!=='ok'&&ev!=='s'&&ev!=='st')netLog(`send ${ev} → ${res}`);}).catch(e=>netLog(`send ${ev} failed ${e&&e.message||e}`));}catch(e){netLog(`send ${ev} threw ${e&&e.message||e}`);}}
 let CK_SEQ=0;
