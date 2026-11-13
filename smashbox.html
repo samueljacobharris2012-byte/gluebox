@@ -27,7 +27,7 @@
   #scopefx:before,#scopefx:after{content:'';position:absolute;left:50%;top:50%;background:#000}
   #scopefx:before{width:68vmin;height:2px;margin:-1px 0 0 -34vmin}
   #scopefx:after{width:2px;height:68vmin;margin:-34vmin 0 0 -1px}
-  #modsP{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(8,10,14,.6);z-index:4}
+  #modsP{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(8,10,14,.6);z-index:7}
   #modsP .card{background:#1a1d24;color:#e8eef6;border-radius:16px;padding:16px 18px;max-width:440px;margin:12px;max-height:90vh;overflow:auto;font:600 14px system-ui,sans-serif}
   #modsP h2{margin:0 0 8px;color:#6fe0b8;font-size:22px}
   #modsP .row{margin:8px 0}
@@ -79,7 +79,7 @@
     <button class="mode" data-mode="normal">Normal Room</button>
     <button class="mode" data-mode="kitchen">Kitchen</button>
     <button class="mode wide" data-mode="random">Random Room</button>
-    <button id="mSpeed" class="wide">Speed: PRETTY</button>
+    <button id="mSpeed">Speed: PRETTY</button><button id="mSet">Settings</button>
     <button id="mVR" class="vr">Enter VR</button>
     <button id="mResume" class="wide" style="display:none">Resume</button>
   </div>
@@ -774,6 +774,7 @@ function release(gr, vel) {
   const t = gr.held; if (!t) return;
   t.body.collisionFilterMask = FREE_MASK; if (vel) t.body.velocity.set(vel.x, vel.y, vel.z);
   t.body.wakeUp(); t.heldBy = null; gr.held = null;
+  if (t.support) { t.support.hand.support = null; t.support = null; }
   if (t.gren) grenReleased(t);
 }
 function pulse(src, i = 0.4, ms = 30) { try { src?.gamepad?.hapticActuators?.[0]?.pulse?.(i, ms); } catch (e) {} }
@@ -956,14 +957,14 @@ function kickCam(type, m = 1) { input.pitch = clamp(input.pitch + { pistol: 0.03
 
 /* ================= BACKPACK ================= */
 const SLOTS = [['bat', 'BAT'], ['crowbar', 'CROWBAR'], ['pickaxe', 'PICKAXE'], ['sledge', 'SLEDGEHAMMER'], ['menu', 'MENU'],
-  ['pistol', 'PISTOL'], ['ak', 'AK'], ['shotgun', 'SHOTGUN'], ['minigun', 'MINIGUN'], ['grenade', 'GRENADE'],
-  ['pistolMag', 'PISTOL MAG'], ['akMag', 'AK MAG'], ['miniAmmo', 'MINIGUN AMMO'], ['ammo9', '9MM AMMO'], ['ammo762', '7.62 AMMO'],
-  ['ammo12', 'SHELLS'], ['impact', 'IMPACT GRENADE'], ['chainsaw', 'CHAINSAW'], ['jackhammer', 'JACKHAMMER'], ['gauntlets', 'POWER GAUNTLETS'],
-  ['scope', 'SCOPE'], ['reddot', 'RED DOT'], ['laser', 'LASER'], ['flashlight', 'FLASHLIGHT'], ['suppressor', 'SUPPRESSOR'],
-  ['foregrip', 'FOREGRIP'], ['wire', 'BARBED WIRE'], ['nails', 'NAILS'], ['saw', 'SAW BLADE'], ['blade', 'TAPED KNIFE']];
+  ['pistol', 'PISTOL'], ['ak', 'AK'], ['shotgun', 'SHOTGUN'], ['minigun', 'MINIGUN'], ['settings', 'SETTINGS'],
+  ['pistolMag', 'PISTOL MAG'], ['akMag', 'AK MAG'], ['shell', 'SHOTGUN SHELL'], ['miniAmmo', 'MINIGUN AMMO'], ['grenade', 'GRENADE'],
+  ['impact', 'IMPACT GRENADE'], ['chainsaw', 'CHAINSAW'], ['jackhammer', 'JACKHAMMER'], ['gauntlets', 'POWER GAUNTLETS'], ['scope', 'SCOPE'],
+  ['reddot', 'RED DOT'], ['laser', 'LASER'], ['flashlight', 'FLASHLIGHT'], ['suppressor', 'SUPPRESSOR'], ['foregrip', 'FOREGRIP'],
+  ['wire', 'BARBED WIRE'], ['nails', 'NAILS'], ['saw', 'SAW BLADE'], ['blade', 'TAPED KNIFE']];
 const PACK_COLS = 5;
-const SHORT = { sledge: 'SLEDGE', miniAmmo: 'MINI AMMO', gauntlets: 'GAUNTLETS', jackhammer: 'JACKHAMMER', impact: 'IMPACT', wire: 'BARBED WIRE', blade: 'KNIFE', flashlight: 'FLASHLIGHT', foregrip: 'FOREGRIP', pistolMag: 'PISTOL MAG', suppressor: 'SUPPRESSOR' };
-const slotColor = k => k === 'menu' ? '#c82a2a' : ['chainsaw', 'jackhammer', 'gauntlets'].includes(k) ? '#7a4a14' : k.startsWith('ammo') ? '#7a5a2a' : (k.includes('Mag') || k === 'miniAmmo') ? '#4a4a52' : (k === 'grenade' || k === 'impact') ? '#5a6a1a' : ATT_KINDS.includes(k) ? '#2a4064' : MOD_KINDS.includes(k) ? '#6a3424' : '#2a3a20';
+const SHORT = { shell: 'SHELLS',  sledge: 'SLEDGE', miniAmmo: 'MINI AMMO', gauntlets: 'GAUNTLETS', jackhammer: 'JACKHAMMER', impact: 'IMPACT', wire: 'BARBED WIRE', blade: 'KNIFE', flashlight: 'FLASHLIGHT', foregrip: 'FOREGRIP', pistolMag: 'PISTOL MAG', suppressor: 'SUPPRESSOR' };
+const slotColor = k => k === 'menu' ? '#c82a2a' : k === 'settings' ? '#2a5a8a' : k === 'shell' ? '#7a2a2a' : ['chainsaw', 'jackhammer', 'gauntlets'].includes(k) ? '#7a4a14' : k.startsWith('ammo') ? '#7a5a2a' : (k.includes('Mag') || k === 'miniAmmo') ? '#4a4a52' : (k === 'grenade' || k === 'impact') ? '#5a6a1a' : ATT_KINDS.includes(k) ? '#2a4064' : MOD_KINDS.includes(k) ? '#6a3424' : '#2a3a20';
 const ATT_KINDS = ['scope', 'reddot', 'laser', 'flashlight', 'suppressor', 'foregrip'], MOD_KINDS = ['wire', 'nails', 'saw', 'blade'];
 const pack = (() => {
   const g = new THREE.Group(); scene.add(g);
@@ -973,7 +974,7 @@ const pack = (() => {
     SLOTS.forEach(([k, lab], i) => { const c = i % PACK_COLS, r = Math.floor(i / PACK_COLS), cx = 55 + c * 110, cy = 52 + r * 103;
       x.fillStyle = slotColor(k); x.beginPath(); x.roundRect(cx - 50, cy - 46, 100, 92, 12); x.fill();
       x.strokeStyle = '#a8b880'; x.lineWidth = 3; x.stroke(); x.fillStyle = '#fff';
-      if (k === 'menu') { x.font = 'bold 22px sans-serif'; x.fillText('MENU', cx, cy); x.font = 'bold 13px sans-serif'; } else { x.font = 'bold 13px sans-serif'; x.fillText(SHORT[k] || lab, cx, cy + 35); } });
+      if (k === 'menu' || k === 'settings') { x.font = k === 'menu' ? 'bold 22px sans-serif' : 'bold 17px sans-serif'; x.fillText(lab, cx, cy); x.font = 'bold 13px sans-serif'; } else { x.font = 'bold 13px sans-serif'; x.fillText(SHORT[k] || lab, cx, cy + 35); } });
   }, true));
   panel.position.z = 0.113; g.add(panel);
   const slots = SLOTS.map(([k], i) => { const c = i % PACK_COLS, r = Math.floor(i / PACK_COLS), lp = new V3(-0.22 + c * 0.11, 0.258 - r * 0.103, 0.12);
@@ -985,7 +986,7 @@ function spawnFromSlot(k, pos) {
   switch (k) {
     case 'bat': case 'crowbar': case 'pickaxe': return WEAP[k](pos);
     case 'pistol': case 'ak': case 'shotgun': return makeGun(k, pos);
-    case 'pistolMag': return makeMag('pistol', pos); case 'akMag': return makeMag('ak', pos);
+    case 'pistolMag': return makeMag('pistol', pos, { type: 'pistol', count: 12, cap: 12 }); case 'akMag': return makeMag('ak', pos, { type: 'ak', count: 30, cap: 30 }); case 'shell': return makeRound('shotgun', pos);
     case 'ammo9': return makeAmmoBox('pistol', pos); case 'ammo762': return makeAmmoBox('ak', pos); case 'ammo12': return makeAmmoBox('shotgun', pos);
     case 'grenade': return makeGrenade('frag', pos); case 'impact': return makeGrenade('impact', pos);
     case 'sledge': return WEAP.sledge(pos); case 'minigun': return makeGun('minigun', pos); case 'miniAmmo': return makeMag('minigun', pos, { type: 'minigun', count: 200, cap: 200 });
@@ -1034,7 +1035,10 @@ function preStep() {
     const t = gr.held; if (!t) continue; const b = t.body; b.wakeUp();
     tp.copy(gr.rel.p).applyQuaternion(gr.quat).add(gr.pos); tq.copy(gr.quat).multiply(gr.rel.q);
     let K = t.gun ? 0.75 : 0.45;
-    if (t.gun && t.gun.recoil > 0) { const r = t.gun.recoil; tq.multiply(new QT().setFromAxisAngle(new V3(1, 0, 0), r * 0.35)); tp.add(new V3(0, 0, r * 0.05).applyQuaternion(gr.quat)); }
+    const sup = t.support; // other hand also holding it: aim from the main hand toward the second hand
+    if (sup && sup.hand.active && !(gr.swingT > 0)) { const gp = gr.rel.p.clone().applyQuaternion(gr.rel.q.clone().invert()).negate(), v = sup.lp.clone().sub(gp).applyQuaternion(tq), want = sup.hand.pos.clone().sub(gr.pos);
+      if (v.lengthSq() > 1e-4 && want.lengthSq() > 4e-4) { tq.premultiply(new QT().setFromUnitVectors(v.normalize(), want.normalize())); tp.copy(gr.pos).sub(gp.applyQuaternion(tq)); K = 0.9; } }
+    if (t.gun && t.gun.recoil > 0) { const r = t.gun.recoil * (sup ? 0.4 : 1); tq.multiply(new QT().setFromAxisAngle(new V3(1, 0, 0), r * 0.35)); tp.add(new V3(0, 0, r * 0.05).applyQuaternion(gr.quat)); }
     if (gr.swingT > 0) { gr.swingT -= FIX; const a = Math.sin((1 - gr.swingT / 0.3) * Math.PI), sq = new QT().setFromAxisAngle(new V3(1, 0, 0), -a * 1.8);
       tp.copy(gr.rel.p).applyQuaternion(sq).add(new V3(0, 0.05 * a, -0.45 * a)).applyQuaternion(gr.quat).add(gr.pos); tq.copy(gr.quat).multiply(sq).multiply(gr.rel.q); K = 0.9; }
     const dx = tp.x - b.position.x, dy = tp.y - b.position.y, dz = tp.z - b.position.z;
@@ -1417,7 +1421,8 @@ function makeJackhammer(pos) {
 }
 function updateTools(dt) {
   let sawLoud = 0, sawRev = 0;
-  for (const gr of grabbers) if (gr.held?.gauntletItem) { removeThing(gr.held); setGauntlets(true); if (gr === flatGr) say('Power gauntlets on! Punch stuff'); }
+  for (const t of things) if (t.gauntletItem && !t.heldBy) t.armed = true;
+  for (const gr of grabbers) if (gr.held?.gauntletItem && gr.held.armed) { removeThing(gr.held); setGauntlets(true); if (gr === flatGr) say('Power gauntlets on! Punch stuff'); }
   for (const t of things) { const tl = t.tool; if (!tl) continue;
     if (t.heldBy === flatGr) tl.trig = autoFire; else if (!t.heldBy) tl.trig = false;
     if (tl.kind === 'chainsaw') {
@@ -1468,7 +1473,7 @@ function gauntletVis() { const g = new THREE.Group(); g.add(M(rbox(0.085, 0.07, 
   for (let i = 0; i < 4; i++) g.add(M(BOX, 0x8a8e94, -0.03 + i * 0.02, 0.018, -0.05, { s: [0.014, 0.012, 0.02] })); return g; }
 function makeGauntletItem(pos) {
   const a = gauntletVis(), b = gauntletVis(); a.position.x = -0.055; b.position.x = 0.055; const g = new THREE.Group(); g.add(a, b);
-  const t = compound('Power gauntlets', pos, [{ p: [0, 0, 0], s: [0.2, 0.07, 0.12], c: 0, hidden: true }, { p: new V3(), obj: g }], 1.5); t.gauntletItem = true; return t;
+  const t = compound('Power gauntlets', pos, [{ p: [0, 0, 0], s: [0.2, 0.07, 0.12], c: 0, hidden: true }, { p: new V3(), obj: g }], 1.5); t.gauntletItem = true; t.armed = true; return t;
 }
 const handGaunts = hands.map(h => { const g = noRay(gauntletVis()); g.visible = false; h.grip.add(g); return g; });
 const flatGaunts = fBalls.map(b => { const g = noRay(gauntletVis()); g.visible = false; g.scale.setScalar(1 / 0.04); b.add(g); return g; });
@@ -1511,6 +1516,22 @@ function vrCord(h, sq) {
   if (gunWorldT(t, t.cordLocal).distanceTo(h.pos) > 0.28) { h.cordPull = null; tl.cordH.position.copy(home); const ok = tryStartSaw(t); pulse(h.grip.userData.src, ok ? 1 : 0.6, ok ? 120 : 60); pulseFor(t, 0.8, 100); }
 }
 
+function vrGauntletPull(h, other) { // grab your other wrist to pull a gauntlet off
+  if (!gauntletsOn || other.held || !other.active || other.pos.distanceTo(h.pos) > 0.13) return false;
+  setGauntlets(false); const it = makeGauntletItem(h.pos.clone()); it.armed = false; grab(h, it, h.pos.clone()); pulse(h.grip.userData.src, 0.6, 40); pulse(other.grip.userData.src, 0.6, 40); return true;
+}
+
+/* ================= SETTINGS ================= */
+const SET = { height: 0, angle: 35 };
+try { Object.assign(SET, JSON.parse(localStorage.getItem('smashbox-settings') || '{}')); } catch (e) {}
+const handCorr = new QT();
+function applySettings() {
+  SET.height = clamp(Math.round(SET.height * 100) / 100, -0.4, 1.0); SET.angle = clamp(Math.round(SET.angle), 0, 70);
+  handCorr.setFromAxisAngle(new V3(1, 0, 0), -SET.angle * Math.PI / 180);
+  try { handGaunts.forEach(g => g.rotation.x = -SET.angle * Math.PI / 180); } catch (e) {}
+  if (renderer.xr.isPresenting) rig.position.y = SET.height;
+  try { localStorage.setItem('smashbox-settings', JSON.stringify(SET)); } catch (e) {}
+}
 /* ================= PLAYER MOVEMENT ================= */
 const input = { joy: { x: 0, y: 0 }, yaw: 0, pitch: 0, crouch: false, keys: {} };
 function camDir() { return camera.getWorldDirection(new V3()); }
@@ -1542,7 +1563,7 @@ function resolve(p) {
 function playerBlocked(p) { for (const d of DIRS8) if (solidStatic(new V3(p.x + d.x * 0.2, 1.0, p.z + d.z * 0.2))) return true; return false; }
 function moveStep(p, dx, dz) { const n = Math.max(1, Math.ceil(Math.hypot(dx, dz) / 0.04)); for (let i = 0; i < n; i++) { p.x += dx / n; p.z += dz / n; resolve(p); } }
 function placePlayer() {
-  if (!room) return; rig.position.set(room.spawn.x, 0, room.spawn.z); input.yaw = 0; input.pitch = 0; rig.rotation.set(0, 0, 0);
+  if (!room) return; rig.position.set(room.spawn.x, renderer.xr.isPresenting ? SET.height : 0, room.spawn.z); input.yaw = 0; input.pitch = 0; rig.rotation.set(0, 0, 0);
   if (renderer.xr.isPresenting) { rig.updateMatrixWorld(true); const h = camera.getWorldPosition(new V3()); rig.position.x += room.spawn.x - h.x; rig.position.z += room.spawn.z - h.z; }
   if (!things.some(t => t.melee && !t.removed)) { WEAP.bat(new V3(room.spawn.x + 0.3, 0.05, room.spawn.z - 0.9)).body.quaternion.setFromEuler(0, 0, Math.PI / 2); }
 }
@@ -1562,7 +1583,7 @@ function updateFlat(dt) {
   rig.rotation.set(0, input.yaw, 0); camera.rotation.set(input.pitch, 0, 0, 'YXZ');
   const y = input.yaw, fx = -Math.sin(y), fz = -Math.cos(y), rx = Math.cos(y), rz = -Math.sin(y), sp = 2.8;
   moveStep(rig.position, (rx * mx - fx * my) * sp * dt, (rz * mx - fz * my) * sp * dt);
-  camera.position.y += ((input.crouch ? 0.95 : 1.6) - camera.position.y) * Math.min(1, dt * 10);
+  camera.position.y += ((input.crouch ? 0.95 : 1.6 + SET.height * 0.5) - camera.position.y) * Math.min(1, dt * 10);
   rig.updateMatrixWorld(true); playerTarget.set(rig.position.x, 0.75, rig.position.z); softPushPlayer(rig.position, dt);
   const held = flatGr.held, cq = camera.getWorldQuaternion(new QT()), cp = camera.getWorldPosition(new V3()), d = camDir();
   // holder pose
@@ -1603,10 +1624,10 @@ function updateFlat(dt) {
   const g = held?.gun; gunbar.style.display = (g || held?.magData || offMag) ? '' : 'none';
   if (g) {
     bAct.textContent = 'Shoot'; gMag.style.display = g.type === 'shotgun' ? 'none' : ''; gMag.textContent = 'Mag out';
-    gRack.textContent = g.type === 'shotgun' ? 'Pump' : 'Rack'; gLoad.textContent = g.type === 'shotgun' ? 'Load shell' : 'Load round'; gIns.style.display = offMag && g.type !== 'shotgun' ? '' : 'none';
+    gRack.textContent = g.type === 'shotgun' ? 'Pump' : 'Rack'; gLoad.textContent = g.type === 'shotgun' ? 'Load shell' : g.type === 'minigun' ? 'Get full box' : 'Get full mag'; gIns.style.display = offMag && g.type !== 'shotgun' ? '' : 'none';
     ammoEl.textContent = g.type === 'minigun' ? `Ammo box: ${g.mag ? g.mag.count + '/200' : 'none'}` + (offMag ? `\nLeft hand box: ${offMag.count}/200` : '') : g.type === 'shotgun' ? `Chamber: ${g.chamber ? 'loaded' : 'empty'}\nTube: ${g.tube}/6` : `Chamber: ${g.chamber ? 'loaded' : 'empty'}\nMag: ${g.mag ? g.mag.count + '/' + g.mag.cap : 'none'}` + (offMag ? `\nLeft hand mag: ${offMag.count}/${offMag.cap}` : '');
-  } else if (held?.magData) { gMag.style.display = 'none'; gRack.style.display = 'none'; gIns.style.display = 'none'; gLoad.textContent = 'Load round'; ammoEl.textContent = `Mag: ${held.magData.count}/${held.magData.cap}`; }
-  else { ammoEl.textContent = offMag ? `Left hand mag: ${offMag.count}/${offMag.cap}` : ''; gMag.style.display = 'none'; gRack.style.display = 'none'; gLoad.style.display = offMag ? '' : 'none'; gLoad.textContent = 'Load round'; gIns.style.display = 'none'; }
+  } else if (held?.magData) { gMag.style.display = 'none'; gRack.style.display = 'none'; gIns.style.display = 'none'; gLoad.style.display = 'none'; ammoEl.textContent = `Mag: ${held.magData.count}/${held.magData.cap}`; }
+  else { ammoEl.textContent = offMag ? `Left hand mag: ${offMag.count}/${offMag.cap}` : ''; gMag.style.display = 'none'; gRack.style.display = 'none'; gLoad.style.display = 'none'; gIns.style.display = 'none'; }
   if (g) { gRack.style.display = g.type === 'minigun' ? 'none' : ''; gLoad.style.display = ''; if (g.type === 'minigun') { gMag.textContent = 'Box off'; gIns.textContent = 'Put box on'; } else gIns.textContent = 'Insert mag'; }
   gAim.style.display = g && g.type !== 'minigun' ? '' : 'none'; gAim.textContent = adsToggle ? 'Stop aiming' : 'Aim'; gAim.classList.toggle('on', adsToggle);
   bMods.classList.toggle('hide', !(g || held?.wkind));
@@ -1637,7 +1658,7 @@ function flatAction() {
     release(flatGr); return;
   }
   if (!target) { if (gauntletsOn) flatPunch(); return; }
-  if (target.slot) { if (target.slot === 'menu') { openMenu(); return; } if (target.slot === 'gauntlets' && gauntletsOn) { setGauntlets(false); say('Gauntlets off'); return; } const t = spawnFromSlot(target.slot, flatGr.pos.clone()); S.zip(); takeFlat(t); return; }
+  if (target.slot) { if (target.slot === 'menu') { openMenu(); return; } if (target.slot === 'settings') { openSettingsFlat(); return; } if (target.slot === 'gauntlets' && gauntletsOn) { setGauntlets(false); say('Gauntlets off'); return; } const t = spawnFromSlot(target.slot, flatGr.pos.clone()); S.zip(); takeFlat(t); return; }
   if (target.interact) { target.interact.use(); return; }
   if (target.thing) takeFlat(target.thing, target);
 }
@@ -1655,11 +1676,10 @@ function flatRack() { const h = flatGr.held; if (!h?.gun) return; const g = h.gu
   else { rackBack(h); g.manip = 1; updateGunVisual(h); setTimeout(() => { rackFwd(h); g.manip = 0; updateGunVisual(h); }, 240); } }
 function flatLoad() {
   const h = flatGr.held, g = h?.gun;
-  if (g?.type === 'shotgun') { if (!nearAmmoBox('shotgun')) { say('Get a SHELLS box out of your backpack first'); return; } if (g.tube >= 6) { say('Tube is full'); return; } g.tube++; S.shellIn(); return; }
-  const mag = h?.magData || offMag; if (!mag) { say(g ? 'Take the mag out first (Mag out)' : 'Hold a magazine'); return; }
-  if (mag.count >= mag.cap) { say('Magazine is full'); return; }
-  if (!nearAmmoBox(mag.type === 'minigun' ? 'ak' : mag.type)) { say(`Get a ${mag.type === 'pistol' ? '9MM' : '7.62'} ammo box out of your backpack first`); return; }
-  mag.count++; S.roundIn(); if (h?.magVis) h.magVis.userData.top.visible = true;
+  if (g?.type === 'shotgun') { if (g.tube >= 6) { say('Tube is full'); return; } g.tube++; S.shellIn(); return; }
+  if (!g) return; // grab a full mag from the backpack into your left hand (the empty one drops)
+  if (offMag) { const old = makeMag(offMag.type, fBalls[0].position.clone(), offMag); old.body.velocity.set(0, -1, 0); }
+  offMag = { type: g.type, count: g.G.cap, cap: g.G.cap }; S.zip(); S.magOut();
 }
 function flatInsert() { const h = flatGr.held; if (!h?.gun || !offMag) return; if (offMag.type !== h.gun.type) { say('Wrong magazine for this gun'); return; } if (magIn(h, offMag)) offMag = null; }
 const press = (el, fn) => el.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); audio(); fn(); });
@@ -1710,7 +1730,7 @@ function updateVR(dt) {
   hands.forEach((h, hi) => {
     const src = h.grip.userData.src, gp = src?.gamepad;
     if (!gp || !h.grip.visible) { h.active = false; if (h.held) release(h); return; }
-    h.active = true; h.grip.getWorldPosition(h.pos); h.grip.getWorldQuaternion(h.quat);
+    h.active = true; h.grip.getWorldPosition(h.pos); h.grip.getWorldQuaternion(h.quat); h.quat.multiply(handCorr);
     h.hist.push({ t: now, p: h.pos.clone() }); while (h.hist.length > 10) h.hist.shift();
     const trig = (gp.buttons[0]?.value || 0) > 0.5, sq = !!gp.buttons[1]?.pressed, bA = !!gp.buttons[4]?.pressed, bB = !!gp.buttons[5]?.pressed;
     const other = hands[1 - hi];
@@ -1721,7 +1741,7 @@ function updateVR(dt) {
     if (!h.beam) { h.beam = noRay(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V3(), new V3(0, 0, -1)]), new THREE.LineBasicMaterial({ color: 0x9fd3ff, transparent: true, opacity: 0.7 }))); h.beam.frustumCulled = false; scene.add(h.beam); h.dot = noRay(new THREE.Mesh(SPH, new THREE.MeshBasicMaterial({ color: 0x7dff9b }))); h.dot.scale.setScalar(0.02); scene.add(h.dot); }
     h.farTarget = null; h.beam.visible = false; h.dot.visible = false;
     if (!h.held && trig && !h.manip) {
-      const dir = new V3(0, -0.35, -1).normalize().applyQuaternion(h.quat); ray.set(h.pos, dir); ray.far = 10;
+      const dir = new V3(0, -0.1, -1).normalize().applyQuaternion(h.quat); ray.set(h.pos, dir); ray.far = 10;
       const hit = ray.intersectObjects(things.filter(t => !t.removed && !t.heldBy).map(t => t.mesh), true).find(x => !(x.object.layers.mask & 8));
       const end = hit ? hit.point : h.pos.clone().addScaledVector(dir, 3); const pa = h.beam.geometry.attributes.position; pa.setXYZ(0, h.pos.x, h.pos.y, h.pos.z); pa.setXYZ(1, end.x, end.y, end.z); pa.needsUpdate = true;
       h.beam.visible = true; h.beam.material.color.setHex(hit ? 0x7dff9b : 0x9fd3ff);
@@ -1736,18 +1756,21 @@ function updateVR(dt) {
       const oGun = other.held?.gun ? other.held : null;
       const manipNear = oGun && oGun.gun.type !== 'minigun' && gunWorld(oGun, oGun.gun.G.manip).distanceTo(h.pos) < 0.1;
       const box = things.find(t => t.ammoBox && t.heldBy !== h && gunWorldT(t, t.boxTop).distanceTo(h.pos) < 0.08);
-      if (vrToolGrip(h, other) || vrGripSpecial(h, other)) {}
+      if (vrGauntletPull(h, other) || vrToolGrip(h, other) || vrGripSpecial(h, other)) {}
+      else if (slot && slot.k === 'settings') { openMenu('settings'); pulse(src, 0.4, 20); }
       else if (slot && slot.k === 'gauntlets' && gauntletsOn) { setGauntlets(false); pulse(src, 0.5, 30); }
       else if (slot && slot.k !== 'menu') { const t = spawnFromSlot(slot.k, h.pos.clone()); S.zip(); grab(h, t, h.pos.clone()); pulse(src, 0.6, 40); }
       else if (manipNear) { h.manip = { gun: oGun, start: h.pos.clone() }; pulse(src, 0.4, 20); }
       else if (box) { const t = makeRound(box.ammoBox, h.pos.clone()); grab(h, t, h.pos.clone()); h.rel.p.set(0, -0.01, -0.03); S.roundIn(); pulse(src, 0.3, 15); }
+      else if (best && best.heldBy === other && other !== h) { const b = best.body; h.support = best; best.support = { hand: h, lp: h.pos.clone().sub(new V3(b.position.x, b.position.y, b.position.z)).applyQuaternion(bodyQuat(b).invert()) }; S.grab(); pulse(src, 0.5, 30); }
       else if (best) { grab(h, best, h.pos.clone()); pulse(src, 0.6, 40); }
       else if (pack.state === 'worn' ? (packReach(h.pos) || pack.g.position.distanceTo(h.pos) < 0.35) : (packInside(h.pos) || pack.g.localToWorld(new V3(0, 0.39, 0)).distanceTo(h.pos) < 0.12)) { pack.state = 'held'; pack.heldBy = h; S.zip(); pulse(src, 0.5, 30); }
       else if (h.farTarget) { const t = h.farTarget; grab(h, t, h.pos.clone()); if (!t.gripLocal) h.rel.p.set(0, -0.02, -0.04); h.pullT = 1.2; S.whoosh(); pulse(src, 0.8, 60); }
     }
     // grip released
     if (!sq && h.prev.sq) {
-      if (h.manip) { const g = h.manip.gun.gun; if (g.rackBack && g.type !== 'shotgun') { g.rackBack = false; rackFwd(h.manip.gun); } g.manip = 0; updateGunVisual(h.manip.gun); h.manip = null; }
+      if (h.support) { if (h.support.support?.hand === h) h.support.support = null; h.support = null; }
+      else if (h.manip) { const g = h.manip.gun.gun; if (g.rackBack && g.type !== 'shotgun') { g.rackBack = false; rackFwd(h.manip.gun); } g.manip = 0; updateGunVisual(h.manip.gun); h.manip = null; }
       else if (pack.heldBy === h) { pack.heldBy = null; const head2 = camera.getWorldPosition(new V3()); if (packReach(h.pos) || pack.g.position.distanceTo(head2.clone().add(new V3(0, -0.4, 0)).addScaledVector(d, -0.25)) < 0.3) { pack.state = 'worn'; S.zip(); } else { pack.state = 'hover'; pack.hoverPos.copy(pack.g.position); pack.yaw = Math.atan2(head2.x - pack.g.position.x, head2.z - pack.g.position.z); } }
       else if (h.held) {
         if (pack.state !== 'worn' && packInside(h.pos)) storeInPack(h.held);
@@ -1779,7 +1802,7 @@ function updateVR(dt) {
     if (ht?.ammo && ht.ammo !== 'shotgun') { const mag = things.find(t => t.magData && (t.magData.type === ht.ammo || (t.magData.type === 'minigun' && ht.ammo === 'ak')) && gunWorldT(t, t.magTop).distanceTo(h.pos) < 0.07); if (mag && mag.magData.count < mag.magData.cap) { mag.magData.count++; mag.magVis.userData.top.visible = true; removeThing(ht); S.roundIn(); pulse(src, 0.4, 20); } }
     if (ht?.ammo === 'shotgun') { const sg = things.find(t => t.gun?.type === 'shotgun' && gunWorld(t, t.gun.G.well).distanceTo(h.pos) < 0.09); if (sg && sg.gun.tube < 6) { sg.gun.tube++; removeThing(ht); S.shellIn(); pulse(src, 0.5, 25); } }
     if (ht?.magData) { const top = gunWorldT(ht, ht.magTop); const gun = things.find(t => t.gun && !t.gun.mag && t.gun.type === ht.magData.type && gunWorld(t, t.gun.G.well).distanceTo(top) < 0.07); if (gun && magIn(gun, ht.magData)) removeThing(ht); }
-    h.ballMat.color.setHex(h.held ? 0x8fc8ff : (best || h.manip) ? 0x9df0a8 : HAND_COL);
+    h.ballMat.color.setHex(h.held || h.support ? 0x8fc8ff : (best || h.manip) ? 0x9df0a8 : HAND_COL);
     h.prev = { trig, sq, bA, bB };
   });
 }
@@ -1789,40 +1812,63 @@ const gunWorldT = (t, local) => { const w = t.body.pointToWorldFrame(cv(local));
 let menuOpen = true, started = false;
 const menuEl = $('menu'), hudEl = $('hud');
 const vrMenu = (() => {
-  const c = document.createElement('canvas'); c.width = 512; c.height = 420; const x = c.getContext('2d'); const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
-  const m = noRay(new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.82), new THREE.MeshBasicMaterial({ map: tex, transparent: true }))); m.visible = false; scene.add(m);
-  const btns = [{ k: 'normal', t: 'NORMAL ROOM', r: [30, 110, 220, 70] }, { k: 'kitchen', t: 'KITCHEN', r: [262, 110, 220, 70] }, { k: 'random', t: 'RANDOM ROOM', r: [30, 195, 452, 70] }, { k: 'speed', t: '', r: [30, 280, 452, 55] }, { k: 'resume', t: 'RESUME', r: [30, 345, 452, 55] }];
-  const draw = hov => { x.clearRect(0, 0, 512, 420); x.fillStyle = 'rgba(20,23,30,.94)'; x.beginPath(); x.roundRect(0, 0, 512, 420, 24); x.fill();
-    x.fillStyle = '#ff6a3a'; x.font = 'bold 54px sans-serif'; x.textAlign = 'center'; x.fillText('SMASHBOX', 256, 70);
-    for (const b of btns) { if (b.k === 'resume' && !started) continue; x.fillStyle = b.k === hov ? '#ffffff' : (b.k === 'speed' || b.k === 'resume') ? '#2f3644' : '#c8402a'; x.beginPath(); x.roundRect(...b.r, 14); x.fill();
-      x.fillStyle = b.k === hov ? '#111' : '#fff'; x.font = 'bold 28px sans-serif'; x.fillText(b.k === 'speed' ? 'SPEED: ' + (PERF.fast ? 'FAST' : 'PRETTY') : b.t, b.r[0] + b.r[2] / 2, b.r[1] + b.r[3] / 2 + 10); }
+  const W = 512, H = 480, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'); const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  const m = noRay(new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.9375), new THREE.MeshBasicMaterial({ map: tex, transparent: true }))); m.visible = false; scene.add(m);
+  const pages = {
+    main: [{ k: 'normal', t: 'NORMAL ROOM', r: [30, 100, 220, 66] }, { k: 'kitchen', t: 'KITCHEN', r: [262, 100, 220, 66] }, { k: 'random', t: 'RANDOM ROOM', r: [30, 180, 452, 66] },
+      { k: 'speed', t: '', r: [30, 262, 220, 58] }, { k: 'settings', t: 'SETTINGS', r: [262, 262, 220, 58] }, { k: 'resume', t: 'RESUME', r: [30, 336, 452, 58] }],
+    settings: [{ k: 'hdn', t: '-', r: [30, 110, 80, 62] }, { k: 'hup', t: '+', r: [402, 110, 80, 62] }, { k: 'adn', t: '-', r: [30, 196, 80, 62] }, { k: 'aup', t: '+', r: [402, 196, 80, 62] },
+      { k: 'autoh', t: 'MAKE ME GROWN-UP HEIGHT', r: [30, 280, 452, 56] }, { k: 'gaunt', t: 'TAKE OFF GAUNTLETS', r: [30, 344, 452, 56] }, { k: 'back', t: 'BACK', r: [30, 408, 452, 56] }],
+  };
+  const st = { page: 'main' };
+  const vis = b => !((b.k === 'resume' && !started) || (b.k === 'gaunt' && !gauntletsOn));
+  const draw = hov => { x.clearRect(0, 0, W, H); x.fillStyle = 'rgba(20,23,30,.94)'; x.beginPath(); x.roundRect(0, 0, W, H, 24); x.fill(); x.textAlign = 'center';
+    if (st.page === 'main') { x.fillStyle = '#ff6a3a'; x.font = 'bold 54px sans-serif'; x.fillText('SMASHBOX', 256, 70); }
+    else { x.fillStyle = '#6fb8ff'; x.font = 'bold 44px sans-serif'; x.fillText('SETTINGS', 256, 64); x.fillStyle = '#fff'; x.font = 'bold 24px sans-serif';
+      x.fillText('HEIGHT  ' + (SET.height >= 0 ? '+' : '') + Math.round(SET.height * 100) + ' cm', 256, 150); x.fillText('HAND ANGLE  ' + SET.angle + '\u00b0', 256, 236);
+      x.font = '15px sans-serif'; x.fillStyle = '#aeb8c6'; x.fillText('taller / shorter', 256, 172); x.fillText('bigger = guns point more forward', 256, 258); }
+    for (const b of pages[st.page]) { if (!vis(b)) continue; x.fillStyle = b.k === hov ? '#ffffff' : ['speed', 'resume', 'back', 'settings'].includes(b.k) ? '#2f3644' : b.k === 'gaunt' ? '#7a4a14' : st.page === 'settings' ? '#2a5a8a' : '#c8402a'; x.beginPath(); x.roundRect(...b.r, 14); x.fill();
+      x.fillStyle = b.k === hov ? '#111' : '#fff'; x.font = b.t.length < 2 ? 'bold 40px sans-serif' : 'bold 26px sans-serif'; x.fillText(b.k === 'speed' ? 'SPEED: ' + (PERF.fast ? 'FAST' : 'PRETTY') : b.t, b.r[0] + b.r[2] / 2, b.r[1] + b.r[3] / 2 + (b.t.length < 2 ? 14 : 9)); }
     tex.needsUpdate = true; };
-  return { m, btns, draw, hov: null };
+  return { m, st, pages, vis, draw, hov: null, W, H, get btns() { return pages[st.page]; } };
 })();
 function placeVRMenu() { const h = camera.getWorldPosition(new V3()), d = camDir(); d.y = 0; if (d.lengthSq() < 1e-4) d.set(0, 0, -1); d.normalize(); const y = Math.max(h.y, 1.0); vrMenu.m.position.set(h.x, y - 0.15, h.z).addScaledVector(d, 1.1); vrMenu.m.lookAt(h.x, vrMenu.m.position.y, h.z); }
 function keepVRMenuInView() { // the menu follows you if you look away or walk off, so it can never get lost
   const h = camera.getWorldPosition(new V3()), d = camDir(), to = vrMenu.m.position.clone().sub(h), dist = to.length();
   if (dist < 0.4 || dist > 2.2 || to.normalize().dot(d) < 0.55 || vrMenu.m.position.y < 0.3) placeVRMenu();
 }
-function openMenu() { menuOpen = true; S.menu(); autoFire = false;
+function openMenu(page = 'main') { menuOpen = true; S.menu(); autoFire = false; vrMenu.st.page = page;
   if (renderer.xr.isPresenting) { placeVRMenu(); vrMenu.m.visible = true; vrMenu.draw(null); }
+  else if (page === 'settings') { menuOpen = false; openSettingsFlat(); }
   else { menuEl.style.display = 'flex'; hudEl.style.display = 'none'; $('mResume').style.display = started ? '' : 'none'; if (document.pointerLockElement) document.exitPointerLock(); }
 }
 function closeMenu() { menuOpen = false; vrMenu.m.visible = false; menuEl.style.display = 'none'; if (!renderer.xr.isPresenting) hudEl.style.display = ''; hands.forEach(h => { if (h.beam) h.beam.visible = false; }); }
 function menuPick(k) {
   audio();
   if (k === 'speed') { setSpeed(!PERF.fast); vrMenu.draw(vrMenu.hov); return; }
+  const set = { hdn: () => SET.height -= 0.05, hup: () => SET.height += 0.05, adn: () => SET.angle -= 5, aup: () => SET.angle += 5, autoh: autoHeight, gaunt: () => setGauntlets(false), settings: () => vrMenu.st.page = 'settings', back: () => vrMenu.st.page = 'main' }[k];
+  if (set) { set(); applySettings(); S.click(); vrMenu.draw(vrMenu.hov); return; }
   if (k === 'resume') { if (started) closeMenu(); return; }
   for (const t of things.slice()) if (!t.heldBy) removeThing(t);
   buildRoom(k, (Math.random() * 1e9) | 0); started = true; placePlayer(); closeMenu();
 }
 function vrMenuPoint(h, click) {
-  const dir = new V3(0, -0.35, -1).normalize().applyQuaternion(h.quat); ray.set(h.pos, dir); ray.far = 5;
+  const dir = new V3(0, -0.1, -1).normalize().applyQuaternion(h.quat); ray.set(h.pos, dir); ray.far = 5;
   if (!h.beam) return; const hit = ray.intersectObject(vrMenu.m)[0];
   const end = hit ? hit.point : h.pos.clone().addScaledVector(dir, 2); const pa = h.beam.geometry.attributes.position; pa.setXYZ(0, h.pos.x, h.pos.y, h.pos.z); pa.setXYZ(1, end.x, end.y, end.z); pa.needsUpdate = true; h.beam.visible = true; h.dot.visible = !!hit; if (hit) h.dot.position.copy(hit.point);
-  let hov = null; if (hit) { const px = hit.uv.x * 512, py = (1 - hit.uv.y) * 420; for (const b of vrMenu.btns) { if (b.k === 'resume' && !started) continue; const [x, y, w, hh] = b.r; if (px >= x && px <= x + w && py >= y && py <= y + hh) hov = b.k; } }
+  let hov = null; if (hit) { const px = hit.uv.x * vrMenu.W, py = (1 - hit.uv.y) * vrMenu.H; for (const b of vrMenu.btns) { if (!vrMenu.vis(b)) continue; const [x, y, w, hh] = b.r; if (px >= x && px <= x + w && py >= y && py <= y + hh) hov = b.k; } }
   if (hov !== vrMenu.hov) { vrMenu.hov = hov; vrMenu.draw(hov); if (hov) pulse(h.grip.userData.src, 0.2, 10); }
   if (click && hov) menuPick(hov);
+}
+function autoHeight() { // make your eyes about 1.7 m high in the game (grown-up height)
+  if (renderer.xr.isPresenting) SET.height = 1.7 - camera.position.y; else SET.height = 0.2;
+}
+function openSettingsFlat() {
+  modsOpen = true; modsP.style.display = 'flex'; if (document.pointerLockElement) document.exitPointerLock(); $('modsT').textContent = 'Settings'; modsL.innerHTML = '';
+  const row = (title, opts) => { const d = document.createElement('div'); d.className = 'row'; d.innerHTML = `<b>${title}</b>`; for (const [lab, fn] of opts) { const b = document.createElement('button'); b.textContent = lab; b.onclick = () => { audio(); fn(); applySettings(); openSettingsFlat(); }; d.appendChild(b); } modsL.appendChild(d); };
+  row(`HEIGHT: ${SET.height >= 0 ? '+' : ''}${Math.round(SET.height * 100)} cm`, [['Shorter', () => SET.height -= 0.05], ['Taller', () => SET.height += 0.05], ['Grown-up height', autoHeight]]);
+  row(`VR HAND ANGLE: ${SET.angle}\u00b0 (bigger = guns point more forward)`, [['-5', () => SET.angle -= 5], ['+5', () => SET.angle += 5]]);
+  if (gauntletsOn) row('POWER GAUNTLETS', [['Take them off', () => setGauntlets(false)]]);
 }
 function setSpeed(fast) {
   PERF.fast = fast; PERF.debrisCap = fast ? 45 : 110; PERF.dustCap = fast ? 140 : 300; FIX = fast ? 1 / 60 : 1 / 90; warm.visible = !fast;
@@ -1832,6 +1878,8 @@ function setSpeed(fast) {
 document.querySelectorAll('#card .mode').forEach(b => b.addEventListener('click', () => menuPick(b.dataset.mode)));
 $('mSpeed').addEventListener('click', () => { audio(); setSpeed(!PERF.fast); });
 $('mResume').addEventListener('click', () => { audio(); closeMenu(); });
+$('mSet').addEventListener('click', () => { audio(); openSettingsFlat(); });
+applySettings();
 $('mVR').addEventListener('click', async () => {
   audio(); const msg = $('msg'); msg.textContent = '';
   if (!navigator.xr) { msg.textContent = 'No VR here. Open this page in the Meta Quest Browser.'; return; }
@@ -1839,9 +1887,9 @@ $('mVR').addEventListener('click', async () => {
     if (!(await navigator.xr.isSessionSupported('immersive-vr'))) { msg.textContent = 'VR is not available on this device.'; return; }
     const s = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor'] });
     if (!started) { buildRoom('random', (Math.random() * 1e9) | 0); started = true; }
-    await renderer.xr.setSession(s); menuEl.style.display = 'none'; hudEl.style.display = 'none'; camera.rotation.set(0, 0, 0); camera.position.set(0, 0, 0);
+    await renderer.xr.setSession(s); applySettings(); menuEl.style.display = 'none'; hudEl.style.display = 'none'; camera.rotation.set(0, 0, 0); camera.position.set(0, 0, 0);
     placePlayer(); closeMenu();
-    s.addEventListener('end', () => { camera.position.set(0, 1.6, 0); for (const h of hands) { h.active = false; release(h); } vrMenu.m.visible = false; openMenu(); });
+    s.addEventListener('end', () => { camera.position.set(0, 1.6, 0); rig.position.y = 0; for (const h of hands) { h.active = false; release(h); } vrMenu.m.visible = false; openMenu(); });
   } catch (e) { msg.textContent = 'Could not start VR: ' + (e.message || e); }
 });
 if (/OculusBrowser|Quest/i.test(navigator.userAgent)) setSpeed(true);
@@ -1891,7 +1939,7 @@ function frame() {
   renderer.render(scene, camera);
 }
 renderer.setAnimationLoop(frame);
-window.__dbg = { things, vobjs, world, input, rig, flatGr, buildRoom, hitVoxels, WEAP, makeGun, makeMag, makeAmmoBox, spawnFromSlot, pack, fireGun, flatAction, flatMag, flatRack, flatLoad, flatInsert, menuPick, takeFlat, flatThrow, magOut, storeInPack, get target() { return target; }, get offMag() { return offMag; }, get frames() { return frames; }, get TS() { return TS; }, setGauntlets, flatPunch, get gauntletsOn() { return gauntletsOn; }, voxAt, tryStartSaw, set autoFire(v) { autoFire = v; }, hands, renderer, camera, attachTo, addMod, makeGrenade, pullPin, explode, openMods, get ads() { return ads; }, set adsToggle(v) { adsToggle = v; }, slowHeld, debris, room: () => room };
+window.__dbg = { things, vobjs, world, input, rig, flatGr, buildRoom, hitVoxels, WEAP, makeGun, makeMag, makeAmmoBox, spawnFromSlot, pack, fireGun, flatAction, flatMag, flatRack, flatLoad, flatInsert, menuPick, takeFlat, flatThrow, magOut, storeInPack, get target() { return target; }, get offMag() { return offMag; }, get frames() { return frames; }, get TS() { return TS; }, SET, applySettings, menuPick, openMenu, get menuOpen() { return menuOpen; }, setGauntlets, flatPunch, get gauntletsOn() { return gauntletsOn; }, voxAt, tryStartSaw, set autoFire(v) { autoFire = v; }, hands, renderer, camera, attachTo, addMod, makeGrenade, pullPin, explode, openMods, get ads() { return ads; }, set adsToggle(v) { adsToggle = v; }, slowHeld, debris, room: () => room };
 </script>
 </body>
 </html>
