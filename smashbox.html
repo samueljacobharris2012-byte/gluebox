@@ -1522,16 +1522,20 @@ function solidStatic(p) {
 function solidDyn(p) { // loose furniture / big chunks block you too, so you can't shove them through walls
   for (const vo of vobjs) { if (!vo.dynamic || vo.dead || vo.nx * vo.ny * vo.nz < 6) continue; const b = vo.body.position, R = Math.max(vo.nx, vo.ny, vo.nz) * vo.s;
     if (Math.abs(b.x - p.x) > R || Math.abs(b.z - p.z) > R || Math.abs(b.y - p.y) > R) continue;
-    const [gx, gy, gz] = vo.toGrid(p); if (vo.isSolid(Math.floor(gx), Math.floor(gy), Math.floor(gz))) return true; }
-  return false;
+    const [gx, gy, gz] = vo.toGrid(p); if (vo.isSolid(Math.floor(gx), Math.floor(gy), Math.floor(gz))) return vo; }
+  return null;
 }
-function softPushPlayer(p, dt) { // nudge small loose items out of your way gently instead of ramming them
+const pushReq = new Map();
+function softPushPlayer(p, dt) { // push things with your body: firm but limited, so walls stop them (and then stop you)
+  for (const [vo, d] of pushReq) { if (vo.dead) continue; const b = vo.body; b.wakeUp(); const want = clamp(2.2 / Math.sqrt(Math.max(1, b.mass / 8)), 0.5, 1.8);
+    const along = b.velocity.x * d.x + b.velocity.z * d.z; if (along < want) { const k = Math.min(1, dt * 10); b.velocity.x += d.x * (want - along) * k; b.velocity.z += d.z * (want - along) * k; } }
+  pushReq.clear();
   for (const t of things) { if (t.heldBy || t.removed) continue; const b = t.body.position; if (b.y > 1.5) continue; const dx = b.x - p.x, dz = b.z - p.z, d = Math.hypot(dx, dz); if (d > 0.3 || d < 1e-4) continue;
-    b.wakeUp?.(); t.body.wakeUp(); const s = Math.min(1.2, (0.3 - d) * 12); t.body.velocity.x += (dx / d * s - t.body.velocity.x) * 0.25; t.body.velocity.z += (dz / d * s - t.body.velocity.z) * 0.25; }
+    t.body.wakeUp(); const s = Math.min(1.2, (0.3 - d) * 12); t.body.velocity.x += (dx / d * s - t.body.velocity.x) * 0.25; t.body.velocity.z += (dz / d * s - t.body.velocity.z) * 0.25; }
 }
 const DIRS8 = Array.from({ length: 8 }, (_, i) => new V3(Math.cos(i * Math.PI / 4), 0, Math.sin(i * Math.PI / 4)));
 function resolve(p) {
-  for (let it = 0; it < 3; it++) for (const d of DIRS8) for (const h of [0.35, 1.1]) { const q = new V3(p.x + d.x * 0.24, h, p.z + d.z * 0.24); if (solidStatic(q) || solidDyn(q)) { p.x -= d.x * 0.03; p.z -= d.z * 0.03; } }
+  for (let it = 0; it < 3; it++) for (const d of DIRS8) for (const h of [0.35, 1.1]) { const q = new V3(p.x + d.x * 0.24, h, p.z + d.z * 0.24); const dv = solidDyn(q); if (dv) pushReq.set(dv, d); if (solidStatic(q) || dv) { p.x -= d.x * 0.03; p.z -= d.z * 0.03; } }
   if (room) { const b = room.bounds; p.x = clamp(p.x, b.minx, b.maxx); p.z = clamp(p.z, b.minz, b.maxz); }
   if (room?.ped) { const dx = p.x - room.ped.x, dz = p.z - room.ped.z, dd = Math.hypot(dx, dz); if (dd < 0.42 && dd > 1e-4) { p.x = room.ped.x + dx / dd * 0.42; p.z = room.ped.z + dz / dd * 0.42; } }
 }
