@@ -35,13 +35,13 @@
 <div id="hurt"></div><div id="scopeH"></div>
 <div id="menu"><div id="card">
   <h1>BLACK SITE</h1><div class="sub">INFILTRATE · RECOVER THE BRIEFCASE</div>
-  <p>Take a guard's keycard, get inside, and fight sector by sector to the briefcase. It's always one sector deeper...</p>
+  <p>Get past the guards, open the base door, and fight sector by sector to the briefcase. It's always one sector deeper...</p>
   <button id="bVR" class="vr">ENTER VR</button>
   <button id="bPC">PLAY ON PC</button>
   <div class="row">VR hand angle <button id="aDn">-</button><span id="aV">35°</span><button id="aUp">+</button></div>
   <div class="row">Height <button id="hDn">-</button><span id="hV">+0 cm</span><button id="hUp">+</button></div>
   <div id="best"></div><div id="msg"></div>
-  <p style="font-size:12px;margin-top:14px">VR: left stick move (push all the way), right stick turn. Grip = grab, trigger = shoot / pull grenade pin. Your AK stays slung on your chest. A/X drops the mag; reach to your LEFT POCKET (left thigh) and grip for a new mag, push it in, grab the charging handle and pull it back. Hold the foregrip with your other hand. Knife on your chest, grenades on your right hip. B/Y = menu.<br>PC: WASD, mouse aim, click shoot, right click aim down the scope, R reload, G grenade, F knife, E use, Shift sprint, Esc menu.</p>
+  <p style="font-size:12px;margin-top:14px">VR: left stick move (push all the way), right stick turn. Grip = grab, trigger = shoot / pull grenade pin. Your AK stays slung on your chest. Push the red button by the base door to open it. A/X drops the mag; reach to your LEFT POCKET (left thigh) and grip for a new mag, push it in, grab the charging handle and pull it back. Hold the foregrip with your other hand. Knife on your chest, grenades on your right hip. B/Y = menu.<br>PC: WASD, mouse aim, click shoot, right click aim down the scope, R reload, G grenade, F knife, E use, Shift sprint, Esc menu.</p>
 </div></div>
 <script type="module">
 import * as THREE from 'three';
@@ -414,19 +414,22 @@ function buildRoom(type, origin, heading, rng, exitSide, sector) {
 /* ================= OUTSIDE COMPOUND ================= */
 function buildOutside() {
   const ch = new Chunk(new V3(0, 0, 0), 0); ch.type = 'outside';
-  ch.box(0, -0.05, -15, 160, 0.1, 160, 'dirt'); ch.box(0, 0.002, -5, 7, 0.01, 50, 'asphalt', { col: false });
+  ch.box(0, -0.065, -15, 160, 0.1, 160, 'dirt'); ch.box(0, 0.002, -5, 7, 0.01, 50, 'asphalt', { col: false });
   // fence around the compound
   const fx = 34, fz0 = -56, fz1 = 24; const fence = (x, z, w, d) => { ch.box(x, 1.6, z, w, 3.2, d, 'fence'); };
   fence(-fx, (fz0 + fz1) / 2, 0.05, fz1 - fz0); fence(fx, (fz0 + fz1) / 2, 0.05, fz1 - fz0); fence(0, fz0, fx * 2, 0.05); fence(-fx / 2 - 2, fz1, fx - 4, 0.05); fence(fx / 2 + 2, fz1, fx - 4, 0.05);
   for (let x = -fx; x <= fx; x += 4) { ch.cyl(x, 1.7, fz0, 0.05, 3.4, 'steel'); ch.cyl(x, 1.7, fz1, 0.05, 3.4, 'steel'); } for (let z = fz0; z <= fz1; z += 4) { ch.cyl(-fx, 1.7, z, 0.05, 3.4, 'steel'); ch.cyl(fx, 1.7, z, 0.05, 3.4, 'steel'); }
-  ch.box(0, 1.2, fz1 + 4, 8, 2.4, 0.3, 'concrete'); // blocked gate behind you
+  for (const sx of [-1, 1]) { ch.box(sx * 2, 1.6, fz1, 4, 3.2, 0.05, 'fence'); ch.box(sx * 4.05, 1.7, fz1, 0.16, 3.4, 0.16, 'darkSteel'); ch.box(sx * 2, 3.15, fz1, 4, 0.08, 0.08, 'steel', { col: false }).box(sx * 2, 0.08, fz1, 4, 0.08, 0.08, 'steel', { col: false }).box(sx * 0.05, 1.6, fz1, 0.08, 3.2, 0.08, 'steel', { col: false }); }
+  ch.box(0, 1.6, fz1 - 0.02, 0.5, 0.35, 0.03, 'red', { col: false }); // closed gate behind you
   // the base building
   const bz = -30, bw = 28, bd = 22, bh = 8;
-  ch.box(-(bw / 2 + 1.1) / 2 - 0.55, bh / 2, bz - 0.3, bw / 2 - 1.1, bh, 0.6, 'concrete').box((bw / 2 + 1.1) / 2 + 0.55, bh / 2, bz - 0.3, bw / 2 - 1.1, bh, 0.6, 'concrete').box(0, 2.6 + (bh - 2.6) / 2, bz - 0.3, 2.2, bh - 2.6, 0.6, 'concrete');
+  ch.box(-(bw / 2 + 1.1) / 2, bh / 2, bz - 0.3, bw / 2 - 1.1, bh, 0.6, 'concrete').box((bw / 2 + 1.1) / 2, bh / 2, bz - 0.3, bw / 2 - 1.1, bh, 0.6, 'concrete').box(0, 2.6 + (bh - 2.6) / 2, bz - 0.3, 2.2, bh - 2.6, 0.6, 'concrete');
+  ch.box(0, 2.78, bz + 0.06, 2.9, 0.36, 0.12, 'darkSteel', { col: false }).box(-1.32, 1.3, bz + 0.06, 0.26, 2.6, 0.12, 'darkSteel', { col: false }).box(1.32, 1.3, bz + 0.06, 0.26, 2.6, 0.12, 'darkSteel', { col: false });
   ch.box(-bw / 2, bh / 2, bz - bd / 2, 0.6, bh, bd, 'concrete').box(bw / 2, bh / 2, bz - bd / 2, 0.6, bh, bd, 'concrete').box(0, bh / 2, bz - bd, bw, bh, 0.6, 'concrete').box(0, bh + 0.2, bz - bd / 2, bw + 0.6, 0.4, bd + 0.6, 'concreteDark');
   ch.box(0, bh - 0.6, bz + 0.05, bw - 2, 0.3, 0.1, 'hazard', { col: false }); ch.box(0, 3.1, bz + 0.2, 3.2, 0.12, 1.0, 'darkSteel', { col: false }).box(0, 3.03, bz + 0.2, 1.4, 0.05, 0.3, 'light', { col: false });
   for (const x of [-9, 9]) ch.box(x, 5.5, bz + 0.05, 2.4, 1.2, 0.08, 'black', { col: false });
-  const reader = new V3(1.55, 1.3, bz + 0.05); ch.box(reader.x, reader.y, reader.z + 0.04, 0.18, 0.26, 0.08, 'black', { col: false }); ch.reader = reader;
+  const reader = new V3(1.85, 1.25, bz + 0.2); ch.box(reader.x, reader.y, reader.z - 0.08, 0.26, 0.34, 0.1, 'yellow', { col: false }).box(reader.x, reader.y - 0.11, reader.z - 0.025, 0.2, 0.05, 0.02, 'black', { col: false }); ch.reader = reader;
+  ch.extra.push((() => { const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.06, 0.05, 20), new THREE.MeshBasicMaterial({ color: 0xff2a20 })); btn.rotation.x = Math.PI / 2; btn.position.set(reader.x, reader.y + 0.03, reader.z - 0.01); scene.add(btn); ch.button = btn; return { dispose() { scene.remove(btn); } }; })());
   // props
   const sandU = (x, z, r = 0) => { const s = Math.sin(r), c = Math.cos(r), at = (dx, dz) => [x + dx * c + dz * s, z - dx * s + dz * c]; for (const [dx, dz, w, d] of [[0, 0, 3, 0.7], [-1.5, 1.0, 0.7, 2.3], [1.5, 1.0, 0.7, 2.3]]) { const [px, pz] = at(dx, dz); ch.box(px, 0.55, pz, Math.abs(c) > 0.5 ? w : d, 1.1, Math.abs(c) > 0.5 ? d : w, 'sand', { cover: true }); } ch.covers.push({ p: new V3(...at(0, 0.9)).setY(0) }); };
   sandU(-9, -16); sandU(10, -10, Math.PI); sandU(-14, 2); sandU(15, 8, Math.PI / 2);
@@ -512,6 +515,18 @@ const hands = [0, 1].map(i => {
 hands.forEach(h => { h.glove = makeGlove(h.side); });
 const pulse = (h, i = 0.5, ms = 30) => { try { h.grip.userData.src?.gamepad?.hapticActuators?.[0]?.pulse(i, ms); } catch (e) {} };
 
+/* curved AK magazine: one smooth extruded banana shape with rounded edges, ribs and a brass round on top */
+let _magGeo = null;
+function magGeo() { if (_magGeo) return _magGeo; const sh = new THREE.Shape(); // x = forward, y = up (top of the mag at y=0)
+  sh.moveTo(-0.027, 0); sh.lineTo(0.031, 0); sh.quadraticCurveTo(0.047, -0.11, 0.104, -0.198); sh.lineTo(0.097, -0.217); sh.lineTo(0.041, -0.217); sh.quadraticCurveTo(-0.012, -0.112, -0.027, 0);
+  const g = new THREE.ExtrudeGeometry(sh, { depth: 0.022, bevelEnabled: true, bevelThickness: 0.003, bevelSize: 0.003, bevelSegments: 2, curveSegments: 14 }); g.rotateY(Math.PI / 2); g.translate(-0.011, 0, 0); g.computeVertexNormals(); return _magGeo = g; }
+const magMat = new THREE.MeshLambertMaterial({ color: 0x2b2d30 });
+function buildMag() { const mg = new THREE.Group(); mg.add(new THREE.Mesh(magGeo(), magMat));
+  for (let i = 0; i < 3; i++) { const t = 0.25 + i * 0.25, y = -0.217 * t, z = -(0.002 + 0.068 * t * t + 0.02 * t); mg.add(M(rbox(0.031, 0.008, 0.05, 0.003), 0x232527, 0, y - 0.02, z - 0.012, { rx: -0.45 * t })); }
+  mg.add(M(rbox(0.032, 0.012, 0.066, 0.004), 0x1d1e20, 0, -0.218, -0.07, { rx: 0.0 }));
+  const top = new THREE.Group(); top.add(M(CYLG, 0xc8a050, 0, 0.006, 0.002, { s: [0.0056, 0.028, 0.0056], rx: Math.PI / 2 })); top.add(M(new THREE.ConeGeometry(0.0045, 0.014, 10), 0xb8703a, 0, 0.006, -0.019, { rx: -Math.PI / 2 })); mg.add(top); mg.userData.top = top;
+  return mg; }
+
 /* ================= THE AK (decked out) ================= */
 const GUN = { grip: new V3(0, -0.075, 0.085), fore: new V3(0, -0.085, -0.27), well: new V3(0, -0.035, -0.035), charge: new V3(0.04, 0.03, -0.02), muzzle: new V3(0, 0.025, -0.64), laser: new V3(-0.036, 0.0, -0.34), light: new V3(0.038, 0.0, -0.34), eye: new V3(0, 0.103, 0.07), scopeCam: new V3(0, 0.103, -0.1) };
 const gun = { g: new THREE.Group(), mag: { count: 30 }, chamber: true, hand: null, support: null, kick: 0, cool: 0, chargeT: 0, chargeBack: false, magMesh: null, chargeMesh: null, flat: false };
@@ -536,11 +551,11 @@ const scopeRT = new THREE.WebGLRenderTarget(256, 256), scopeCam = new THREE.Pers
   reticle.position.set(0, 0.103, 0.0815);
   add(new THREE.Mesh(new THREE.CircleGeometry(0.02, 20), new THREE.MeshBasicMaterial({ color: 0x0e1a24 }))).position.set(0, 0.103, -0.0905); g.children[g.children.length - 1].rotation.y = Math.PI;
   // magazine (curved)
-  const mg = new THREE.Group(); for (let i = 0; i < 3; i++) mg.add(M(rbox(0.026, 0.07, 0.06, 0.006), 0x2a2c2e, 0, -0.035 - i * 0.062, -0.012 * i, { rx: -0.2 * i })); mg.position.copy(GUN.well); add(mg); gun.magMesh = mg;
+  const mg = buildMag(); mg.position.copy(GUN.well); add(mg); gun.magMesh = mg;
   const ch = add(M(rbox(0.02, 0.014, 0.03, 0.004), metal, 0.036, 0.03, -0.02)); gun.chargeMesh = ch; gun.chargeBase = ch.position.z;
   noRay(g); scene.add(g);
 }
-function makeMagMesh() { const mg = new THREE.Group(); for (let i = 0; i < 3; i++) mg.add(M(rbox(0.026, 0.07, 0.06, 0.006), 0x2a2c2e, 0, -0.035 - i * 0.062, -0.012 * i, { rx: -0.2 * i })); mg.add(M(BOXG, 0xc8a050, 0, 0.003, 0, { s: [0.014, 0.008, 0.035] })); noRay(mg); return mg; }
+function makeMagMesh() { const mg = buildMag(); noRay(mg); return mg; }
 const gunW = local => gun.g.localToWorld(local.clone());
 const gunFwd = () => new V3(0, 0, -1).applyQuaternion(gun.g.quaternion);
 
@@ -804,7 +819,7 @@ function updateVR(dt) {
     if (h.held === 'mag' && !gun.mag && heldVis.get(h)) { const mt = heldVis.get(h).position; if (mt.distanceTo(gunW(GUN.well)) < 0.075) { magIn(h.magData); h.held = null; h.magData = null; heldMesh(h, null); } }
     if (h.held === 'grenade') { if (trig && !h.prev.trig && !h.gren.pinOut) pullPin(h); if (h.gren.fuse > 0) { h.gren.fuse -= dt; if (h.gren.fuse <= 0) { const p2 = h.pos.clone(); heldMesh(h, null); h.held = null; explode(p2); } } }
     if (h.held === 'knife') { const sp = h.vel.length(); if (sp > 1.4 && now > knife.hitT) { if (knifeHit(knifeBlade(), h.vel.clone().normalize(), 75)) { knife.hitT = now + 0.35; pulse(h, 1, 60); } } }
-    if ((h.held === 'card' || (!h.held && player.keycard)) && readerPos() && h.pos.distanceTo(readerPos()) < (h.held === 'card' ? 0.2 : 0.14)) useKeycard();
+    if (readerPos() && h.pos.distanceTo(readerPos()) < 0.13) { useKeycard(); pulse(h, 0.8, 50); }
     if (h.manip && gun.hand === other) { const back = new V3(0, 0, 1).applyQuaternion(gun.g.quaternion), v = clamp(h.pos.clone().sub(h.manip.start).dot(back) / 0.075, 0, 1); gun.chargeT = v;
       if (v > 0.85 && !gun.chargeBack) { gun.chargeBack = true; rackBack(); pulse(h, 0.6, 30); } if (gun.chargeBack && v < 0.2) { gun.chargeBack = false; rackFwd(); pulse(h, 0.7, 30); } }
     else if (h.manip && gun.hand !== other) { h.manip = null; gun.chargeT = 0; }
@@ -819,12 +834,15 @@ function updateVR(dt) {
   if (lh) { const q = lh.glove.quaternion.clone().multiply(new QT().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, Math.PI / 2))); const p0 = lh.glove.position.clone().add(new V3(-0.045, 0.0, 0.1).applyQuaternion(lh.glove.quaternion)); watch.frame.position.copy(p0); watch.frame.quaternion.copy(q); watch.m.position.copy(p0).add(new V3(0, 0, 0.0065).applyQuaternion(q)); watch.m.quaternion.copy(q); watch.draw(); }
 }
 let stepT = 0;
+// a hand wrapped around a vertical grip: palm against the side, fingers round the front, back of the hand outward
+function gripPose(local, side, tilt) { const gq = gun.g.quaternion; const q = gq.clone().multiply(new QT().setFromAxisAngle(new V3(1, 0, 0), tilt)).multiply(new QT().setFromAxisAngle(new V3(0, 0, 1), -Math.PI / 2));
+  return { pos: gunW(local.clone().add(new V3(side * 0.031, 0.014, 0.014))), quat: q, scale: side > 0 ? [1, 1, 1] : [1, -1, 1] }; }
 function poseGloves(h, sqV) {
   const g = h.glove; let pos = h.pos, q = h.quat;
-  if (h.held === 'gun') { pos = gunW(GUN.grip); q = gun.g.quaternion.clone(); }
-  else if (h.support) { pos = gunW(GUN.fore).add(new V3(0, 0.01, 0).applyQuaternion(gun.g.quaternion)); q = gun.g.quaternion.clone(); }
+  let sc = [h.side < 0 ? -1 : 1, 1, 1];
+  if (h.held === 'gun' || h.support) { const P = gripPose(h.held === 'gun' ? GUN.grip : GUN.fore, h.side, h.held === 'gun' ? 0.28 : 0); pos = P.pos; q = P.quat; sc = P.scale; }
   else if (h.manip) { pos = gunW(GUN.charge).add(new V3(0.03, 0, 0).applyQuaternion(gun.g.quaternion)); }
-  g.position.copy(pos); g.quaternion.copy(q); g.scale.set(h.side < 0 ? -1 : 1, 1, 1);
+  g.position.copy(pos); g.quaternion.copy(q); g.scale.set(...sc);
   const c = h.held || h.support || h.manip ? 1 : sqV * 0.9; setCurl(g, c, (h.grip.userData.src?.gamepad?.buttons[0]?.value || 0) < 0.2 && !h.held);
 }
 function pullPin(h) { if (!h.gren || h.gren.pinOut) return; h.gren.pinOut = true; h.gren.mesh.userData.pin.visible = false; S.pin(); pulse(h, 0.5, 30); }
@@ -878,11 +896,12 @@ function updateFlat(dt) {
     if (t > 1.05) nadeAnim = null; }
   // gloves + arms
   const rq = gun.g.quaternion.clone();
-  fhand[1].glove.position.copy(gunW(GUN.grip)); fhand[1].glove.quaternion.copy(rq); setCurl(fhand[1].glove, 1);
-  fhand[0].glove.position.copy(lp); fhand[0].glove.quaternion.copy(lq); fhand[0].glove.scale.set(-1, 1, 1); setCurl(fhand[0].glove, reload && reload.left > 0.75 && reload.left < 0.85 ? 0.8 : 1);
+  { const P = gripPose(GUN.grip, 1, 0.28); fhand[1].glove.position.copy(P.pos); fhand[1].glove.quaternion.copy(P.quat); fhand[1].glove.scale.set(...P.scale); setCurl(fhand[1].glove, 1); }
+  if (!reload && !knifeAnim && !nadeAnim) { const P = gripPose(GUN.fore, -1, 0); lp = P.pos; lq = P.quat; fhand[0].glove.scale.set(...P.scale); } else fhand[0].glove.scale.set(-1, 1, 1);
+  fhand[0].glove.position.copy(lp); fhand[0].glove.quaternion.copy(lq); setCurl(fhand[0].glove, reload && reload.left > 0.75 && reload.left < 0.85 ? 0.8 : 1);
   if (knifeAnim) { knife.mesh.position.copy(lp); knife.mesh.quaternion.copy(lq).multiply(new QT().setFromAxisAngle(new V3(1, 0, 0), -Math.PI / 2)); } else poseKnife(null);
   const sh = s => camera.localToWorld(new V3(s * 0.21, -0.3, 0.16)); const pole = s => camera.localToWorld(new V3(s * 0.6, -0.9, 0.2));
-  solveArm(arms[1], sh(1), wristOf(fhand[1].glove.position, rq), pole(1)); solveArm(arms[0], sh(-1), wristOf(lp, lq), pole(-1));
+  solveArm(arms[1], sh(1), wristOf(fhand[1].glove.position, fhand[1].glove.quaternion), pole(1)); solveArm(arms[0], sh(-1), wristOf(lp, lq), pole(-1));
   for (const a of arms) a.up.visible = a.fo.visible = a.cuff.visible = true;
   gun.chargeMesh.position.z = gun.chargeBase + (reload && reload.needRack && reload.t > 1.42 && reload.t < 1.75 ? smooth(clamp((reload.t - 1.42) / 0.18, 0, 1)) * (1 - smooth(clamp((reload.t - 1.6) / 0.12, 0, 1))) : 0) * 0.075; gun.magMesh.visible = !!gun.mag;
   // laser + flashlight
@@ -1160,18 +1179,18 @@ function clearWorld() {
 function startGame() {
   clearWorld(); Object.assign(player, { hp: 100, mags: 6, grenades: 3, hurtT: -99, dead: false, keycard: false, kills: 0, sector: 0 }); gun.mag = { count: 30 }; gun.chamber = true; gun.chargeT = 0; reload = knifeAnim = nadeAnim = null; diff = 1; lastTurn = null; recent = []; roomCount = 0; roomRng = mulberry32((Math.random() * 1e9) | 0);
   outside = buildOutside(); activeChunk = outside; sky.visible = true; scene.fog.density = 0.02;
-  const kc = Math.random() < 0.5 ? 0 : 1; outside.guardPaths.forEach((path, i) => new Enemy('guard', path[0].clone(), outside, { patrol: path, flashlight: true, keycard: i === kc }));
+  const kc = Math.random() < 0.5 ? 0 : 1; outside.guardPaths.forEach((path, i) => new Enemy('guard', path[0].clone(), outside, { patrol: path, flashlight: true, keycard: false }));
   const sp = outside.spawnPlayer; player.yaw = 0; player.pitch = 0; player.bodyYaw = 0; rig.rotation.set(0, 0, 0);
   if (renderer.xr.isPresenting) { rig.position.set(sp.x, SET.height, sp.z); rig.updateMatrixWorld(true); const h = camera.getWorldPosition(new V3()); rig.position.x += sp.x - h.x; rig.position.z += sp.z - h.z; } else rig.position.set(sp.x, 0, sp.z);
-  objective = 'Get a guard keycard'; gameState = 'play'; godT = 1.5; closeMenus();
-  setTimeout(() => msg('Two guards patrol the compound.\nTake one down and grab the KEYCARD.', 5), 400);
+  objective = 'Press the button at the big door'; gameState = 'play'; godT = 1.5; closeMenus();
+  setTimeout(() => msg('Two guards patrol the compound.\nGet to the big door and press the RED BUTTON.', 5), 400);
 }
 const readerPos = () => outside && outside.buildingDoor.locked ? outside.reader : null;
 function useKeycard() {
-  if (!outside || !outside.buildingDoor.locked) return; outside.buildingDoor.setLocked(false); S.beep(); msg('ACCESS GRANTED', 2); objective = 'Find the briefcase';
+  if (!outside || !outside.buildingDoor.locked) return; outside.buildingDoor.setLocked(false); S.beep(); if (outside.button) outside.button.material.color.setHex(0x3aff6a); msg('DOOR OPEN', 2); objective = 'Find the briefcase';
   makeRoom('checkpoint', new V3(0, 0, -30.3), 0, 'front');
 }
-function tryUse() { const r = readerPos(); if (!r) return; const head = camera.getWorldPosition(new V3()); if (head.distanceTo(r) > 2.4) return; if (player.keycard) useKeycard(); else { S.deny(); msg('Locked. You need a keycard.', 2); } }
+function tryUse() { const r = readerPos(); if (!r) return; const head = camera.getWorldPosition(new V3()); if (head.distanceTo(r) > 2.4) return; useKeycard(); }
 function makeRoom(type, origin, heading, side) {
   const sector = ++roomCount; const ch = buildRoom(type, origin, heading, roomRng, side, sector); ch.sector = sector; rooms.push(ch); recent.push(type); if (recent.length > 4) recent.shift();
   spawnRoomEnemies(ch, sector); const extra = (ch.ammo || 0) + (Math.random() < 0.6 ? 1 : 0); for (let i = 0; i < extra && ch.spawns.length; i++) addPickup(i === 2 ? 'grenade' : 'mag', ch.spawns[(Math.random() * ch.spawns.length) | 0]);
