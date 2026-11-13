@@ -256,7 +256,7 @@ class Door {
     this.chunk = chunk; this.p = p.clone(); this.along = along.clone(); this.w = width; this.h = height; this.open = 0; this.want = 0; this.locked = true;
     this.g = new THREE.Group(); scene.add(this.g); this.g.position.copy(p); this.g.quaternion.setFromUnitVectors(new V3(1, 0, 0), along);
     const pm = MATS[style][0]; this.panels = [-1, 1].map(s => { const m = new THREE.Mesh(wbox(width / 2, height, 0.1, 1.4), pm); m.position.set(s * width / 4, height / 2, 0); m.userData.level = true; this.g.add(m); rayMeshes.push(m);
-      m.add(new THREE.Mesh(new THREE.BoxGeometry(0.06, height * 0.9, 0.12), MATS.hazard[0])).position.set(-s * width / 4 + s * 0.03, 0, 0); return m; });
+      m.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.06, height * 0.9, 0.12), MATS.hazard[0]), -s * width / 4 + s * 0.03, 0, 0)); return m; });
     this.lamp = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.1, 0.06), new THREE.MeshBasicMaterial({ color: 0xff2a20 })); this.lamp.position.set(0, height + 0.15, 0); this.g.add(this.lamp);
     for (const s of [-1, 1]) this.g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.16, height + 0.3, 0.3), MATS.darkSteel[0]), s * (width / 2 + 0.08), (height + 0.3) / 2, 0));
     this.g.add(at(new THREE.Mesh(new THREE.BoxGeometry(width + 0.32, 0.16, 0.3), MATS.darkSteel[0]), 0, height + 0.08, 0));
@@ -937,18 +937,33 @@ addEventListener('wheel', e => { if (gameState === 'play' && !renderer.xr.isPres
 
 /* ================= DESERT EAGLE (sidearm, right hip holster, mags in the right pocket) ================= */
 S.deagle = () => { noise(0.25, 0.75, 2400, 140); tone(78, 0.22, 'sine', 0.65, 32); tone(2100, 0.025, 'square', 0.09); noise(0.8, 0.16, 800, 120, 'lowpass', 0.05); };
-const DG = { grip: new V3(0, -0.062, 0.074), well: new V3(0, -0.132, 0.09), seat: new V3(0, -0.012, 0.06), muzzle: new V3(0, 0.028, -0.18), slide: new V3(0.025, 0.03, 0.08), eye: new V3(0, 0.056, 0.095), eject: new V3(0.02, 0.045, -0.01) };
+const DG = { grip: new V3(0, -0.064, 0.076), well: new V3(0, -0.138, 0.094), seat: new V3(0, -0.016, 0.062), muzzle: new V3(0, 0.034, -0.168), slide: new V3(0.026, 0.036, 0.07), eye: new V3(0, 0.068, 0.088), eject: new V3(0.02, 0.05, 0.0) };
 const dg = { g: new THREE.Group(), mag: { count: 7 }, chamber: true, locked: false, hand: null, support: null, kick: 0, cool: 0, slideT: 0, manipT: 0, manipBack: false, slide: null, magMesh: null };
-function buildDMag() { const g = new THREE.Group(); g.add(M(rbox(0.024, 0.118, 0.038, 0.004), 0x8a8f96, 0, -0.059, 0)); g.add(M(rbox(0.03, 0.013, 0.05, 0.004), 0x1d1e20, 0, -0.121, 0.003));
+function buildDMag() { const g = new THREE.Group(); g.add(M(rbox(0.024, 0.118, 0.038, 0.004), 0x8a8f96, 0, -0.059, 0)); g.add(M(rbox(0.031, 0.013, 0.052, 0.004), 0x1d1e20, 0, -0.121, 0.003));
   g.add(M(CYLG, 0xc8a050, 0, 0.004, 0.004, { s: [0.0065, 0.026, 0.0065], rx: Math.PI / 2 })); g.add(M(new THREE.ConeGeometry(0.0055, 0.012, 10), 0xb8703a, 0, 0.004, -0.014, { rx: -Math.PI / 2 })); return g; }
+// a side profile (points are [z, y]) extruded sideways into a chunky part with rounded edges
+function sidePart(pts, width, color, bevel = 0.003) { const sh = new THREE.Shape(); pts.forEach(([z, y], i) => i ? sh.lineTo(-z, y) : sh.moveTo(-z, y)); sh.closePath();
+  const g = new THREE.ExtrudeGeometry(sh, { depth: width - bevel * 2, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, curveSegments: 6 }); g.rotateY(Math.PI / 2); g.translate(-(width - bevel * 2) / 2, 0, 0); g.computeVertexNormals(); return new THREE.Mesh(g, mat(color)); }
 {
-  const g = dg.g, silver = 0x9ba1a8, dark = 0x26282c;
-  const slide = new THREE.Group(); slide.add(M(rbox(0.036, 0.034, 0.27, 0.006), silver, 0, 0.03, -0.04)); for (let i = 0; i < 7; i++) slide.add(B(0.038, 0.022, 0.003, 0x6a7078, 0, 0.03, 0.05 + i * 0.008));
-  slide.add(B(0.006, 0.011, 0.01, 0x111111, 0, 0.052, -0.165), B(0.02, 0.011, 0.009, 0x111111, 0, 0.052, 0.088), B(0.004, 0.004, 0.002, 0xffffff, 0, 0.054, -0.17)); g.add(slide); dg.slide = slide;
-  g.add(M(rbox(0.033, 0.027, 0.225, 0.005), dark, 0, 0.0, -0.045), B(0.028, 0.022, 0.025, dark, 0, 0.006, -0.165));
-  g.add(M(rbox(0.012, 0.036, 0.056, 0.006), dark, 0, -0.03, 0.012), B(0.006, 0.024, 0.007, 0x111111, 0, -0.024, 0.022));
-  g.add(M(rbox(0.035, 0.128, 0.054, 0.012), 0x161719, 0, -0.07, 0.075, { rx: -0.25 })); g.add(B(0.012, 0.024, 0.014, 0x111111, 0, 0.036, 0.108));
-  const mg = buildDMag(); mg.position.copy(DG.seat); mg.rotation.x = -0.25; g.add(mg); dg.magMesh = mg;
+  const g = dg.g, steel = 0xaab0b8, steelDk = 0x7d848c, blk = 0x1b1c1f;
+  // fixed barrel at the front (the Deagle's tall, flat-sided barrel with the rib on top)
+  g.add(sidePart([[-0.168, 0.013], [-0.168, 0.05], [-0.162, 0.057], [-0.032, 0.057], [-0.032, 0.013]], 0.034, steel));
+  g.add(B(0.012, 0.005, 0.13, steelDk, 0, 0.0605, -0.098)); for (let i = 0; i < 6; i++) g.add(B(0.0125, 0.002, 0.004, 0x55595f, 0, 0.0635, -0.155 + i * 0.022));
+  const bore = new THREE.Mesh(new THREE.CircleGeometry(0.0075, 16), mat(0x050505)); bore.position.set(0, 0.032, -0.1715); bore.rotation.y = Math.PI; g.add(bore);
+  g.add(B(0.004, 0.009, 0.01, 0x111111, 0, 0.067, -0.155));
+  // the slide (moves back when firing / racking)
+  const slide = new THREE.Group(); slide.add(sidePart([[-0.031, 0.013], [-0.031, 0.057], [0.078, 0.057], [0.093, 0.046], [0.093, 0.013]], 0.034, steel));
+  for (let i = 0; i < 7; i++) for (const sx of [-1, 1]) slide.add(B(0.002, 0.03, 0.003, 0x4a4f55, sx * 0.0172, 0.035, 0.05 + i * 0.0055));
+  slide.add(B(0.006, 0.01, 0.008, 0x111111, -0.007, 0.064, 0.082), B(0.006, 0.01, 0.008, 0x111111, 0.007, 0.064, 0.082));
+  for (const sx of [-1, 1]) slide.add(M(CYLG, 0x1b1c1f, sx * 0.018, 0.04, 0.072, { s: [0.006, 0.006, 0.006], rz: Math.PI / 2 }));
+  g.add(slide); dg.slide = slide;
+  // black frame, squared trigger guard, hammer
+  g.add(sidePart([[-0.115, 0.013], [0.092, 0.013], [0.098, 0.0], [0.098, -0.022], [0.045, -0.022], [-0.04, -0.022], [-0.115, -0.006]], 0.031, blk, 0.0025));
+  g.add(B(0.012, 0.044, 0.008, blk, 0, -0.044, -0.04), B(0.012, 0.008, 0.07, blk, 0, -0.064, -0.006), B(0.006, 0.026, 0.008, 0x111111, 0, -0.034, 0.006));
+  g.add(B(0.012, 0.022, 0.012, blk, 0, 0.044, 0.1), B(0.012, 0.006, 0.014, blk, 0, 0.054, 0.104));
+  // raked-back grip with wrap-around rubber panels
+  g.add(M(rbox(0.037, 0.135, 0.058, 0.012), 0x141517, 0, -0.072, 0.076, { rx: -0.22 })); for (let i = 0; i < 4; i++) g.add(M(rbox(0.039, 0.006, 0.05, 0.002), 0x0c0c0d, 0, -0.035 - i * 0.025, 0.07 + i * 0.0055, { rx: -0.22 }));
+  const mg = buildDMag(); mg.position.copy(DG.seat); mg.rotation.x = -0.22; g.add(mg); dg.magMesh = mg;
   noRay(g); scene.add(g);
 }
 const dgW = l => dg.g.localToWorld(l.clone());
@@ -976,7 +991,7 @@ function poseDeagle(dt) {
   if (dg.hand) { const h = dg.hand, R = h.quat.clone().multiply(new QT().setFromAxisAngle(new V3(1, 0, 0), dg.kick * (dg.support ? 0.18 : 0.32)));
     dg.g.quaternion.copy(R); dg.g.position.copy(h.pos).sub(DG.grip.clone().applyQuaternion(R)).add(new V3(0, 0, dg.kick * 0.03).applyQuaternion(R)); }
   else if (renderer.xr.isPresenting || player.flatWeapon !== 'deagle') { const p = holsterW(), q = yawQ(player.bodyYaw).multiply(new QT().setFromAxisAngle(new V3(1, 0, 0), -Math.PI / 2)); dg.g.position.lerp(p, Math.min(1, dt * 14)); dg.g.quaternion.slerp(q, Math.min(1, dt * 14)); }
-  dg.slide.position.z = (dg.locked || dg.slideT > 0 ? 0.05 : 0) + dg.manipT * 0.05; dg.magMesh.visible = !!dg.mag;
+  dg.slide.position.z = (dg.locked || dg.slideT > 0 ? 0.045 : 0) + dg.manipT * 0.045; dg.magMesh.visible = !!dg.mag;
 }
 // ---- VR hooks
 function vrDeagleGrip(h, other) {
@@ -1002,7 +1017,7 @@ function vrDeagleHold(h, other, trig, bA) {
     if (dg.manipBack && v < 0.2) { dg.manipBack = false; S.rackFwd(); dg.locked = false; if (!dg.chamber && dg.mag && dg.mag.count > 0) { dg.mag.count--; dg.chamber = true; } pulse(h, 0.7, 30); } }
 }
 function deagleGlove(h) { // returns a pose when this hand is doing something with the Deagle
-  if (h.held === 'deagle') return dgPose(DG.grip, h.side, -0.25);
+  if (h.held === 'deagle') return dgPose(DG.grip, h.side, -0.22);
   if (h.dsupport) return cupPose(h.side);
   if (h.dmanip) return { pos: dgW(DG.slide).add(new V3(0.02, 0, 0).applyQuaternion(dg.g.quaternion)), quat: h.quat, scale: [h.side < 0 ? -1 : 1, 1, 1] };
   return null;
@@ -1016,7 +1031,7 @@ function flatDeagle(dt, moving) {
   gun.g.visible = false; laser.beam.visible = laser.dot.visible = false; flashSpot.intensity = 0;
   adsT += ((ads && !dReload && swapT <= 0 ? 1 : 0) - adsT) * Math.min(1, dt * 10); swapT = Math.max(0, swapT - dt);
   const bob = moving ? Math.sin(performance.now() * 0.011) * 0.012 : Math.sin(performance.now() * 0.002) * 0.003;
-  const hip = new V3(0.12, -0.17 + bob, -0.33), aim = new V3(0, 0, -0.26).sub(DG.eye); const local = hip.lerp(aim, smooth(adsT)); local.y -= swapT * 0.5;
+  const hip = new V3(0.13, -0.17 + bob, -0.36), aim = new V3(0, 0, -0.3).sub(DG.eye); const local = hip.lerp(aim, smooth(adsT)); local.y -= swapT * 0.5;
   const rot = new THREE.Euler(dg.kick * 0.35 - swapT * 1.2, 0, 0); dg.kick = Math.max(0, dg.kick - dt * 9); dg.slideT -= dt; local.z += dg.kick * 0.04;
   let lp = null, lq = null;
   if (dReload) { const t = (dReload.t += dt), T = 1.45, tilt = smooth(clamp(t / 0.25, 0, 1)) * smooth(clamp((T - t) / 0.3, 0, 1)); rot.z -= tilt * 0.45; rot.x += tilt * 0.25; local.x += tilt * 0.02;
@@ -1024,13 +1039,13 @@ function flatDeagle(dt, moving) {
     once('out', 0.22, () => { if (dg.mag) dMagOut(true); }); once('take', 0.62, () => { player.dmags--; S.pouch(); dReload.mesh = makeDMagMesh(); scene.add(dReload.mesh); }); once('in', 1.02, () => { scene.remove(dReload.mesh); dReload.mesh = null; dMagIn({ count: 7 }); });
     if (t > T) { if (dReload.mesh) scene.remove(dReload.mesh); dReload = null; } }
   dg.g.position.copy(camera.localToWorld(local.clone())); dg.g.quaternion.copy(camera.getWorldQuaternion(new QT())).multiply(new QT().setFromEuler(rot)); dg.g.updateMatrixWorld(true);
-  dg.slide.position.z = (dg.locked || dg.slideT > 0 ? 0.05 : 0); dg.magMesh.visible = !!dg.mag;
+  dg.slide.position.z = (dg.locked || dg.slideT > 0 ? 0.045 : 0); dg.magMesh.visible = !!dg.mag;
   const cup = cupPose(-1);
   if (dReload) { const t = dReload.t, well = dgW(DG.well.clone().add(new V3(0, -0.07, 0))), pocket = camera.localToWorld(new V3(0.2, -0.64, 0.03)); const keys = [[0, cup.pos], [0.2, well], [0.26, well], [0.62, pocket], [0.68, pocket], [1.02, dgW(DG.well)], [1.1, well], [1.4, cup.pos]];
     let a = keys[0], b = keys[keys.length - 1]; for (let i = 0; i < keys.length - 1; i++) if (t >= keys[i][0] && t <= keys[i + 1][0]) { a = keys[i]; b = keys[i + 1]; break; } lp = a[1].clone().lerp(b[1], smooth(clamp((t - a[0]) / Math.max(0.001, b[0] - a[0]), 0, 1))); lq = camera.getWorldQuaternion(new QT()).multiply(new QT().setFromEuler(new THREE.Euler(-0.6, 0, 0.6)));
     if (dReload?.mesh) { dReload.mesh.position.copy(lp).add(new V3(0, 0.07, 0).applyQuaternion(dg.g.quaternion)); dReload.mesh.quaternion.copy(dg.g.quaternion).multiply(new QT().setFromAxisAngle(new V3(1, 0, 0), -0.25)); }
     fhand[0].glove.scale.set(-1, 1, 1); } else { lp = cup.pos; lq = cup.quat; fhand[0].glove.scale.set(...cup.scale); }
-  const P = dgPose(DG.grip, 1, -0.25); fhand[1].glove.position.copy(P.pos); fhand[1].glove.quaternion.copy(P.quat); fhand[1].glove.scale.set(...P.scale); setCurl(fhand[1].glove, 1);
+  const P = dgPose(DG.grip, 1, -0.22); fhand[1].glove.position.copy(P.pos); fhand[1].glove.quaternion.copy(P.quat); fhand[1].glove.scale.set(...P.scale); setCurl(fhand[1].glove, 1);
   fhand[0].glove.position.copy(lp); fhand[0].glove.quaternion.copy(lq); setCurl(fhand[0].glove, 0.9);
   const sh = s => camera.localToWorld(new V3(s * 0.21, -0.3, 0.16)), pole = s => camera.localToWorld(new V3(s * 0.6, -0.9, 0.2));
   solveArm(arms[1], sh(1), wristOf(P.pos, P.quat), pole(1)); solveArm(arms[0], sh(-1), wristOf(lp, lq), pole(-1)); for (const a of arms) a.up.visible = a.fo.visible = a.cuff.visible = true;
@@ -1178,11 +1193,13 @@ function killEnemy(e, impulse, at, part) {
   const list = [['pelvis', j.pelvis, null], ['torso', j.torsoMesh, 'pelvis'], ['head', j.headMesh, 'torso'], ['uaL', j.sh[0].up, 'torso'], ['faL', j.sh[0].fo, 'uaL'], ['uaR', j.sh[1].up, 'torso'], ['faR', j.sh[1].fo, 'uaR'], ['thL', j.leg[0].th, 'pelvis'], ['shL', j.leg[0].sh, 'thL'], ['thR', j.leg[1].th, 'pelvis'], ['shR', j.leg[1].sh, 'thR']];
   const bodies = {}, rag = { parts: [], cons: [], t: 0, e };
   for (const [k, m] of list) { if (!m.geometry.boundingBox) m.geometry.computeBoundingBox(); const bb = m.geometry.boundingBox, size = bb.getSize(new V3()), ctr = bb.getCenter(new V3()); const sc = m.getWorldScale(new V3());
-    scene.attach(m); const b = new CANNON.Body({ mass: Math.max(1.5, size.x * size.y * size.z * 900) * (e.T.armor ? 1.6 : 1), material: defMat, collisionFilterGroup: G_RAG, collisionFilterMask: G_STATIC | G_DYN, linearDamping: 0.08, angularDamping: 0.4 });
+    scene.attach(m); const b = new CANNON.Body({ mass: Math.max(1.5, size.x * size.y * size.z * 900) * (e.T.armor ? 1.6 : 1), material: defMat, collisionFilterGroup: G_RAG, collisionFilterMask: G_STATIC | G_DYN | G_RAG, linearDamping: 0.05, angularDamping: 0.25 });
     b.addShape(new CANNON.Box(new CANNON.Vec3(size.x * sc.x / 2, size.y * sc.y / 2, size.z * sc.z / 2)), cv(ctr.multiply(sc))); b.position.copy(cv(m.position)); b.quaternion.set(m.quaternion.x, m.quaternion.y, m.quaternion.z, m.quaternion.w); m.scale.set(1, 1, 1); world.addBody(b); bodies[k] = { b, m }; rag.parts.push({ b, m }); }
   for (const [k, m, par] of list) { if (!par) continue; const A = bodies[par].b, Bd = bodies[k].b; const piv = new V3(Bd.position.x, Bd.position.y, Bd.position.z); const la = A.quaternion.inverse().vmult(cv(piv).vsub(A.position));
-    const c = new CANNON.ConeTwistConstraint(A, Bd, { pivotA: la, pivotB: new CANNON.Vec3(0, 0, 0), axisA: A.quaternion.inverse().vmult(Bd.quaternion.vmult(new CANNON.Vec3(0, 1, 0))), axisB: new CANNON.Vec3(0, 1, 0), angle: k === 'head' ? 0.5 : k.startsWith('sh') || k.startsWith('fa') ? 1.2 : 0.9, twistAngle: 0.4, collideConnected: false }); world.addConstraint(c); rag.cons.push(c); }
+    const c = new CANNON.ConeTwistConstraint(A, Bd, { pivotA: la, pivotB: new CANNON.Vec3(0, 0, 0), axisA: A.quaternion.inverse().vmult(Bd.quaternion.vmult(new CANNON.Vec3(0, 1, 0))), axisB: new CANNON.Vec3(0, 1, 0), angle: k === 'head' ? 0.5 : k.startsWith('sh') ? 0.75 : k.startsWith('fa') ? 1.1 : k === 'torso' ? 0.55 : 0.95, twistAngle: k.startsWith('sh') ? 0.15 : 0.4, collideConnected: false }); world.addConstraint(c); rag.cons.push(c); }
   const hitB = (part === 'head' ? bodies.head : part === 'leg' ? bodies.thR : bodies.torso).b; hitB.applyImpulse(cv(impulse.clone().multiplyScalar(hitB.mass * 0.6)), new CANNON.Vec3(0, 0, 0)); bodies.pelvis.b.velocity.set(impulse.x * 0.15, 0.5, impulse.z * 0.15);
+  // tip the upper body over the way the hit pushed, so they fall instead of folding in place
+  const push = new V3(impulse.x, 0, impulse.z); if (push.lengthSq() < 1e-4) push.set(rnd(-1, 1), 0, rnd(-1, 1)); push.normalize(); for (const k of ['torso', 'head', 'uaL', 'uaR']) { const b = bodies[k].b; b.velocity.x += push.x * 2.2; b.velocity.z += push.z * 2.2; } for (const k of ['shL', 'shR']) { const b = bodies[k].b; b.velocity.x -= push.x * 0.8; b.velocity.z -= push.z * 0.8; }
   e.root.visible = false; e.wpn && scene.attach(e.wpn);
   if (e.wpn) { const wb = new CANNON.Body({ mass: 3, material: defMat, collisionFilterGroup: G_RAG, collisionFilterMask: G_STATIC }); const bb = new THREE.Box3().setFromObject(e.wpn), sz = bb.getSize(new V3()); wb.addShape(new CANNON.Box(new CANNON.Vec3(Math.max(0.02, sz.x / 2), Math.max(0.02, sz.y / 2), Math.max(0.02, sz.z / 2)))); wb.position.copy(cv(e.wpn.position)); wb.quaternion.set(e.wpn.quaternion.x, e.wpn.quaternion.y, e.wpn.quaternion.z, e.wpn.quaternion.w); wb.velocity.set(impulse.x * 0.3, 1, impulse.z * 0.3); world.addBody(wb); rag.parts.push({ b: wb, m: e.wpn }); }
   rags.push(rag); while (rags.filter(r => !r.frozen).length > 7) freezeRag(rags.find(r => !r.frozen));
@@ -1285,7 +1302,7 @@ function animateEnemy(e, dt, aiming) {
     e.wpn.rotation.set(-Math.PI / 2 + 0.22, 0, 0);
   } else { R.g.rotation.set(-Math.sin(ph) * amp * 0.8 + 0.35, 0, -0.05); R.el.rotation.x = 0.7; L.g.rotation.set(Math.sin(ph) * amp * 0.8 + 0.5, 0, 0.45); L.el.rotation.x = 0.9; e.wpn.rotation.set(-Math.PI / 2 + 0.9, 0, 0); }
 }
-function updateEnemies(dt) { for (const e of enemies) { if (e.dead) continue; if (e.chunk !== activeChunk && !(e.chunk.type === 'outside' && activeChunk?.type === 'outside')) continue; updateEnemy(e, dt); } }
+function updateEnemies(dt) { for (const e of enemies) { if (e.dead) continue; if (e.chunk !== activeChunk && !e.chunk.awake && !(e.chunk.type === 'outside' && activeChunk?.type === 'outside')) continue; updateEnemy(e, dt); } }
 
 /* ================= GAME FLOW ================= */
 let roomCount = 0, gameState = 'menu', outside = null, rooms = [], lastTurn = null, recent = [], roomRng = mulberry32(1), briefcase = null;
@@ -1326,7 +1343,10 @@ function nextRoom() {
 function inside(ch, p, m = 0.6) { const b = ch.bounds; return p.x > b.min.x + m && p.x < b.max.x - m && p.z > b.min.z + m && p.z < b.max.z - m; }
 function updateProgress(dt) {
   const head = camera.getWorldPosition(new V3());
-  for (const ch of rooms) { if (ch.dead || ch === activeChunk) continue; if (inside(ch, head)) enterRoom(ch); }
+  for (const ch of rooms) { if (ch.dead || ch === activeChunk) continue; if (inside(ch, head)) enterRoom(ch);
+    // the moment the door into a room opens, everyone in there knows you're coming
+    const i = rooms.indexOf(ch), entry = i === 0 ? outside?.buildingDoor : rooms[i - 1]?.exitDoor;
+    if (!ch.awake && entry && entry.open > 0.15) { ch.awake = true; for (const e of enemies) if (e.chunk === ch && !e.dead) { e.alert(); e.reactT += 0.4; } } }
 }
 function enterRoom(ch) {
   const prev = activeChunk; activeChunk = ch; player.sector = ch.sector; diff = Math.min(2.8, 1 + (ch.sector - 1) * 0.075); scene.fog.density = 0.03;
