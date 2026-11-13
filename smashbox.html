@@ -945,6 +945,7 @@ const SLOTS = [['bat', 'BAT'], ['crowbar', 'CROWBAR'], ['pickaxe', 'PICKAXE'], [
   ['ammo12', 'SHELLS'], ['impact', 'IMPACT GRENADE'], ['scope', 'SCOPE'], ['reddot', 'RED DOT'],
   ['laser', 'LASER'], ['flashlight', 'FLASH LIGHT'], ['suppressor', 'SUPPRESSOR'], ['foregrip', 'FORE GRIP'],
   ['wire', 'BARBED WIRE'], ['nails', 'NAILS'], ['saw', 'SAW BLADE'], ['blade', 'TAPED KNIFE']];
+const SHORT = { impact: 'IMPACT', wire: 'BARBED WIRE', blade: 'KNIFE', flashlight: 'FLASHLIGHT', foregrip: 'FOREGRIP', pistolMag: 'PISTOL MAG', suppressor: 'SUPPRESSOR' };
 const slotColor = k => k === 'menu' ? '#c82a2a' : k.startsWith('ammo') ? '#7a5a2a' : k.includes('Mag') ? '#4a4a52' : (k === 'grenade' || k === 'impact') ? '#5a6a1a' : ATT_KINDS.includes(k) ? '#2a4064' : MOD_KINDS.includes(k) ? '#6a3424' : '#2a3a20';
 const ATT_KINDS = ['scope', 'reddot', 'laser', 'flashlight', 'suppressor', 'foregrip'], MOD_KINDS = ['wire', 'nails', 'saw', 'blade'];
 const pack = (() => {
@@ -954,7 +955,8 @@ const pack = (() => {
     x.fillStyle = '#3c4a28'; x.fillRect(0, 0, 440, 620); x.font = 'bold 16px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
     SLOTS.forEach(([k, lab], i) => { const c = i % 4, r = Math.floor(i / 4), cx = 55 + c * 110, cy = 52 + r * 103;
       x.fillStyle = slotColor(k); x.beginPath(); x.roundRect(cx - 50, cy - 46, 100, 92, 12); x.fill();
-      x.strokeStyle = '#a8b880'; x.lineWidth = 3; x.stroke(); x.fillStyle = '#fff'; const words = lab.split(' '); words.forEach((w, wi) => x.fillText(w, cx, cy + (wi - (words.length - 1) / 2) * 19)); });
+      x.strokeStyle = '#a8b880'; x.lineWidth = 3; x.stroke(); x.fillStyle = '#fff';
+      if (k === 'menu') { x.font = 'bold 22px sans-serif'; x.fillText('MENU', cx, cy); x.font = 'bold 13px sans-serif'; } else { x.font = 'bold 13px sans-serif'; x.fillText(SHORT[k] || lab, cx, cy + 35); } });
   }, true));
   panel.position.z = 0.113; g.add(panel);
   const slots = SLOTS.map(([k], i) => { const c = i % 4, r = Math.floor(i / 4), lp = new V3(-0.165 + c * 0.11, 0.258 - r * 0.103, 0.12);
@@ -982,8 +984,8 @@ function updatePack(dt, inVR) {
     const back = inVR ? head.clone().addScaledVector(d, -0.25).add(new V3(0, -0.42, 0)) : head.clone().addScaledVector(d, -0.6).add(new V3(0, -0.6, 0));
     pack.g.position.copy(back); pack.g.rotation.set(0, yaw + Math.PI, 0);
   } else if (pack.state === 'held') {
-    const h = pack.heldBy; pack.g.position.copy(h.pos).add(new V3(0, -0.05, 0).applyQuaternion(h.quat)); pack.g.quaternion.copy(h.quat);
-  } else { pack.bob += dt; pack.g.position.copy(pack.hoverPos).add(new V3(0, Math.sin(pack.bob * 2) * 0.012, 0)); pack.g.rotation.set(0, pack.yaw, 0); }
+    const h = pack.heldBy; pack.g.position.copy(h.pos).add(new V3(0, -0.4, 0)); pack.g.rotation.set(0, Math.atan2(head.x - pack.g.position.x, head.z - pack.g.position.z), 0);
+  } else { pack.bob += dt; if (Math.hypot(pack.hoverPos.x - head.x, pack.hoverPos.z - head.z) > 3.2) { pack.state = 'worn'; S.zip(); } pack.g.position.copy(pack.hoverPos).add(new V3(0, Math.sin(pack.bob * 2) * 0.012, 0)); pack.g.rotation.set(0, pack.yaw, 0); }
 }
 function packToFront() { const head = camera.getWorldPosition(new V3()), d = camDir(); d.y = 0; d.normalize(); pack.state = 'hover'; pack.hoverPos.copy(head).addScaledVector(d, 0.95).add(new V3(0, -0.18, 0)); pack.yaw = Math.atan2(d.x, d.z); S.zip(); }
 
@@ -1308,6 +1310,37 @@ function vrAttachCheck(h, sq) {
   }
 }
 
+/* ---------- Vacation-Simulator-style backpack: 3D items inside, flap opens ---------- */
+const packFlap = pack.g.children[1];
+let packOpen = 0;
+const packMinis = [];
+(() => {
+  for (const s of pack.slots) { if (s.k === 'menu') continue;
+    const t = spawnFromSlot(s.k, new V3(0, -40, 0)); if (!t) continue;
+    removeThing(t); t.mesh.traverse(o => { o.userData = {}; }); const inner = t.mesh.clone(true);
+    const strip = []; inner.traverse(o => { if (o.isMesh && !o.visible) strip.push(o); });
+    inner.traverse(o => { if (o.material === lensMat) o.material = new THREE.MeshBasicMaterial({ color: 0x1a3550 }); }); strip.forEach(o => o.parent.remove(o));
+    inner.position.set(0, 0, 0); inner.quaternion.identity(); inner.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(inner), c = box.getCenter(new V3()), sz = box.getSize(new V3());
+    const holder = new THREE.Group(), spin = new THREE.Group(); inner.position.copy(c).negate(); spin.add(inner); holder.add(spin);
+    if (['pistol', 'ak', 'shotgun', 'scope', 'reddot', 'laser', 'flashlight', 'suppressor'].includes(s.k)) spin.rotation.y = Math.PI / 2; // show guns side-on
+    const fit = 0.066 / Math.max(sz.x, sz.y, sz.z, 0.01); holder.userData.fit = fit; holder.position.copy(s.lp).add(new V3(0, 0.012, 0.03));
+    holder.traverse(o => { o.userData = { slot: s.k }; o.castShadow = false; }); holder.userData.fit = fit;
+    pack.g.add(holder); packMinis.push({ holder, spin, base: spin.rotation.y, ph: Math.random() * 6 });
+  }
+})();
+function updatePackLook(dt) {
+  const want = pack.state === 'worn' ? 0 : 1; packOpen += (want - packOpen) * Math.min(1, dt * 7);
+  const th = -1.9 * packOpen, c = Math.cos(th), s = Math.sin(th); packFlap.rotation.x = th; packFlap.position.set(0, 0.335 + 0.03 * c - 0.11 * s, -0.11 + 0.03 * s + 0.11 * c); // hinged at the back
+  const t = performance.now() / 1000;
+  for (const m of packMinis) { m.holder.visible = packOpen > 0.04; if (!m.holder.visible) continue;
+    const pop = Math.min(1, packOpen * 1.15); m.holder.scale.setScalar(m.holder.userData.fit * (0.2 + 0.8 * pop)); m.spin.rotation.y = m.base + Math.sin(t * 0.9 + m.ph) * 0.45; }
+}
+function packReach(p) { // reach over your shoulder (or anywhere behind your head) to grab the backpack
+  const head = camera.getWorldPosition(new V3()), d = camDir(); d.y = 0; if (d.lengthSq() < 1e-4) d.set(0, 0, -1); d.normalize();
+  const r = p.clone().sub(head); return r.dot(d) < 0.06 && r.y > -0.6 && r.y < 0.25 && Math.hypot(r.x, r.z) < 0.5;
+}
+
 /* ================= PLAYER MOVEMENT ================= */
 const input = { joy: { x: 0, y: 0 }, yaw: 0, pitch: 0, crouch: false, keys: {} };
 function camDir() { return camera.getWorldDirection(new V3()); }
@@ -1487,6 +1520,7 @@ function updateVR(dt) {
   rig.position.x += hp.x - before.x; rig.position.z += hp.z - before.z; rig.updateMatrixWorld(true);
   playerTarget.set(hp.x, 0.75, hp.z);
   fBalls.forEach(b => b.visible = false); for (const k in offMagVis) offMagVis[k].visible = false;
+  if (menuOpen) keepVRMenuInView();
   hands.forEach((h, hi) => {
     const src = h.grip.userData.src, gp = src?.gamepad;
     if (!gp || !h.grip.visible) { h.active = false; if (h.held) release(h); return; }
@@ -1521,13 +1555,13 @@ function updateVR(dt) {
       else if (manipNear) { h.manip = { gun: oGun, start: h.pos.clone() }; pulse(src, 0.4, 20); }
       else if (box) { const t = makeRound(box.ammoBox, h.pos.clone()); grab(h, t, h.pos.clone()); h.rel.p.set(0, -0.01, -0.03); S.roundIn(); pulse(src, 0.3, 15); }
       else if (best) { grab(h, best, h.pos.clone()); pulse(src, 0.6, 40); }
-      else if (pack.state === 'worn' ? pack.g.position.distanceTo(h.pos) < 0.35 : pack.g.position.distanceTo(h.pos) < 0.24) { pack.state = 'held'; pack.heldBy = h; S.zip(); pulse(src, 0.5, 30); }
+      else if (pack.state === 'worn' ? (packReach(h.pos) || pack.g.position.distanceTo(h.pos) < 0.35) : (packInside(h.pos) || pack.g.localToWorld(new V3(0, 0.39, 0)).distanceTo(h.pos) < 0.12)) { pack.state = 'held'; pack.heldBy = h; S.zip(); pulse(src, 0.5, 30); }
       else if (h.farTarget) { const t = h.farTarget; grab(h, t, h.pos.clone()); if (!t.gripLocal) h.rel.p.set(0, -0.02, -0.04); h.pullT = 1.2; S.whoosh(); pulse(src, 0.8, 60); }
     }
     // grip released
     if (!sq && h.prev.sq) {
       if (h.manip) { const g = h.manip.gun.gun; if (g.rackBack && g.type !== 'shotgun') { g.rackBack = false; rackFwd(h.manip.gun); } g.manip = 0; updateGunVisual(h.manip.gun); h.manip = null; }
-      else if (pack.heldBy === h) { pack.heldBy = null; const head2 = camera.getWorldPosition(new V3()); if (pack.g.position.distanceTo(head2.clone().add(new V3(0, -0.4, 0)).addScaledVector(d, -0.25)) < 0.3) { pack.state = 'worn'; S.zip(); } else { pack.state = 'hover'; pack.hoverPos.copy(pack.g.position); pack.yaw = Math.atan2(head2.x - pack.g.position.x, head2.z - pack.g.position.z); } }
+      else if (pack.heldBy === h) { pack.heldBy = null; const head2 = camera.getWorldPosition(new V3()); if (packReach(h.pos) || pack.g.position.distanceTo(head2.clone().add(new V3(0, -0.4, 0)).addScaledVector(d, -0.25)) < 0.3) { pack.state = 'worn'; S.zip(); } else { pack.state = 'hover'; pack.hoverPos.copy(pack.g.position); pack.yaw = Math.atan2(head2.x - pack.g.position.x, head2.z - pack.g.position.z); } }
       else if (h.held) {
         if (pack.state !== 'worn' && packInside(h.pos)) storeInPack(h.held);
         else { let vel = null; const old = h.hist.find(e => now - e.t < 0.09) || h.hist[0]; const span = Math.max(0.011, now - old.t); vel = h.pos.clone().sub(old.p).multiplyScalar(1.25 / span); release(h, vel); }
@@ -1577,8 +1611,13 @@ const vrMenu = (() => {
     tex.needsUpdate = true; };
   return { m, btns, draw, hov: null };
 })();
+function placeVRMenu() { const h = camera.getWorldPosition(new V3()), d = camDir(); d.y = 0; if (d.lengthSq() < 1e-4) d.set(0, 0, -1); d.normalize(); const y = Math.max(h.y, 1.0); vrMenu.m.position.set(h.x, y - 0.15, h.z).addScaledVector(d, 1.1); vrMenu.m.lookAt(h.x, vrMenu.m.position.y, h.z); }
+function keepVRMenuInView() { // the menu follows you if you look away or walk off, so it can never get lost
+  const h = camera.getWorldPosition(new V3()), d = camDir(), to = vrMenu.m.position.clone().sub(h), dist = to.length();
+  if (dist < 0.4 || dist > 2.2 || to.normalize().dot(d) < 0.55 || vrMenu.m.position.y < 0.3) placeVRMenu();
+}
 function openMenu() { menuOpen = true; S.menu(); autoFire = false;
-  if (renderer.xr.isPresenting) { const h = camera.getWorldPosition(new V3()), d = camDir(); d.y = 0; d.normalize(); vrMenu.m.position.copy(h).addScaledVector(d, 1.1).add(new V3(0, -0.15, 0)); vrMenu.m.lookAt(h.x, vrMenu.m.position.y, h.z); vrMenu.m.visible = true; vrMenu.draw(null); }
+  if (renderer.xr.isPresenting) { placeVRMenu(); vrMenu.m.visible = true; vrMenu.draw(null); }
   else { menuEl.style.display = 'flex'; hudEl.style.display = 'none'; $('mResume').style.display = started ? '' : 'none'; if (document.pointerLockElement) document.exitPointerLock(); }
 }
 function closeMenu() { menuOpen = false; vrMenu.m.visible = false; menuEl.style.display = 'none'; if (!renderer.xr.isPresenting) hudEl.style.display = ''; hands.forEach(h => { if (h.beam) h.beam.visible = false; }); }
@@ -1613,7 +1652,7 @@ $('mVR').addEventListener('click', async () => {
     const s = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor'] });
     if (!started) { buildRoom('random', (Math.random() * 1e9) | 0); started = true; }
     await renderer.xr.setSession(s); menuEl.style.display = 'none'; hudEl.style.display = 'none'; camera.rotation.set(0, 0, 0); camera.position.set(0, 0, 0);
-    placePlayer(); setTimeout(() => openMenu(), 300);
+    placePlayer(); closeMenu();
     s.addEventListener('end', () => { camera.position.set(0, 1.6, 0); for (const h of hands) { h.active = false; release(h); } vrMenu.m.visible = false; openMenu(); });
   } catch (e) { msg.textContent = 'Could not start VR: ' + (e.message || e); }
 });
@@ -1654,7 +1693,7 @@ function frame() {
   for (const t of things) { t.mesh.position.copy(t.body.position); t.mesh.quaternion.copy(t.body.quaternion); }
   for (const t of things.slice()) if (t.body.position.y < -5 && !t.removed) removeThing(t);
   updateGrenades(dt * TS); updateAttachments(dt);
-  processVoxels(); updateDebris(dt * TS); updatePack(dt, inVR);
+  processVoxels(); updateDebris(dt * TS); updatePack(dt, inVR); updatePackLook(dt);
   for (const t of things) if (t.gun) { const g = t.gun; g.cool -= dt; g.recoil = Math.max(0, g.recoil - dt * 6); if (g.slideT > 0) { g.slideT -= dt; updateGunVisual(t); } }
   for (let i = casings.length - 1; i >= 0; i--) { const c = casings[i]; c.life += dt * TS; if (c.life > 8 || c.removed) { if (!c.removed) removeThing(c); casings.splice(i, 1); } }
   if (flashT > 0) { flashT -= dt; if (flashT <= 0) flashMesh.visible = false; }
