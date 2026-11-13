@@ -261,6 +261,7 @@ function removeThing(t) {
   world.removeBody(t.body); scene.remove(t.mesh);
   const i = things.indexOf(t); if (i >= 0) things.splice(i, 1);
   t.removed = true;
+  if (t.dummy && !t.dummy.dead) killDummy(t.dummy);
 }
 const objParts = objs => objs.map(o => ({ p: new V3(), obj: o }));
 
@@ -764,6 +765,7 @@ function distTo(t, p) {
 }
 function grab(gr, t, point) {
   if (t.heldBy) release(t.heldBy);
+  if (t.dummy) knockDummy(t.dummy);
   gr.held = t; t.heldBy = gr; gr.farT = 0; gr.swingT = 0; gr.pullT = 0; t.body.wakeUp(); S.grab();
   const inv = gr.quat.clone().invert(), bp = new V3(t.body.position.x, t.body.position.y, t.body.position.z);
   gr.rel = { p: bp.sub(gr.pos).applyQuaternion(inv), q: inv.multiply(bodyQuat(t.body)) };
@@ -934,7 +936,7 @@ function shootRay(origin, dir, dmg, rad, muz, gunT) {
   if (!hit) return;
   const vo = hit.object.userData.vobj;
   if (vo) { hitVoxels(vo, hit.point.clone().addScaledVector(dir, vo.s * 0.4), rad, dmg, dir, 0.7); sparks(hit.point, dir); }
-  else { const t = hit.object.userData.thing || (() => { let o = hit.object; while (o && !o.userData.thing) o = o.parent; return o?.userData.thing; })(); if (t && !t.removed) { t.body.wakeUp(); t.body.applyImpulse(cv(dir.clone().multiplyScalar(dmg * 0.8)), cv(hit.point).vsub(t.body.position)); sparks(hit.point, dir); } }
+  else { const t = hit.object.userData.thing || (() => { let o = hit.object; while (o && !o.userData.thing) o = o.parent; return o?.userData.thing; })(); if (t && !t.removed) { if (t.dummy) { dummyHit(t, hit.point, dir.clone().multiplyScalar(dmg * 1.6)); sparks(hit.point, dir); return; } t.body.wakeUp(); t.body.applyImpulse(cv(dir.clone().multiplyScalar(dmg * 0.8)), cv(hit.point).vsub(t.body.position)); sparks(hit.point, dir); } }
 }
 function magOut(t, toFlatHand) {
   const g = t.gun; if (!g.mag) return null; const data = g.mag; g.mag = null; S.magOut(); updateGunVisual(t);
@@ -961,10 +963,10 @@ const SLOTS = [['bat', 'BAT'], ['crowbar', 'CROWBAR'], ['pickaxe', 'PICKAXE'], [
   ['pistolMag', 'PISTOL MAG'], ['akMag', 'AK MAG'], ['shell', 'SHOTGUN SHELL'], ['miniAmmo', 'MINIGUN AMMO'], ['grenade', 'GRENADE'],
   ['impact', 'IMPACT GRENADE'], ['chainsaw', 'CHAINSAW'], ['jackhammer', 'JACKHAMMER'], ['gauntlets', 'POWER GAUNTLETS'], ['scope', 'SCOPE'],
   ['reddot', 'RED DOT'], ['laser', 'LASER'], ['flashlight', 'FLASHLIGHT'], ['suppressor', 'SUPPRESSOR'], ['foregrip', 'FOREGRIP'],
-  ['wire', 'BARBED WIRE'], ['nails', 'NAILS'], ['saw', 'SAW BLADE'], ['blade', 'TAPED KNIFE']];
+  ['wire', 'BARBED WIRE'], ['nails', 'NAILS'], ['saw', 'SAW BLADE'], ['blade', 'TAPED KNIFE'], ['dummy', 'PERSON']];
 const PACK_COLS = 5;
 const SHORT = { shell: 'SHELLS',  sledge: 'SLEDGE', miniAmmo: 'MINI AMMO', gauntlets: 'GAUNTLETS', jackhammer: 'JACKHAMMER', impact: 'IMPACT', wire: 'BARBED WIRE', blade: 'KNIFE', flashlight: 'FLASHLIGHT', foregrip: 'FOREGRIP', pistolMag: 'PISTOL MAG', suppressor: 'SUPPRESSOR' };
-const slotColor = k => k === 'menu' ? '#c82a2a' : k === 'settings' ? '#2a5a8a' : k === 'shell' ? '#7a2a2a' : ['chainsaw', 'jackhammer', 'gauntlets'].includes(k) ? '#7a4a14' : k.startsWith('ammo') ? '#7a5a2a' : (k.includes('Mag') || k === 'miniAmmo') ? '#4a4a52' : (k === 'grenade' || k === 'impact') ? '#5a6a1a' : ATT_KINDS.includes(k) ? '#2a4064' : MOD_KINDS.includes(k) ? '#6a3424' : '#2a3a20';
+const slotColor = k => k === 'menu' ? '#c82a2a' : k === 'dummy' ? '#b08a20' : k === 'settings' ? '#2a5a8a' : k === 'shell' ? '#7a2a2a' : ['chainsaw', 'jackhammer', 'gauntlets'].includes(k) ? '#7a4a14' : k.startsWith('ammo') ? '#7a5a2a' : (k.includes('Mag') || k === 'miniAmmo') ? '#4a4a52' : (k === 'grenade' || k === 'impact') ? '#5a6a1a' : ATT_KINDS.includes(k) ? '#2a4064' : MOD_KINDS.includes(k) ? '#6a3424' : '#2a3a20';
 const ATT_KINDS = ['scope', 'reddot', 'laser', 'flashlight', 'suppressor', 'foregrip'], MOD_KINDS = ['wire', 'nails', 'saw', 'blade'];
 const pack = (() => {
   const g = new THREE.Group(); scene.add(g);
@@ -990,6 +992,7 @@ function spawnFromSlot(k, pos) {
     case 'ammo9': return makeAmmoBox('pistol', pos); case 'ammo762': return makeAmmoBox('ak', pos); case 'ammo12': return makeAmmoBox('shotgun', pos);
     case 'grenade': return makeGrenade('frag', pos); case 'impact': return makeGrenade('impact', pos);
     case 'sledge': return WEAP.sledge(pos); case 'minigun': return makeGun('minigun', pos); case 'miniAmmo': return makeMag('minigun', pos, { type: 'minigun', count: 200, cap: 200 });
+    case 'dummy': { const dm = makeDummy(new V3(pos.x, Math.max(0, pos.y - 1.3), pos.z), 0, true); const off = new V3(pos.x, pos.y, pos.z).sub(new V3(dm.parts.chest.body.position.x, dm.parts.chest.body.position.y, dm.parts.chest.body.position.z)); for (const t of dm.list) t.body.position.vadd(cv(off), t.body.position); return dm.parts.chest; }
     case 'chainsaw': return makeChainsaw(pos); case 'jackhammer': return makeJackhammer(pos); case 'gauntlets': return makeGauntletItem(pos);
   }
   if (ATT_KINDS.includes(k)) return makeAttItem(k, pos);
@@ -997,7 +1000,7 @@ function spawnFromSlot(k, pos) {
   return null;
 }
 function packInside(p) { const l = pack.g.worldToLocal(p.clone()); return Math.abs(l.x) < 0.36 && Math.abs(l.y) < 0.41 && l.z > -0.2 && l.z < 0.3; }
-function storeInPack(t) { removeThing(t); S.zip(); }
+function storeInPack(t) { if (t.dummy) { if (t.heldBy) release(t.heldBy); return; } removeThing(t); S.zip(); }
 function updatePack(dt, inVR) {
   const head = camera.getWorldPosition(new V3()), d = camDir(); d.y = 0; d.normalize(); const yaw = Math.atan2(-d.x, -d.z);
   if (pack.state === 'worn') {
@@ -1013,7 +1016,7 @@ function packToFront() { const head = camera.getWorldPosition(new V3()), d = cam
 const restoreBtn = interact(new V3(0, -10, 0), 0.24, 'RESTORE room', () => { S.menu(); restoreRoom(); });
 function restoreRoom() {
   for (const t of things.slice()) if (!t.heldBy && (t.ammo || t.name === 'Casing')) removeThing(t);
-  buildRoom(roomMode, roomSeed);
+  buildRoom(roomMode, roomSeed); freshDummies();
   // keep the player where they are unless now inside furniture: move them to spawn
   const p = rig.position; if (playerBlocked(p)) placePlayer();
   breakSound('crumble', 4, 0.6);
@@ -1239,6 +1242,7 @@ function explode(p, power) {
   for (const d of debris) { const b = d.b, dv = new V3(b.position.x - p.x, b.position.y - p.y, b.position.z - p.z), dd = dv.length(); if (dd > 3.2) continue; dv.normalize(); const f = 9 / (0.6 + dd); b.wakeUp(); b.velocity.x += dv.x * f; b.velocity.y += dv.y * f + 2; b.velocity.z += dv.z * f; }
   for (const t of things.slice()) { if (t.removed) continue; const b = t.body, dv = new V3(b.position.x - p.x, b.position.y - p.y, b.position.z - p.z), dd = dv.length(); if (dd > 4.5) continue;
     if (t.gren && t.gren.fuse !== 0) { t.gren.fuse = t.gren.fuse > 0 ? Math.min(t.gren.fuse, 0.12 + Math.random() * 0.15) : 0.12 + Math.random() * 0.2; t.gren.armT = 1; }
+    if (t.dummy) knockDummy(t.dummy);
     if (t.heldBy) continue; dv.normalize(); const f = Math.min(14, 9 / (dd * dd + 0.35)); b.wakeUp(); b.velocity.x += dv.x * f; b.velocity.y += dv.y * f + f * 0.35; b.velocity.z += dv.z * f;
     b.angularVelocity.set(rnd(-1, 1) * f, rnd(-1, 1) * f, rnd(-1, 1) * f); }
   for (let i = 0; i < 26; i++) dust(p.clone(), [0x8a8580, 0x5a5550, 0xffa040][i % 3], 1, new V3(rnd(-1, 1), rnd(0, 1.2), rnd(-1, 1)).normalize().multiplyScalar(3));
@@ -1338,9 +1342,10 @@ const packFlap = pack.g.children[1];
 let packOpen = 0;
 const packMinis = [];
 (() => {
-  for (const s of pack.slots) { if (s.k === 'menu') continue;
-    const t = spawnFromSlot(s.k, new V3(0, -40, 0)); if (!t) continue;
-    removeThing(t); t.mesh.traverse(o => { o.userData = {}; }); const inner = t.mesh.clone(true);
+  for (const s of pack.slots) { if (s.k === 'menu' || s.k === 'dummy') continue;
+    const t = spawnFromSlot(s.k, new V3(0, -40, 0)); if (!t) continue; let inner;
+    if (t.dummy) { inner = new THREE.Group(); const c0 = t.body.position; for (const pt of t.dummy.list) { pt.mesh.traverse(o => { o.userData = {}; }); const cl = pt.mesh.clone(true); cl.position.set(pt.body.position.x - c0.x, pt.body.position.y - c0.y, pt.body.position.z - c0.z); cl.quaternion.set(pt.body.quaternion.x, pt.body.quaternion.y, pt.body.quaternion.z, pt.body.quaternion.w); inner.add(cl); } killDummy(t.dummy); }
+    else { removeThing(t); t.mesh.traverse(o => { o.userData = {}; }); inner = t.mesh.clone(true); }
     const strip = []; inner.traverse(o => { if (o.isMesh && !o.visible) strip.push(o); });
     inner.traverse(o => { if (o.material === lensMat) o.material = new THREE.MeshBasicMaterial({ color: 0x1a3550 }); }); strip.forEach(o => o.parent.remove(o));
     inner.position.set(0, 0, 0); inner.quaternion.identity(); inner.updateMatrixWorld(true);
@@ -1485,7 +1490,7 @@ function punchAt(p, dir, speed, src) {
   const pow = clamp(speed / 3.2, 0.6, 1.5); let did = false;
   const vo = voxNear(p, 0.06) || voxAt(p.clone().addScaledVector(dir, 0.06));
   if (vo) { hitVoxels(vo, p, 0.14, 4.6 * pow, dir, 0.9); did = true; }
-  for (const t of things) { if (t.heldBy || t.removed) continue; if (distTo(t, p) < 0.06) { t.body.wakeUp(); t.body.applyImpulse(cv(dir.clone().multiplyScalar(3.5 * pow)), cv(p).vsub(t.body.position)); did = true; } }
+  for (const t of things) { if (t.heldBy || t.removed) continue; if (t.dummy && distTo(t, p) < 0.1) { dummyHit(t, p, dir.clone().multiplyScalar(6 * pow)); did = true; continue; } if (distTo(t, p) < 0.06) { t.body.wakeUp(); t.body.applyImpulse(cv(dir.clone().multiplyScalar(3.5 * pow)), cv(p).vsub(t.body.position)); did = true; } }
   if (did) { noise(0.12, 0.3 * pow, 700, 150); tone(90, 0.12, 'sine', 0.25 * pow, 45); tone(1700, 0.03, 'square', 0.05); dust(p, 0xffa040, 4, dir.clone().negate()); if (src) pulse(src, 1, 70); }
   return did;
 }
@@ -1520,6 +1525,127 @@ function vrGauntletPull(h, other) { // grab your other wrist to pull a gauntlet 
   if (!gauntletsOn || other.held || !other.active || other.pos.distanceTo(h.pos) > 0.13) return false;
   setGauntlets(false); const it = makeGauntletItem(h.pos.clone()); it.armed = false; grab(h, it, h.pos.clone()); pulse(h.grip.userData.src, 0.6, 40); pulse(other.grip.userData.src, 0.6, 40); return true;
 }
+
+/* ================= RAGDOLL PEOPLE (crash-test dummies) ================= */
+const dummies = [];
+const SKINS = [0xf1c27d, 0xe0ac69, 0xc68642, 0x8d5524, 0xffdbac, 0xa0663a], SHIRTS = [0xd83a3a, 0x3a7ad8, 0x3aa85a, 0xe0b020, 0x8a4ad8, 0xf07a2a, 0xeeeeee, 0x2a2c30], PANTS = [0x2a3a5a, 0x3a3a3a, 0x5a4a3a, 0x2a4a3a, 0x6a6a70];
+const DUMMY_FACE = canvasMat(64, 64, x => { x.fillStyle = '#ffffff00'; x.clearRect(0, 0, 64, 64); x.fillStyle = '#1a1a1a'; x.fillRect(18, 22, 8, 10); x.fillRect(38, 22, 8, 10); x.fillRect(24, 44, 16, 4);
+  x.fillStyle = '#ffd200'; x.beginPath(); x.arc(32, 8, 7, 0, 7); x.fill(); x.fillStyle = '#111'; x.beginPath(); x.moveTo(32, 8); x.arc(32, 8, 7, 0, Math.PI / 2); x.fill(); x.beginPath(); x.moveTo(32, 8); x.arc(32, 8, 7, Math.PI, Math.PI * 1.5); x.fill(); }, true);
+DUMMY_FACE.transparent = true;
+// rest layout (feet at y=0, facing +z). c = centre, s = size
+const DPARTS = {
+  pelvis: { c: [0, 1.0, 0], s: [0.3, 0.18, 0.18], m: 10, col: 'pants' }, chest: { c: [0, 1.3, 0], s: [0.36, 0.36, 0.2], m: 14, col: 'shirt' },
+  head: { c: [0, 1.62, 0], s: [0.2, 0.23, 0.21], m: 5, col: 'skin' },
+  uArmL: { c: [-0.245, 1.28, 0], s: [0.09, 0.3, 0.09], m: 2.5, col: 'shirt' }, lArmL: { c: [-0.245, 1.0, 0], s: [0.08, 0.27, 0.08], m: 2, col: 'skin' },
+  uArmR: { c: [0.245, 1.28, 0], s: [0.09, 0.3, 0.09], m: 2.5, col: 'shirt' }, lArmR: { c: [0.245, 1.0, 0], s: [0.08, 0.27, 0.08], m: 2, col: 'skin' },
+  uLegL: { c: [-0.09, 0.7, 0], s: [0.13, 0.42, 0.13], m: 8, col: 'pants' }, lLegL: { c: [-0.09, 0.27, 0.01], s: [0.11, 0.44, 0.12], m: 5, col: 'pants' },
+  uLegR: { c: [0.09, 0.7, 0], s: [0.13, 0.42, 0.13], m: 8, col: 'pants' }, lLegR: { c: [0.09, 0.27, 0.01], s: [0.11, 0.44, 0.12], m: 5, col: 'pants' },
+};
+const DJOINTS = [['pelvis', 'chest', [0, 1.13, 0], 0.5, 0.4], ['chest', 'head', [0, 1.5, 0], 0.6, 0.6], ['chest', 'uArmL', [-0.245, 1.43, 0], 1.6, 0.6], ['uArmL', 'lArmL', [-0.245, 1.135, 0], 1.3, 0.3],
+  ['chest', 'uArmR', [0.245, 1.43, 0], 1.6, 0.6], ['uArmR', 'lArmR', [0.245, 1.135, 0], 1.3, 0.3], ['pelvis', 'uLegL', [-0.09, 0.91, 0], 1.0, 0.3], ['uLegL', 'lLegL', [-0.09, 0.49, 0], 1.1, 0.2],
+  ['pelvis', 'uLegR', [0.09, 0.91, 0], 1.0, 0.3], ['uLegR', 'lLegR', [0.09, 0.49, 0], 1.1, 0.2]];
+function makeDummy(pos, yaw = 0, ragdolled = false) {
+  const pick = a => a[(Math.random() * a.length) | 0], cols = { skin: pick(SKINS), shirt: pick(SHIRTS), pants: pick(PANTS) };
+  const dm = { parts: {}, list: [], cons: [], state: 'stand', root: new V3(pos.x, 0, pos.z), yaw, phase: Math.random() * 6, walk: Math.random() < 0.6, target: null, t: 0, still: 0, prev: new Map(), dead: false };
+  const yq = new QT().setFromAxisAngle(new V3(0, 1, 0), yaw);
+  for (const k in DPARTS) { const P = DPARTS[k], c = v3(P.c);
+    const vis = [M(rbox(P.s[0], P.s[1], P.s[2], 0.02), cols[P.col], 0, 0, 0)];
+    if (k === 'head') { const f = new THREE.Mesh(new THREE.PlaneGeometry(0.19, 0.19), DUMMY_FACE); f.position.set(0, 0.0, 0.1055); vis.push(f, M(rbox(0.21, 0.06, 0.22, 0.02), 0x3a2a1a, 0, 0.1, -0.01)); }
+    if (k === 'lLegL' || k === 'lLegR') vis.push(M(rbox(0.12, 0.06, 0.2, 0.02), 0x1d1e21, 0, -0.2, 0.04));
+    if (k === 'chest') vis.push(M(BOX, 0xffd200, 0.1, 0.08, 0.101, { s: [0.06, 0.06, 0.003] }));
+    const wp = c.clone().applyQuaternion(yq).add(dm.root);
+    const t = compound('Person', wp, [{ p: [0, 0, 0], s: P.s, c: 0, hidden: true }, ...objParts(vis)], P.m);
+    t.body.quaternion.copy(cv4(yq)); t.body.linearDamping = 0.06; t.body.angularDamping = 0.35; t.dummy = dm; t.dpart = k; t.quiet = false;
+    t.onCollide = (e, iv) => dummyCollide(dm, t, e, iv);
+    dm.parts[k] = t; dm.list.push(t);
+  }
+  for (const [a, b, pv, ang, tw] of DJOINTS) { const A = dm.parts[a], B = dm.parts[b], P = v3(pv);
+    const con = new CANNON.ConeTwistConstraint(A.body, B.body, { pivotA: cv(P.clone().sub(v3(DPARTS[a].c))), pivotB: cv(P.clone().sub(v3(DPARTS[b].c))), axisA: new CANNON.Vec3(0, 1, 0), axisB: new CANNON.Vec3(0, 1, 0), angle: ang, twistAngle: tw, collideConnected: false, maxForce: 1e6 });
+    world.addConstraint(con); dm.cons.push(con); }
+  dummies.push(dm);
+  if (ragdolled) knockDummy(dm); else { for (const t of dm.list) { t.body.type = CANNON.Body.KINEMATIC; t.body.updateMassProperties?.(); } poseDummy(dm, 0); }
+  return dm;
+}
+const cv4 = q => new CANNON.Quaternion(q.x, q.y, q.z, q.w);
+function killDummy(dm) { if (dm.dead) return; dm.dead = true; for (const c of dm.cons) world.removeConstraint(c); for (const t of dm.list) if (!t.removed) removeThing(t); const i = dummies.indexOf(dm); if (i >= 0) dummies.splice(i, 1); }
+// standing / walking pose, written straight onto kinematic bodies
+const _rx = (a) => new QT().setFromAxisAngle(new V3(1, 0, 0), a);
+function standPose(dm, walkAmt) {
+  const ph = dm.phase, a = Math.sin(ph) * 0.45 * walkAmt, bend = (1 - Math.cos(ph)) * 0.22 * walkAmt, bob = Math.abs(Math.sin(ph)) * 0.025 * walkAmt, breathe = Math.sin(performance.now() * 0.002 + dm.yaw) * 0.006;
+  const out = {}, put = (k, c, q) => { out[k] = { c, q }; };
+  put('pelvis', new V3(0, 1.0 + bob, 0), new QT()); put('chest', new V3(0, 1.3 + bob + breathe, 0), _rx(0.03)); put('head', new V3(0, 1.62 + bob + breathe, 0), new QT());
+  for (const [side, sx, sgn] of [['L', -0.09, 1], ['R', 0.09, -1]]) { const aa = a * sgn, hip = new V3(sx, 0.91 + bob, 0), q1 = _rx(aa), q2 = _rx(aa + bend * (sgn > 0 ? (Math.sin(ph) > 0 ? 1 : 0.3) : (Math.sin(ph) < 0 ? 1 : 0.3)));
+    const knee = hip.clone().add(new V3(0, -0.42, 0).applyQuaternion(q1)); put('uLeg' + side, hip.clone().add(new V3(0, -0.21, 0).applyQuaternion(q1)), q1); put('lLeg' + side, knee.clone().add(new V3(0, -0.22, 0.01).applyQuaternion(q2)), q2); }
+  for (const [side, sx, sgn] of [['L', -0.245, -1], ['R', 0.245, 1]]) { const aa = a * sgn * 0.8, sh = new V3(sx, 1.43 + bob + breathe, 0), q1 = _rx(aa), q2 = _rx(aa - 0.25);
+    const el = sh.clone().add(new V3(0, -0.295, 0).applyQuaternion(q1)); put('uArm' + side, sh.clone().add(new V3(0, -0.15, 0).applyQuaternion(q1)), q1); put('lArm' + side, el.clone().add(new V3(0, -0.135, 0).applyQuaternion(q2)), q2); }
+  return out;
+}
+function poseDummy(dm, dt, blend = 1, from = null) {
+  const yq = new QT().setFromAxisAngle(new V3(0, 1, 0), dm.yaw), P = standPose(dm, dm.moving ? 1 : 0);
+  for (const k in P) { const t = dm.parts[k], b = t.body, wp = P[k].c.clone().applyQuaternion(yq).add(dm.root), wq = yq.clone().multiply(P[k].q);
+    if (from && blend < 1) { const f = from[k]; wp.lerpVectors(f.p, wp, blend); wq.slerpQuaternions(f.q, wq, blend); }
+    if (dt > 0) b.velocity.set((wp.x - b.position.x) / dt, (wp.y - b.position.y) / dt, (wp.z - b.position.z) / dt); else b.velocity.set(0, 0, 0);
+    b.position.set(wp.x, wp.y, wp.z); b.quaternion.set(wq.x, wq.y, wq.z, wq.w); b.angularVelocity.set(0, 0, 0); }
+}
+function knockDummy(dm) {
+  if (dm.state === 'rag' || dm.dead) return; dm.state = 'rag'; dm.t = 0; dm.still = 0;
+  for (const t of dm.list) { const b = t.body; b.type = CANNON.Body.DYNAMIC; b.updateMassProperties(); b.wakeUp(); }
+  if (Math.random() < 0.8) { const f = rnd(150, 230); tone(f, 0.18, 'sawtooth', 0.05, f * 0.6); noise(0.12, 0.05, 700, 300, 'bandpass', 0, 3); } // "oof"
+}
+function dummyHit(t, point, impulse) { const dm = t.dummy; knockDummy(dm); t.body.wakeUp(); t.body.applyImpulse(cv(impulse), cv(point).vsub(t.body.position)); }
+function dummyCollide(dm, t, e, iv) {
+  if (dm.state === 'rag') return; const o = bodyThing.get(e.body);
+  if (o?.dummy === dm) return;
+  const ov = e.body.velocity, sp = Math.hypot(ov.x, ov.y, ov.z), tool = o?.tool && (o.tool.rev > 0.5 || o.tool.trig);
+  if (sp > 2.2 || iv > 2.4 || tool) { const p = contactPoint(e, t.body); knockDummy(dm); t.body.applyImpulse(new CANNON.Vec3(ov.x * 0.6 * Math.min(4, e.body.mass), ov.y * 0.6 * Math.min(4, e.body.mass) + 1, ov.z * 0.6 * Math.min(4, e.body.mass)), cv(p).vsub(t.body.position)); }
+}
+function inRoom(p, pad = 2) { if (!room) return false; const cx = Math.floor((p.x - room.ox) / CS), cz = Math.floor((p.z - room.oz) / CS);
+  for (let a = -pad; a <= pad; a++) for (let b = -pad; b <= pad; b++) { const x = cx + a, z = cz + b; if (x < 0 || z < 0 || x >= room.GW || z >= room.GD || !room.inside[room.C(x, z)]) return false; } return true; }
+function dummyFree(p) { if (!inRoom(p)) return false; for (const h of [0.3, 1.0, 1.6]) for (const d of DIRS8) { const q = new V3(p.x + d.x * 0.3, h, p.z + d.z * 0.3); if (solidStatic(q) || solidDyn(q)) return false; } return true; }
+function randomRoomSpot(minFromPlayer = 1.2) {
+  if (!room) return null; const b = room.bounds, me = camera.getWorldPosition(new V3());
+  for (let i = 0; i < 60; i++) { const p = new V3(rnd(b.minx + 0.4, b.maxx - 0.4), 0, rnd(b.minz + 0.4, b.maxz - 0.4)); if (Math.hypot(p.x - me.x, p.z - me.z) < minFromPlayer) continue; if (room.ped && Math.hypot(p.x - room.ped.x, p.z - room.ped.z) < 0.7) continue; if (dummyFree(p)) return p; }
+  return null;
+}
+function spawnRoomDummies(n) { for (let i = 0; i < n; i++) { const p = randomRoomSpot(1.6); if (p) makeDummy(p, rnd(0, Math.PI * 2)); } }
+function updateDummies(dt) {
+  const sdt = dt * TS, me = camera.getWorldPosition(new V3());
+  for (const dm of dummies.slice()) { if (dm.dead) continue; dm.t += sdt;
+    if (dm.state === 'stand') {
+      dm.moving = false;
+      if (dm.walk) { if (!dm.target || Math.hypot(dm.target.x - dm.root.x, dm.target.z - dm.root.z) < 0.3 || dm.t > 12) { dm.target = randomRoomSpot(0.2); dm.t = 0; dm.pause = rnd(0.5, 3); }
+        if (dm.pause > 0) dm.pause -= sdt;
+        else if (dm.target) { const want = Math.atan2(dm.target.x - dm.root.x, dm.target.z - dm.root.z); let dy = want - dm.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); dm.yaw += clamp(dy, -2.5 * sdt, 2.5 * sdt);
+          if (Math.abs(dy) < 0.5) { const fx = Math.sin(dm.yaw), fz = Math.cos(dm.yaw), ahead = new V3(dm.root.x + fx * 0.4, 0, dm.root.z + fz * 0.4);
+            if (dummyFree(ahead) && Math.hypot(ahead.x - me.x, ahead.z - me.z) > 0.5) { dm.root.x += fx * 0.65 * sdt; dm.root.z += fz * 0.65 * sdt; dm.moving = true; dm.phase += sdt * 5.2; } else dm.target = null; } } }
+      if (!dm.moving) { const want = Math.atan2(me.x - dm.root.x, me.z - dm.root.z); if (!dm.walk && Math.hypot(me.x - dm.root.x, me.z - dm.root.z) < 3) { let dy = want - dm.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); dm.yaw += clamp(dy, -1.2 * sdt, 1.2 * sdt); } dm.phase = 0; }
+      poseDummy(dm, sdt || 0.016);
+      // a hard slap / shove from a VR hand knocks them over
+      for (const h of hands) { if (!h.active || h.held || h.hist.length < 2) continue; const o = h.hist[0], sp = h.pos.distanceTo(o.p) / Math.max(0.011, performance.now() / 1000 - o.t); if (sp < 1.6) continue;
+        for (const t of dm.list) if (distTo(t, h.pos) < 0.07) { dummyHit(t, h.pos, h.pos.clone().sub(o.p).normalize().multiplyScalar(sp * (gauntletsOn ? 9 : 4))); pulse(h.grip.userData.src, 0.7, 40); break; } }
+    } else if (dm.state === 'rag') {
+      const held = dm.list.some(t => t.heldBy); let maxSp = 0; for (const t of dm.list) { const v = t.body.velocity; maxSp = Math.max(maxSp, Math.hypot(v.x, v.y, v.z)); }
+      dm.still = held || maxSp > 0.35 ? 0 : dm.still + sdt;
+      if (dm.parts.pelvis.body.position.y < -4) { killDummy(dm); continue; }
+      if ((dm.still > 1.6 && dm.t > 3.5) || (dm.t > 9 && !held)) { // get back up
+        const pb = dm.parts.pelvis.body.position, spot = new V3(pb.x, 0, pb.z);
+        if (!dummyFree(spot)) { const s2 = randomRoomSpot(0.5); if (s2) spot.copy(s2); }
+        dm.from = {}; for (const t of dm.list) { const b = t.body; dm.from[t.dpart] = { p: new V3(b.position.x, b.position.y, b.position.z), q: bodyQuat(b) }; b.type = CANNON.Body.KINEMATIC; b.updateMassProperties(); }
+        dm.root.set(spot.x, 0, spot.z); dm.yaw = Math.atan2(me.x - spot.x, me.z - spot.z); dm.state = 'getup'; dm.t = 0; dm.moving = false; dm.phase = 0; tone(260, 0.12, 'triangle', 0.035, 330);
+      }
+    } else if (dm.state === 'getup') {
+      if (dm.list.some(t => t.heldBy)) { dm.state = 'stand'; knockDummyForce(dm); continue; }
+      const k = Math.min(1, dm.t / 0.9), e = k * k * (3 - 2 * k); poseDummy(dm, sdt || 0.016, e, dm.from); if (k >= 1) { dm.state = 'stand'; dm.t = 0; }
+    }
+  }
+}
+function knockDummyForce(dm) { dm.state = 'stand'; knockDummy(dm); }
+
+// backpack pocket model of a little person
+(() => { const s = pack.slots.find(s => s.k === 'dummy'); if (!s) return; const t = spawnFromSlot('dummy', new V3(0, -40, 0)); const inner = new THREE.Group(), c0 = t.dummy.parts.pelvis.body.position;
+  const P = standPose(t.dummy, 0); for (const pt of t.dummy.list) { pt.mesh.traverse(o => { o.userData = {}; }); const cl = pt.mesh.clone(true); cl.position.copy(P[pt.dpart].c).sub(new V3(0, 0.85, 0)); cl.quaternion.copy(P[pt.dpart].q); inner.add(cl); }
+  killDummy(t.dummy); const holder = new THREE.Group(), spin = new THREE.Group(); spin.add(inner); holder.add(spin); const fit = 0.07 / 1.75; holder.userData.fit = fit;
+  holder.position.copy(s.lp).add(new V3(0, 0.012, 0.03)); holder.traverse(o => { o.userData = { slot: 'dummy' }; }); holder.userData.fit = fit; pack.g.add(holder); packMinis.push({ holder, spin, base: 0, ph: 1 }); })();
 
 /* ================= SETTINGS ================= */
 const SET = { height: 0, angle: 35 };
@@ -1850,7 +1976,7 @@ function menuPick(k) {
   if (set) { set(); applySettings(); S.click(); vrMenu.draw(vrMenu.hov); return; }
   if (k === 'resume') { if (started) closeMenu(); return; }
   for (const t of things.slice()) if (!t.heldBy) removeThing(t);
-  buildRoom(k, (Math.random() * 1e9) | 0); started = true; placePlayer(); closeMenu();
+  buildRoom(k, (Math.random() * 1e9) | 0); started = true; placePlayer(); closeMenu(); freshDummies();
 }
 function vrMenuPoint(h, click) {
   const dir = new V3(0, -0.1, -1).normalize().applyQuaternion(h.quat); ray.set(h.pos, dir); ray.far = 5;
@@ -1886,7 +2012,7 @@ $('mVR').addEventListener('click', async () => {
   try {
     if (!(await navigator.xr.isSessionSupported('immersive-vr'))) { msg.textContent = 'VR is not available on this device.'; return; }
     const s = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor'] });
-    if (!started) { buildRoom('random', (Math.random() * 1e9) | 0); started = true; }
+    if (!started) { buildRoom('random', (Math.random() * 1e9) | 0); started = true; setTimeout(freshDummies, 500); }
     await renderer.xr.setSession(s); applySettings(); menuEl.style.display = 'none'; hudEl.style.display = 'none'; camera.rotation.set(0, 0, 0); camera.position.set(0, 0, 0);
     placePlayer(); closeMenu();
     s.addEventListener('end', () => { camera.position.set(0, 1.6, 0); rig.position.y = 0; for (const h of hands) { h.active = false; release(h); } vrMenu.m.visible = false; openMenu(); });
@@ -1917,6 +2043,7 @@ function updateSlow(dt) {
 }
 const fogBase = scene.fog ? [scene.fog.color.r, scene.fog.color.g, scene.fog.color.b] : [0, 0, 0];
 
+function freshDummies() { for (const dm of dummies.slice()) killDummy(dm); spawnRoomDummies(roomMode === 'random' ? 4 : 3); }
 /* ================= MAIN LOOP ================= */
 let last = performance.now(), frames = 0;
 function frame() {
@@ -1928,7 +2055,7 @@ function frame() {
   physics(dt);
   for (const t of things) { t.mesh.position.copy(t.body.position); t.mesh.quaternion.copy(t.body.quaternion); }
   for (const t of things.slice()) if (t.body.position.y < -5 && !t.removed) removeThing(t);
-  updateGrenades(dt * TS); updateAttachments(dt); updateTools(dt);
+  updateGrenades(dt * TS); updateAttachments(dt); updateTools(dt); updateDummies(dt);
   processVoxels(); updateDebris(dt * TS); updatePack(dt, inVR); updatePackLook(dt);
   for (const t of things) if (t.gun) { const g = t.gun; g.cool -= dt; g.recoil = Math.max(0, g.recoil - dt * 6); if (g.slideT > 0) { g.slideT -= dt; updateGunVisual(t); } }
   for (let i = casings.length - 1; i >= 0; i--) { const c = casings[i]; c.life += dt * TS; if (c.life > 8 || c.removed) { if (!c.removed) removeThing(c); casings.splice(i, 1); } }
@@ -1939,7 +2066,7 @@ function frame() {
   renderer.render(scene, camera);
 }
 renderer.setAnimationLoop(frame);
-window.__dbg = { things, vobjs, world, input, rig, flatGr, buildRoom, hitVoxels, WEAP, makeGun, makeMag, makeAmmoBox, spawnFromSlot, pack, fireGun, flatAction, flatMag, flatRack, flatLoad, flatInsert, menuPick, takeFlat, flatThrow, magOut, storeInPack, get target() { return target; }, get offMag() { return offMag; }, get frames() { return frames; }, get TS() { return TS; }, SET, applySettings, menuPick, openMenu, get menuOpen() { return menuOpen; }, setGauntlets, flatPunch, get gauntletsOn() { return gauntletsOn; }, voxAt, tryStartSaw, set autoFire(v) { autoFire = v; }, hands, renderer, camera, attachTo, addMod, makeGrenade, pullPin, explode, openMods, get ads() { return ads; }, set adsToggle(v) { adsToggle = v; }, slowHeld, debris, room: () => room };
+window.__dbg = { things, vobjs, world, input, rig, flatGr, buildRoom, hitVoxels, WEAP, makeGun, makeMag, makeAmmoBox, spawnFromSlot, pack, fireGun, flatAction, flatMag, flatRack, flatLoad, flatInsert, menuPick, takeFlat, flatThrow, magOut, storeInPack, get target() { return target; }, get offMag() { return offMag; }, get frames() { return frames; }, get TS() { return TS; }, dummies, makeDummy, knockDummy, SET, applySettings, menuPick, openMenu, get menuOpen() { return menuOpen; }, setGauntlets, flatPunch, get gauntletsOn() { return gauntletsOn; }, voxAt, tryStartSaw, set autoFire(v) { autoFire = v; }, hands, renderer, camera, attachTo, addMod, makeGrenade, pullPin, explode, openMods, get ads() { return ads; }, set adsToggle(v) { adsToggle = v; }, slowHeld, debris, room: () => room };
 </script>
 </body>
 </html>
