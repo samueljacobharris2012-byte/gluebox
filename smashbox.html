@@ -84,7 +84,7 @@
     <button id="mResume" class="wide" style="display:none">Resume</button>
   </div>
   <div id="msg"></div>
-  <p style="margin-top:12px;font-size:12px">VR: left stick walk (push all the way), right stick turn, grip grab, trigger shoot / hold trigger + grip to grab from far, A/X drop magazine, B/Y menu, click and hold a thumbstick for slow-mo.<br>Phone: left side move, right side look. PC: click to aim with mouse, WASD, E grab/use, left click shoot or swing, Q mag out, R rack, T load, G insert, B backpack, hold Z or Shift for slow-mo, right mouse aim, M mods, Esc menu.<br>Grenades: hold one, pull the pin, throw. In VR, grab the pin ring with your other hand. Attachments: in VR bring a scope, laser, etc. to the gun and it clicks on (grab it with your other hand to pull it off). Melee mods: touch them to the weapon.</p>
+  <p style="margin-top:12px;font-size:12px">VR: left stick walk (push all the way), right stick turn, grip grab, trigger shoot / hold trigger + grip to grab from far, A/X drop magazine, B/Y menu, click and hold a thumbstick for slow-mo.<br>Phone: left side move, right side look. PC: click to aim with mouse, WASD, E grab/use, left click shoot or swing, Q mag out, R rack, T load, G insert, B backpack, hold Z or Shift for slow-mo, right mouse aim, M mods, V punch (gauntlets), Esc menu.<br>Grenades: hold one, pull the pin, throw. In VR, grab the pin ring with your other hand. Attachments: in VR bring a scope, laser, etc. to the gun and it clicks on (grab it with your other hand to pull it off). Melee mods: touch them to the weapon. Chainsaw: grab the pull cord with your other hand and yank it to start, then hold trigger to rev. Gauntlets: grab them and they go on both hands; punch hard. Take them off at the GAUNTLETS pocket.</p>
 </div></div>
 <script type="module">
 import * as THREE from 'three';
@@ -179,6 +179,7 @@ const S = {
   zip: () => noise(0.22, 0.09, 5000, 1800, 'bandpass', 0, 2),
   thud: v => noise(0.08, Math.min(0.2, v * 0.03), 280),
   shot: kind => {
+    if (kind === 'minigun') { noise(0.07, 0.3, 3000, 500); tone(95, 0.05, 'sine', 0.22, 45); return; }
     const k = { pistol: [0.5, 0.18, 2800], ak: [0.55, 0.16, 3200], shotgun: [0.85, 0.32, 1900] }[kind];
     noise(k[1] + 0.12, k[0], k[2], 180); tone(110, k[1], 'sine', k[0] * 0.9, 38); tone(2400, 0.025, 'square', 0.08); noise(0.5, k[0] * 0.18, 900, 200, 'lowpass', 0.05);
   },
@@ -788,6 +789,7 @@ function meleeHit(t, e, iv) {
   if (t.mods && t.mods.size) modHitSfx(t, iv);
   pulseFor(t, Math.min(1, 0.3 + iv * 0.1), 40 + n * 4);
   if (t.melee.metal && !n) hitSfxMetal(iv);
+  if (t.melee.heavy && iv > 2) { noise(0.25, Math.min(0.35, iv * 0.04), 380, 90); tone(70, 0.2, 'sine', Math.min(0.3, iv * 0.04), 40); }
 }
 function hitSfxMetal(v) { const a = Math.min(0.12, 0.03 + v * 0.01); [820, 1310, 2170].forEach((f, i) => tone(f * rnd(0.95, 1.05), 0.35, 'sine', a / (1 + i * 0.5))); }
 const holdUpQ = new QT().setFromAxisAngle(new V3(1, 0, 0), -Math.PI / 3);
@@ -801,6 +803,9 @@ const WEAP = {
   pickaxe: pos => { const t = compound('Pickaxe', pos, [{ p: [0, 0, 0], s: [0.035, 0.75, 0.035], c: 0, hidden: true }, { p: [0, 0.34, 0], s: [0.05, 0.05, 0.44], c: 0, hidden: true }, ...objParts([
     M(CYL, 0xa87650, 0, 0, 0, { s: [0.016, 0.75, 0.016] }), M(rbox(0.04, 0.05, 0.12, 0.01), 0x55595f, 0, 0.34, 0), M(new THREE.ConeGeometry(0.022, 0.17, 8), 0x8a8f96, 0, 0.34, -0.14, { rx: -Math.PI / 2 }), M(new THREE.ConeGeometry(0.022, 0.17, 8), 0x8a8f96, 0, 0.34, 0.14, { rx: Math.PI / 2 })])], 2.2);
     t.melee = { power: 2.2, radius: 0.065, metal: true }; t.gripLocal = new V3(0, -0.28, 0); t.holdQ = holdUpQ; t.swing = true; return t; },
+  sledge: pos => { const t = compound('Sledgehammer', pos, [{ p: [0, -0.02, 0], s: [0.035, 0.76, 0.035], c: 0, hidden: true }, { p: [0, 0.36, 0], s: [0.085, 0.085, 0.2], c: 0, hidden: true }, ...objParts([
+    M(CYL, 0xc8a070, 0, -0.02, 0, { s: [0.017, 0.76, 0.017] }), M(CYL, 0x1c1c1c, 0, -0.3, 0, { s: [0.019, 0.16, 0.019] }), M(rbox(0.085, 0.085, 0.2, 0.012), 0x3a3d42, 0, 0.36, 0), M(BOX, 0x5a5e64, 0, 0.36, -0.102, { s: [0.08, 0.08, 0.006] }), M(BOX, 0x5a5e64, 0, 0.36, 0.102, { s: [0.08, 0.08, 0.006] })])], 6);
+    t.melee = { power: 3.4, radius: 0.12, metal: true, heavy: true }; t.gripLocal = new V3(0, -0.3, 0); t.holdQ = holdUpQ; t.swing = true; return t; },
 };
 for (const k in WEAP) { const f = WEAP[k]; WEAP[k] = pos => { const t = f(pos); t.onCollide = (e, iv) => meleeHit(t, e, iv); return t; }; }
 
@@ -808,12 +813,14 @@ for (const k in WEAP) { const f = WEAP[k]; WEAP[k] = pos => { const t = f(pos); 
 const GUNS = {
   pistol: { cap: 12, dmg: 2.4, rad: 0.05, travel: 0.045, muzzle: new V3(0, 0.03, -0.125), well: new V3(0, -0.125, 0.06), port: new V3(0.025, 0.035, -0.02), manip: new V3(0, 0.035, 0.075), grip: new V3(0, -0.06, 0.05), auto: false, rpm: 400 },
   ak: { cap: 30, dmg: 3.2, rad: 0.055, travel: 0.08, muzzle: new V3(0, 0.035, -0.55), well: new V3(0, -0.03, -0.09), port: new V3(0.03, 0.045, -0.12), manip: new V3(0.04, 0.045, -0.05), grip: new V3(0, -0.05, 0.065), auto: true, rpm: 600 },
+  minigun: { cap: 200, dmg: 2.6, rad: 0.055, travel: 0.0, muzzle: new V3(0, 0.0, -0.66), well: new V3(-0.075, -0.02, 0.02), port: new V3(0.06, 0.0, -0.06), manip: new V3(0, 0.2, 0.3), grip: new V3(0, -0.1, 0.16), auto: true, rpm: 1500 },
   shotgun: { cap: 6, dmg: 1.4, rad: 0.05, travel: 0.09, muzzle: new V3(0, 0.04, -0.6), well: new V3(0, -0.02, -0.03), port: new V3(0.03, 0.035, -0.04), manip: new V3(0, 0.012, -0.28), grip: new V3(0, -0.03, 0.11), auto: false, rpm: 300, pellets: 8 },
 };
 const DARK = 0x2a2c30, GUNMETAL = 0x4a4e55, WOODG = 0x8a4a24;
 function makeMagVisual(type) {
   const g = new THREE.Group();
   if (type === 'pistol') g.add(M(rbox(0.022, 0.1, 0.036, 0.004), 0x1c1d20, 0, 0, 0), M(BOX, 0x2a2c30, 0, -0.052, 0.002, { s: [0.026, 0.008, 0.042] }));
+  else if (type === 'minigun') { g.add(M(rbox(0.07, 0.1, 0.15, 0.008), 0x4a5a2a, 0, -0.05, 0), M(BOX, 0xffd23b, 0, -0.05, 0.0755, { s: [0.04, 0.02, 0.002] })); for (let i = 0; i < 5; i++) g.add(M(CYL, 0xc8a050, 0.025, 0.004, -0.04 + i * 0.02, { s: [0.0056, 0.03, 0.0056], rz: Math.PI / 2 })); const top = M(BOX, 0xc8a050, 0.0, 0.004, 0, { s: [0.03, 0.006, 0.11] }); g.add(top); g.userData.top = top; return g; }
   else { for (let i = 0; i < 3; i++) g.add(M(rbox(0.026, 0.065, 0.06, 0.006), 0xb05a2a, 0, -i * 0.06, -i * 0.014, { rx: -0.22 * i })); }
   const top = M(CYL, 0xd8a83a, 0, type === 'pistol' ? 0.052 : 0.035, 0, { s: [type === 'pistol' ? 0.0045 : 0.0055, 0.006, type === 'pistol' ? 0.0045 : 0.0055], rx: Math.PI / 2 }); g.add(top); g.userData.top = top;
   return g;
@@ -834,14 +841,22 @@ function makeGun(type, pos) {
       M(BOX, 0x222222, 0, 0.07, -0.5, { s: [0.004, 0.025, 0.008] }), M(BOX, 0x222222, 0, -0.012, 0.03, { s: [0.006, 0.02, 0.006] }), M(CYL, 0x111111, 0, 0.035, -0.545, { s: [0.012, 0.03, 0.012], rx: Math.PI / 2 }));
     slide = new THREE.Group(); slide.add(M(rbox(0.016, 0.012, 0.03, 0.004), 0x55595f, 0.03, 0.045, -0.05)); vis.push(slide);
     magMesh = makeMagVisual('ak'); magMesh.position.set(0, -0.035, -0.09); vis.push(magMesh);
+  } else if (type === 'minigun') {
+    parts.push({ p: [0, 0, -0.25], s: [0.09, 0.09, 0.82], c: 0, hidden: true }, { p: [0, -0.06, 0.16], s: [0.04, 0.1, 0.05], c: 0, hidden: true });
+    vis.push(M(rbox(0.11, 0.11, 0.22, 0.02), 0x3a3d42, 0, 0, 0.05), M(CYL, 0x2a2c30, 0, 0, 0.19, { s: [0.045, 0.06, 0.045], rx: Math.PI / 2 }), M(rbox(0.035, 0.1, 0.045, 0.008), 0x1d1e21, 0, -0.08, 0.16, { rx: 0.2 }),
+      M(BOX, 0x1d1e21, 0, 0.085, 0.05, { s: [0.02, 0.012, 0.16] }), M(BOX, 0x1d1e21, 0, 0.065, -0.02, { s: [0.016, 0.04, 0.012] }), M(BOX, 0x1d1e21, 0, 0.065, 0.12, { s: [0.016, 0.04, 0.012] }), M(BOX, 0x111111, 0, -0.045, 0.12, { s: [0.006, 0.025, 0.008] }));
+    slide = new THREE.Group(); slide.position.z = -0.06; const bar = new THREE.Group(); slide.add(bar); slide.userData.barrels = bar;
+    for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; bar.add(M(CYL, 0x2a2c30, Math.cos(a) * 0.022, Math.sin(a) * 0.022, -0.3, { s: [0.0085, 0.56, 0.0085], rx: Math.PI / 2 })); }
+    bar.add(M(CYL, 0x3a3d42, 0, 0, -0.5, { s: [0.036, 0.02, 0.036], rx: Math.PI / 2 }), M(CYL, 0x3a3d42, 0, 0, -0.2, { s: [0.036, 0.02, 0.036], rx: Math.PI / 2 }), M(CYL, 0x3a3d42, 0, 0, -0.58, { s: [0.036, 0.015, 0.036], rx: Math.PI / 2 }));
+    vis.push(slide); magMesh = makeMagVisual('minigun'); magMesh.position.set(-0.075, -0.024, 0.02); vis.push(magMesh);
   } else {
     parts.push({ p: [0, 0.025, -0.25], s: [0.05, 0.06, 0.66], c: 0, hidden: true }, { p: [0, -0.02, 0.22], s: [0.04, 0.08, 0.3], c: 0, hidden: true });
     vis.push(M(rbox(0.045, 0.06, 0.2, 0.008), 0x2a2c30, 0, 0.02, 0.0), M(CYL, 0x1d1e21, 0, 0.042, -0.36, { s: [0.011, 0.5, 0.011], rx: Math.PI / 2 }), M(CYL, 0x1d1e21, 0, 0.012, -0.31, { s: [0.011, 0.42, 0.011], rx: Math.PI / 2 }),
       M(rbox(0.04, 0.07, 0.3, 0.012), WOODG, 0, -0.012, 0.24, { rx: 0.1 }), M(SPH, 0xd8d8d8, 0, 0.056, -0.6, { s: [0.004, 0.004, 0.004] }), M(BOX, 0x111111, 0, -0.018, 0.04, { s: [0.006, 0.02, 0.006] }));
     slide = new THREE.Group(); slide.add(M(rbox(0.052, 0.046, 0.14, 0.014), WOODG, 0, 0.012, -0.28)); for (let i = 0; i < 6; i++) slide.add(M(BOX, 0x5a2a12, 0, 0.012, -0.33 + i * 0.02, { s: [0.054, 0.04, 0.004] })); vis.push(slide);
   }
-  const t = compound({ pistol: 'Pistol', ak: 'AK', shotgun: 'Shotgun' }[type], pos, [...parts, ...objParts(vis)], type === 'pistol' ? 0.9 : 3.2);
-  t.gun = { att: {}, type, G, mag: null, chamber: false, spent: false, tube: 0, locked: false, slideT: 0, manip: 0, rackBack: false, recoil: 0, cool: 0, slide, magMesh, slideBase: slide.position.z };
+  const t = compound({ pistol: 'Pistol', ak: 'AK', shotgun: 'Shotgun', minigun: 'Minigun' }[type], pos, [...parts, ...objParts(vis)], type === 'pistol' ? 0.9 : type === 'minigun' ? 12 : 3.2);
+  t.gun = { spin: 0, trigT: 0, att: {}, type, G, mag: null, chamber: false, spent: false, tube: 0, locked: false, slideT: 0, manip: 0, rackBack: false, recoil: 0, cool: 0, slide, magMesh, slideBase: slide.position.z };
   t.gripLocal = G.grip.clone(); t.holdQ = new QT(); t.aimFull = true;
   t.onCollide = (e, iv) => { if (e.body?.vobj && iv > 2.2) hitVoxels(e.body.vobj, contactPoint(e, t.body), 0.06, (iv - 1.5) * 0.4, null, 0.6); };
   if (type !== 'shotgun') t.gun.mag = { type, count: 0, cap: G.cap };
@@ -875,8 +890,9 @@ function ejectCasing(t, live) {
 }
 function makeMag(type, pos, data) {
   const vis = makeMagVisual(type);
-  const t = compound(type === 'pistol' ? 'Pistol mag' : 'AK mag', pos, [{ p: type === 'pistol' ? [0, 0, 0] : [0, -0.06, -0.015], s: type === 'pistol' ? [0.024, 0.1, 0.038] : [0.028, 0.19, 0.07], c: 0, hidden: true }, { p: new V3(), obj: vis }], 0.15);
-  t.magData = data || { type, count: 0, cap: GUNS[type].cap }; t.magVis = vis; t.magTop = new V3(0, type === 'pistol' ? 0.05 : 0.035, 0);
+  const MM = { pistol: ['Pistol mag', [0, 0, 0], [0.024, 0.1, 0.038], 0.05], ak: ['AK mag', [0, -0.06, -0.015], [0.028, 0.19, 0.07], 0.035], minigun: ['Minigun ammo box', [0, -0.05, 0], [0.07, 0.1, 0.15], 0.006] }[type];
+  const t = compound(MM[0], pos, [{ p: MM[1], s: MM[2], c: 0, hidden: true }, { p: new V3(), obj: vis }], type === 'minigun' ? 1.5 : 0.15);
+  t.magData = data || { type, count: 0, cap: GUNS[type].cap }; t.magVis = vis; t.magTop = new V3(0, MM[3], 0);
   vis.userData.top.visible = t.magData.count > 0; return t;
 }
 const ammoMats = {};
@@ -889,7 +905,7 @@ function makeAmmoBox(type, pos) {
 }
 /* ---------- gun actions ---------- */
 function fireGun(t, flat) {
-  const g = t.gun, G = g.G; if (g.cool > 0) return false;
+  const g = t.gun, G = g.G; if (g.type === 'minigun') { g.trigT = 0.09; g.flatTrig = flat; return true; } if (g.cool > 0) return false;
   if (!g.chamber) { S.dry(); g.cool = 0.15; return false; }
   g.cool = 60 / G.rpm; g.chamber = false; const att = g.att || {}; if (att.muzzle) S.shotSup(g.type); else S.shot(g.type); g.recoil = (g.type === 'shotgun' ? 1 : g.type === 'ak' ? 0.45 : 0.6) * (att.grip ? 0.55 : 1); pulseFor(t, 1, g.type === 'shotgun' ? 90 : 50);
   const muz = gunWorld(t, muzzleLocal(t)); let origin = muz, dir = gunDir(t);
@@ -936,30 +952,31 @@ function muzzleFlash(p, d) { flashMesh.position.copy(p).addScaledVector(d, 0.07)
 const tracers = [];
 function tracer(a, b) { const l = noRay(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), new THREE.LineBasicMaterial({ color: 0xffe6a0, transparent: true, opacity: 0.8 }))); scene.add(l); tracers.push({ l, t: 0.06 }); }
 function sparks(p, d) { dust(p, 0xffd27a, 4, d.clone().negate()); }
-function kickCam(type, m = 1) { input.pitch = clamp(input.pitch + { pistol: 0.035, ak: 0.02, shotgun: 0.08 }[type] * m * (ads ? 0.6 : 1), -1.45, 1.45); input.yaw += rnd(-0.01, 0.01); }
+function kickCam(type, m = 1) { input.pitch = clamp(input.pitch + { pistol: 0.035, ak: 0.02, shotgun: 0.08, minigun: 0.006 }[type] * m * (ads ? 0.6 : 1), -1.45, 1.45); input.yaw += rnd(-0.01, 0.01); }
 
 /* ================= BACKPACK ================= */
-const SLOTS = [['bat', 'BAT'], ['crowbar', 'CROWBAR'], ['pickaxe', 'PICKAXE'], ['menu', 'MENU'],
-  ['pistol', 'PISTOL'], ['ak', 'AK'], ['shotgun', 'SHOTGUN'], ['grenade', 'GRENADE'],
-  ['pistolMag', 'PISTOL MAG'], ['akMag', 'AK MAG'], ['ammo9', '9MM AMMO'], ['ammo762', '7.62 AMMO'],
-  ['ammo12', 'SHELLS'], ['impact', 'IMPACT GRENADE'], ['scope', 'SCOPE'], ['reddot', 'RED DOT'],
-  ['laser', 'LASER'], ['flashlight', 'FLASH LIGHT'], ['suppressor', 'SUPPRESSOR'], ['foregrip', 'FORE GRIP'],
-  ['wire', 'BARBED WIRE'], ['nails', 'NAILS'], ['saw', 'SAW BLADE'], ['blade', 'TAPED KNIFE']];
-const SHORT = { impact: 'IMPACT', wire: 'BARBED WIRE', blade: 'KNIFE', flashlight: 'FLASHLIGHT', foregrip: 'FOREGRIP', pistolMag: 'PISTOL MAG', suppressor: 'SUPPRESSOR' };
-const slotColor = k => k === 'menu' ? '#c82a2a' : k.startsWith('ammo') ? '#7a5a2a' : k.includes('Mag') ? '#4a4a52' : (k === 'grenade' || k === 'impact') ? '#5a6a1a' : ATT_KINDS.includes(k) ? '#2a4064' : MOD_KINDS.includes(k) ? '#6a3424' : '#2a3a20';
+const SLOTS = [['bat', 'BAT'], ['crowbar', 'CROWBAR'], ['pickaxe', 'PICKAXE'], ['sledge', 'SLEDGEHAMMER'], ['menu', 'MENU'],
+  ['pistol', 'PISTOL'], ['ak', 'AK'], ['shotgun', 'SHOTGUN'], ['minigun', 'MINIGUN'], ['grenade', 'GRENADE'],
+  ['pistolMag', 'PISTOL MAG'], ['akMag', 'AK MAG'], ['miniAmmo', 'MINIGUN AMMO'], ['ammo9', '9MM AMMO'], ['ammo762', '7.62 AMMO'],
+  ['ammo12', 'SHELLS'], ['impact', 'IMPACT GRENADE'], ['chainsaw', 'CHAINSAW'], ['jackhammer', 'JACKHAMMER'], ['gauntlets', 'POWER GAUNTLETS'],
+  ['scope', 'SCOPE'], ['reddot', 'RED DOT'], ['laser', 'LASER'], ['flashlight', 'FLASHLIGHT'], ['suppressor', 'SUPPRESSOR'],
+  ['foregrip', 'FOREGRIP'], ['wire', 'BARBED WIRE'], ['nails', 'NAILS'], ['saw', 'SAW BLADE'], ['blade', 'TAPED KNIFE']];
+const PACK_COLS = 5;
+const SHORT = { sledge: 'SLEDGE', miniAmmo: 'MINI AMMO', gauntlets: 'GAUNTLETS', jackhammer: 'JACKHAMMER', impact: 'IMPACT', wire: 'BARBED WIRE', blade: 'KNIFE', flashlight: 'FLASHLIGHT', foregrip: 'FOREGRIP', pistolMag: 'PISTOL MAG', suppressor: 'SUPPRESSOR' };
+const slotColor = k => k === 'menu' ? '#c82a2a' : ['chainsaw', 'jackhammer', 'gauntlets'].includes(k) ? '#7a4a14' : k.startsWith('ammo') ? '#7a5a2a' : (k.includes('Mag') || k === 'miniAmmo') ? '#4a4a52' : (k === 'grenade' || k === 'impact') ? '#5a6a1a' : ATT_KINDS.includes(k) ? '#2a4064' : MOD_KINDS.includes(k) ? '#6a3424' : '#2a3a20';
 const ATT_KINDS = ['scope', 'reddot', 'laser', 'flashlight', 'suppressor', 'foregrip'], MOD_KINDS = ['wire', 'nails', 'saw', 'blade'];
 const pack = (() => {
   const g = new THREE.Group(); scene.add(g);
-  g.add(M(rbox(0.47, 0.67, 0.22, 0.06), 0x56683a, 0, 0, 0), M(rbox(0.42, 0.12, 0.06, 0.03), 0x485a30, 0, 0.365, 0.0), M(BOX, 0x2a2e22, -0.12, 0, -0.115, { s: [0.04, 0.58, 0.02] }), M(BOX, 0x2a2e22, 0.12, 0, -0.115, { s: [0.04, 0.58, 0.02] }), M(new THREE.TorusGeometry(0.05, 0.01, 6, 12, Math.PI), 0x2a2e22, 0, 0.395, 0));
-  const panel = new THREE.Mesh(new THREE.PlaneGeometry(0.44, 0.62), canvasMat(440, 620, (x) => {
-    x.fillStyle = '#3c4a28'; x.fillRect(0, 0, 440, 620); x.font = 'bold 16px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-    SLOTS.forEach(([k, lab], i) => { const c = i % 4, r = Math.floor(i / 4), cx = 55 + c * 110, cy = 52 + r * 103;
+  g.add(M(rbox(0.58, 0.67, 0.22, 0.06), 0x56683a, 0, 0, 0), M(rbox(0.53, 0.12, 0.06, 0.03), 0x485a30, 0, 0.365, 0.0), M(BOX, 0x2a2e22, -0.14, 0, -0.115, { s: [0.04, 0.58, 0.02] }), M(BOX, 0x2a2e22, 0.14, 0, -0.115, { s: [0.04, 0.58, 0.02] }), M(new THREE.TorusGeometry(0.05, 0.01, 6, 12, Math.PI), 0x2a2e22, 0, 0.395, 0));
+  const panel = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.62), canvasMat(550, 620, (x) => {
+    x.fillStyle = '#3c4a28'; x.fillRect(0, 0, 550, 620); x.font = 'bold 16px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    SLOTS.forEach(([k, lab], i) => { const c = i % PACK_COLS, r = Math.floor(i / PACK_COLS), cx = 55 + c * 110, cy = 52 + r * 103;
       x.fillStyle = slotColor(k); x.beginPath(); x.roundRect(cx - 50, cy - 46, 100, 92, 12); x.fill();
       x.strokeStyle = '#a8b880'; x.lineWidth = 3; x.stroke(); x.fillStyle = '#fff';
       if (k === 'menu') { x.font = 'bold 22px sans-serif'; x.fillText('MENU', cx, cy); x.font = 'bold 13px sans-serif'; } else { x.font = 'bold 13px sans-serif'; x.fillText(SHORT[k] || lab, cx, cy + 35); } });
   }, true));
   panel.position.z = 0.113; g.add(panel);
-  const slots = SLOTS.map(([k], i) => { const c = i % 4, r = Math.floor(i / 4), lp = new V3(-0.165 + c * 0.11, 0.258 - r * 0.103, 0.12);
+  const slots = SLOTS.map(([k], i) => { const c = i % PACK_COLS, r = Math.floor(i / PACK_COLS), lp = new V3(-0.22 + c * 0.11, 0.258 - r * 0.103, 0.12);
     const pr = new THREE.Mesh(BOX, proxyMat); pr.scale.set(0.1, 0.095, 0.03); pr.position.copy(lp); pr.userData.slot = k; g.add(pr); return { k, lp, mesh: pr }; });
   g.traverse(o => { if (!o.userData.slot) o.userData.pack = true; });
   return { g, slots, state: 'worn', heldBy: null, hoverPos: new V3(), yaw: 0, bob: 0 };
@@ -971,12 +988,14 @@ function spawnFromSlot(k, pos) {
     case 'pistolMag': return makeMag('pistol', pos); case 'akMag': return makeMag('ak', pos);
     case 'ammo9': return makeAmmoBox('pistol', pos); case 'ammo762': return makeAmmoBox('ak', pos); case 'ammo12': return makeAmmoBox('shotgun', pos);
     case 'grenade': return makeGrenade('frag', pos); case 'impact': return makeGrenade('impact', pos);
+    case 'sledge': return WEAP.sledge(pos); case 'minigun': return makeGun('minigun', pos); case 'miniAmmo': return makeMag('minigun', pos, { type: 'minigun', count: 200, cap: 200 });
+    case 'chainsaw': return makeChainsaw(pos); case 'jackhammer': return makeJackhammer(pos); case 'gauntlets': return makeGauntletItem(pos);
   }
   if (ATT_KINDS.includes(k)) return makeAttItem(k, pos);
   if (MOD_KINDS.includes(k)) return makeModItem(k, pos);
   return null;
 }
-function packInside(p) { const l = pack.g.worldToLocal(p.clone()); return Math.abs(l.x) < 0.3 && Math.abs(l.y) < 0.41 && l.z > -0.2 && l.z < 0.3; }
+function packInside(p) { const l = pack.g.worldToLocal(p.clone()); return Math.abs(l.x) < 0.36 && Math.abs(l.y) < 0.41 && l.z > -0.2 && l.z < 0.3; }
 function storeInPack(t) { removeThing(t); S.zip(); }
 function updatePack(dt, inVR) {
   const head = camera.getWorldPosition(new V3()), d = camDir(); d.y = 0; d.normalize(); const yaw = Math.atan2(-d.x, -d.z);
@@ -1271,8 +1290,8 @@ function drawMods() {
   const t = flatGr.held; if (!t) { closeMods(); return; } modsL.innerHTML = '';
   const row = (title, opts) => { const r = document.createElement('div'); r.className = 'row'; r.innerHTML = `<b>${title}</b>`; for (const [lab, on, fn] of opts) { const b = document.createElement('button'); b.textContent = lab; if (on) b.className = 'on'; b.onclick = () => { audio(); fn(); drawMods(); }; r.appendChild(b); } modsL.appendChild(r); };
   if (t.gun) { const a = t.gun.att; $('modsT').textContent = t.name + ' attachments';
-    row('SIGHT', [['None', !a.optic, () => popOff(t, 'optic', false)], ['Red dot', a.optic?.k === 'reddot', () => attachTo(t, 'reddot')], ['Scope', a.optic?.k === 'scope', () => attachTo(t, 'scope')]]);
-    row('MUZZLE', [['None', !a.muzzle, () => popOff(t, 'muzzle', false)], ['Suppressor', !!a.muzzle, () => attachTo(t, 'suppressor')]]);
+    if (MOUNTS[t.gun.type].optic) row('SIGHT', [['None', !a.optic, () => popOff(t, 'optic', false)], ['Red dot', a.optic?.k === 'reddot', () => attachTo(t, 'reddot')], ['Scope', a.optic?.k === 'scope', () => attachTo(t, 'scope')]]);
+    if (MOUNTS[t.gun.type].muzzle) row('MUZZLE', [['None', !a.muzzle, () => popOff(t, 'muzzle', false)], ['Suppressor', !!a.muzzle, () => attachTo(t, 'suppressor')]]);
     row('LASER', [['Off', !a.side, () => popOff(t, 'side', false)], ['On', !!a.side, () => attachTo(t, 'laser')]]);
     row('FLASHLIGHT', [['Off', !a.light, () => popOff(t, 'light', false)], ['On', !!a.light, () => attachTo(t, 'flashlight')]]);
     if (MOUNTS[t.gun.type].grip) row('FOREGRIP (less recoil)', [['None', !a.grip, () => popOff(t, 'grip', false)], ['Foregrip', !!a.grip, () => attachTo(t, 'foregrip')]]);
@@ -1323,7 +1342,7 @@ const packMinis = [];
     inner.position.set(0, 0, 0); inner.quaternion.identity(); inner.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(inner), c = box.getCenter(new V3()), sz = box.getSize(new V3());
     const holder = new THREE.Group(), spin = new THREE.Group(); inner.position.copy(c).negate(); spin.add(inner); holder.add(spin);
-    if (['pistol', 'ak', 'shotgun', 'scope', 'reddot', 'laser', 'flashlight', 'suppressor'].includes(s.k)) spin.rotation.y = Math.PI / 2; // show guns side-on
+    if (['pistol', 'ak', 'shotgun', 'minigun', 'chainsaw', 'scope', 'reddot', 'laser', 'flashlight', 'suppressor'].includes(s.k)) spin.rotation.y = Math.PI / 2; // show guns side-on
     const fit = 0.066 / Math.max(sz.x, sz.y, sz.z, 0.01); holder.userData.fit = fit; holder.position.copy(s.lp).add(new V3(0, 0.012, 0.03));
     holder.traverse(o => { o.userData = { slot: s.k }; o.castShadow = false; }); holder.userData.fit = fit;
     pack.g.add(holder); packMinis.push({ holder, spin, base: spin.rotation.y, ph: Math.random() * 6 });
@@ -1339,6 +1358,157 @@ function updatePackLook(dt) {
 function packReach(p) { // reach over your shoulder (or anywhere behind your head) to grab the backpack
   const head = camera.getWorldPosition(new V3()), d = camDir(); d.y = 0; if (d.lengthSq() < 1e-4) d.set(0, 0, -1); d.normalize();
   const r = p.clone().sub(head); return r.dot(d) < 0.06 && r.y > -0.6 && r.y < 0.25 && Math.hypot(r.x, r.z) < 0.5;
+}
+
+/* ================= POWER TOOLS, MINIGUN SPIN, GAUNTLETS ================= */
+MOUNTS.minigun = { optic: null, muzzle: null, side: [-0.06, 0.03, -0.2], light: [0.06, 0.03, -0.2], grip: null };
+WRAP.sledge = { y0: -0.05, y1: 0.24, r: 0.018, top: 0.31 };
+IRON_EYE.minigun = [0, 0.1, 0.1];
+
+// a solid voxel at this world point? returns the voxel object
+function voxAt(p) {
+  for (const vo of vobjs) { if (vo.dead) continue; const [gx, gy, gz] = vo.toGrid(p); if (gx < 0 || gy < 0 || gz < 0 || gx >= vo.nx || gy >= vo.ny || gz >= vo.nz) continue;
+    if (vo.isSolid(Math.floor(gx), Math.floor(gy), Math.floor(gz))) return vo; }
+  return null;
+}
+const NB = [[0, 0, 0], [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+function voxNear(p, r) { for (const [x, y, z] of NB) { const vo = voxAt(new V3(p.x + x * r, p.y + y * r, p.z + z * r)); if (vo) return vo; } return null; }
+// looping engine / motor sounds
+function makeVoice(type, lp) {
+  return { o: null, g: null, f: null, set(freq, vol) {
+    if (!actx) return; if (!this.o) { this.o = actx.createOscillator(); this.o.type = type; this.f = actx.createBiquadFilter(); this.f.type = 'lowpass'; this.f.frequency.value = lp; this.g = actx.createGain(); this.g.gain.value = 0; this.o.connect(this.f); this.f.connect(this.g); this.g.connect(master); this.o.start(); }
+    const t = actx.currentTime; this.o.frequency.setTargetAtTime(Math.max(20, freq * PITCH), t, 0.04); this.g.gain.setTargetAtTime(vol, t, 0.05); } };
+}
+const motorVoice = makeVoice('sawtooth', 1400), motorWhine = makeVoice('triangle', 4000), sawVoice = makeVoice('sawtooth', 1800), sawBuzz = makeVoice('square', 900);
+
+/* ---------- chainsaw (pull the cord to start it) ---------- */
+function makeChainsaw(pos) {
+  const vis = [M(rbox(0.11, 0.13, 0.24, 0.02), 0xe0701a, 0, 0, 0.04), M(rbox(0.08, 0.06, 0.1, 0.01), 0x2a2c30, 0, 0.02, 0.12), M(new THREE.TorusGeometry(0.06, 0.011, 8, 14, Math.PI), 0x1d1e21, 0, 0.065, 0.0, { ry: Math.PI / 2 }),
+    M(rbox(0.03, 0.03, 0.12, 0.008), 0x1d1e21, 0, -0.03, 0.19), M(BOX, 0x1d1e21, 0, -0.05, 0.25, { s: [0.03, 0.06, 0.03] }), M(BOX, 0x333333, 0, -0.01, 0.15, { s: [0.008, 0.02, 0.01] }),
+    M(BOX, 0xb8bcc0, 0, -0.015, -0.27, { s: [0.006, 0.055, 0.38] }), M(CYL, 0xb8bcc0, 0, -0.015, -0.46, { s: [0.0275, 0.006, 0.0275], rz: Math.PI / 2 }), M(BOX, 0x111111, 0.058, 0.0, 0.03, { s: [0.004, 0.06, 0.1] })];
+  const cordH = M(rbox(0.014, 0.04, 0.014, 0.004), 0x1d1e21, -0.063, 0.03, 0.06); vis.push(cordH);
+  const chain = new THREE.Group(); for (let i = 0; i < 26; i++) chain.add(M(BOX, 0x3a3a3a, 0, 0, 0, { s: [0.009, 0.008, 0.012] })); vis.push(chain);
+  const t = compound('Chainsaw', pos, [{ p: [0, 0, 0.06], s: [0.11, 0.13, 0.3], c: 0, hidden: true }, { p: [0, -0.015, -0.27], s: [0.012, 0.06, 0.4], c: 0, hidden: true }, ...objParts(vis)], 5);
+  t.tool = { kind: 'chainsaw', on: false, rev: 0, trig: false, idleT: 0, pulls: 0, chain, cordH, hitT: 0, chainPos: 0 };
+  t.gripLocal = new V3(0, -0.03, 0.2); t.holdQ = new QT(); t.aimFull = true; t.cordLocal = new V3(-0.065, 0.03, 0.06);
+  layoutChain(t.tool, 0); return t;
+}
+function layoutChain(tl, off) { // teeth run round the bar
+  const L = 0.38, R = 0.028, per = 2 * L + 2 * Math.PI * R, n = tl.chain.children.length;
+  tl.chain.children.forEach((c, i) => { let s = ((i / n) * per + off) % per; if (s < 0) s += per; let x, y, z;
+    if (s < L) { y = -0.015 + R; z = -0.08 - s; } else if (s < L + Math.PI * R) { const a = (s - L) / R; y = -0.015 + Math.cos(a) * R; z = -0.08 - L - Math.sin(a) * R; }
+    else if (s < 2 * L + Math.PI * R) { y = -0.015 - R; z = -0.08 - L + (s - L - Math.PI * R); } else { const a = (s - 2 * L - Math.PI * R) / R; y = -0.015 - Math.cos(a) * R; z = -0.08 + Math.sin(a) * R; }
+    c.position.set(0, y, z); });
+}
+function tryStartSaw(t) {
+  const tl = t.tool; tl.pulls++; noise(0.25, 0.12, 900, 2500, 'bandpass', 0, 1.5); tone(60, 0.2, 'sawtooth', 0.08, 120);
+  if (tl.pulls >= 2 || Math.random() < 0.45) { tl.on = true; tl.pulls = 0; tl.idleT = 0; tone(55, 0.4, 'sawtooth', 0.12, 140); noise(0.4, 0.15, 600, 1600, 'bandpass', 0.05, 1); return true; }
+  tone(50, 0.25, 'sawtooth', 0.07, 30, 0.15); return false; // sputter
+}
+/* ---------- jackhammer ---------- */
+function makeJackhammer(pos) {
+  const bit = new THREE.Group(); bit.add(M(CYL, 0x9a9ea2, 0, -0.38, 0, { s: [0.012, 0.16, 0.012] }), M(new THREE.ConeGeometry(0.012, 0.04, 6), 0xc8ccd0, 0, -0.48, 0, { rx: Math.PI }));
+  const vis = [M(CYL, 0x2f6fb8, 0, 0.0, 0, { s: [0.05, 0.42, 0.05] }), M(CYL, 0x1d1e21, 0, -0.25, 0, { s: [0.035, 0.08, 0.035] }), M(CYL, 0x1d1e21, 0, 0.24, 0, { s: [0.04, 0.06, 0.04] }),
+    M(CYL, 0x1d1e21, 0, 0.28, 0, { s: [0.016, 0.42, 0.016], rz: Math.PI / 2 }), M(CYL, 0x111111, -0.17, 0.28, 0, { s: [0.022, 0.1, 0.022], rz: Math.PI / 2 }), M(CYL, 0x111111, 0.17, 0.28, 0, { s: [0.022, 0.1, 0.022], rz: Math.PI / 2 }),
+    M(BOX, 0xffd23b, 0, 0.08, 0.051, { s: [0.04, 0.1, 0.004] }), bit];
+  const t = compound('Jackhammer', pos, [{ p: [0, 0, 0], s: [0.1, 0.5, 0.1], c: 0, hidden: true }, { p: [0, 0.28, 0], s: [0.42, 0.04, 0.04], c: 0, hidden: true }, { p: [0, -0.4, 0], s: [0.025, 0.2, 0.025], c: 0, hidden: true }, ...objParts(vis)], 9);
+  t.tool = { kind: 'jackhammer', on: true, trig: false, beat: 0, bit }; t.gripLocal = new V3(0.17, 0.28, 0); t.holdQ = new QT().setFromAxisAngle(new V3(1, 0, 0), Math.PI / 2); t.aimFull = true;
+  return t;
+}
+function updateTools(dt) {
+  let sawLoud = 0, sawRev = 0;
+  for (const gr of grabbers) if (gr.held?.gauntletItem) { removeThing(gr.held); setGauntlets(true); if (gr === flatGr) say('Power gauntlets on! Punch stuff'); }
+  for (const t of things) { const tl = t.tool; if (!tl) continue;
+    if (t.heldBy === flatGr) tl.trig = autoFire; else if (!t.heldBy) tl.trig = false;
+    if (tl.kind === 'chainsaw') {
+      if (tl.on) { tl.idleT = t.heldBy ? 0 : tl.idleT + dt; if (tl.idleT > 10) { tl.on = false; tone(60, 0.5, 'sawtooth', 0.06, 25); } }
+      tl.rev += ((tl.on ? (tl.trig ? 1 : 0.2) : 0) - tl.rev) * Math.min(1, dt * 6);
+      if (tl.rev > 0.01) { tl.chainPos += tl.rev * dt * 6 * TS; layoutChain(tl, tl.chainPos); }
+      if (tl.on) { sawLoud = Math.max(sawLoud, 1); sawRev = Math.max(sawRev, tl.rev); }
+      if (tl.on && tl.rev > 0.55) { tl.hitT -= dt * TS; if (tl.hitT <= 0) { tl.hitT = 0.045; let cut = 0;
+        let any = false;
+        for (let i = 0; i < 5; i++) { const p = gunWorldT(t, new V3(0, -0.015 - 0.03, -0.12 - i * 0.08)), p2 = gunWorldT(t, new V3(0, -0.015 + 0.03, -0.12 - i * 0.08));
+          for (const q of [p, p2]) { const vo = voxNear(q, 0.045); if (vo) { any = true; cut += hitVoxels(vo, q, 0.085, 1.5, gunDir(t).negate(), 0.25); dust(q, 0xd8c8a0, 1, new V3(0, 1, 0)); sparks(q, new V3(0, 1, 0)); } } }
+        if (any) { noise(0.06, 0.12, 2600, 1800, 'bandpass', 0, 2); pulseFor(t, 0.7, 40); if (t.heldBy === flatGr) shakeT = Math.max(shakeT, 0.12); } } }
+    } else if (tl.kind === 'jackhammer') {
+      if (tl.trig) { tl.beat -= dt * TS; tl.bit.position.y = Math.sin(performance.now() * 0.12) * 0.012;
+        if (tl.beat <= 0) { tl.beat = 0.055; noise(0.035, 0.16, 1800, null, 'bandpass', 0, 1.5); tone(65, 0.04, 'square', 0.1); pulseFor(t, 0.6, 30); if (t.heldBy === flatGr) shakeT = Math.max(shakeT, 0.1);
+          let tip = null, vo = null; for (const yy of [-0.5, -0.45, -0.4, -0.34]) { const q = gunWorldT(t, new V3(0, yy, 0)); vo = voxNear(q, 0.05); if (vo) { tip = q; break; } }
+          if (vo) { hitVoxels(vo, tip, 0.1, 1.7, gunWorldT(t, new V3(0, -1, 0)).sub(gunWorldT(t, new V3())).normalize(), 0.45); dust(tip, 0xb0aaa0, 2, new V3(0, 1, 0)); noise(0.05, 0.18, 900, 300); } } }
+      else tl.bit.position.y = 0;
+    }
+  }
+  sawVoice.set(48 + sawRev * 95, sawLoud ? 0.05 + sawRev * 0.07 : 0); sawBuzz.set(96 + sawRev * 190, sawLoud ? 0.015 + sawRev * 0.03 : 0);
+  // minigun spin-up
+  let spin = 0;
+  for (const t of things) { const g = t.gun; if (g?.type !== 'minigun') continue;
+    const trig = g.trigT > 0 && t.heldBy; g.trigT -= dt; g.spin = clamp(g.spin + (trig ? 1.8 : -0.7) * dt, 0, 1); spin = Math.max(spin, g.spin);
+    g.slide.userData.barrels.rotation.z += g.spin * 45 * dt * TS;
+    if (trig && g.spin > 0.9) { while (g.cool <= 0) { g.cool += 60 / g.G.rpm; fireMiniRound(t); } }
+    else if (g.cool < 0) g.cool = 0;
+  }
+  motorVoice.set(60 + spin * 260, spin * 0.06); motorWhine.set(400 + spin * 1500, spin * 0.018);
+}
+let miniN = 0;
+function fireMiniRound(t) {
+  const g = t.gun;
+  if (!g.mag || g.mag.count <= 0) { if (++miniN % 8 === 0) S.dry(); return; }
+  g.mag.count--; updateGunVisual(t); S.shot('minigun'); g.recoil = 0.18; pulseFor(t, 0.5, 20);
+  const muz = gunWorld(t, muzzleLocal(t)); let origin = muz, dir = gunDir(t);
+  if (g.flatTrig && t.heldBy === flatGr) { origin = camera.getWorldPosition(new V3()); dir = camDir(); kickCam('minigun'); input.yaw += rnd(-0.003, 0.003); }
+  muzzleFlash(muz, gunDir(t)); dir.add(new V3(rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)).multiplyScalar(0.018)).normalize();
+  shootRay(origin, dir, g.G.dmg, g.G.rad, muz, t);
+  if (++miniN % 4 === 0) ejectCasing(t, false);
+}
+
+/* ---------- power gauntlets (both hands) ---------- */
+let gauntletsOn = false;
+function gauntletVis() { const g = new THREE.Group(); g.add(M(rbox(0.085, 0.07, 0.1, 0.018), 0x5a5e64, 0, -0.005, 0.01), M(rbox(0.09, 0.03, 0.035, 0.01), 0x3a3d42, 0, 0.0, -0.045), M(rbox(0.07, 0.035, 0.06, 0.012), 0x3a3d42, 0, -0.01, 0.06));
+  const glow = new THREE.Mesh(BOX, new THREE.MeshBasicMaterial({ color: 0xff8a2a })); glow.scale.set(0.075, 0.008, 0.008); glow.position.set(0, 0.012, -0.064); g.add(glow);
+  for (let i = 0; i < 4; i++) g.add(M(BOX, 0x8a8e94, -0.03 + i * 0.02, 0.018, -0.05, { s: [0.014, 0.012, 0.02] })); return g; }
+function makeGauntletItem(pos) {
+  const a = gauntletVis(), b = gauntletVis(); a.position.x = -0.055; b.position.x = 0.055; const g = new THREE.Group(); g.add(a, b);
+  const t = compound('Power gauntlets', pos, [{ p: [0, 0, 0], s: [0.2, 0.07, 0.12], c: 0, hidden: true }, { p: new V3(), obj: g }], 1.5); t.gauntletItem = true; return t;
+}
+const handGaunts = hands.map(h => { const g = noRay(gauntletVis()); g.visible = false; h.grip.add(g); return g; });
+const flatGaunts = fBalls.map(b => { const g = noRay(gauntletVis()); g.visible = false; g.scale.setScalar(1 / 0.04); b.add(g); return g; });
+function setGauntlets(on) {
+  gauntletsOn = on; handGaunts.forEach(g => g.visible = on); hands.forEach(h => { if (h.grip.children[0]) h.grip.children[0].visible = !on; }); flatGaunts.forEach(g => g.visible = on); fBalls.forEach(b => b.material.visible = !on);
+  if (on) { tone(300, 0.15, 'sawtooth', 0.06, 900); noise(0.2, 0.08, 4000, 1200, 'bandpass', 0, 2); } else S.detach();
+}
+function punchAt(p, dir, speed, src) {
+  const pow = clamp(speed / 3.2, 0.6, 1.5); let did = false;
+  const vo = voxNear(p, 0.06) || voxAt(p.clone().addScaledVector(dir, 0.06));
+  if (vo) { hitVoxels(vo, p, 0.11, 3.6 * pow, dir, 0.9); did = true; }
+  for (const t of things) { if (t.heldBy || t.removed) continue; if (distTo(t, p) < 0.06) { t.body.wakeUp(); t.body.applyImpulse(cv(dir.clone().multiplyScalar(3.5 * pow)), cv(p).vsub(t.body.position)); did = true; } }
+  if (did) { noise(0.12, 0.3 * pow, 700, 150); tone(90, 0.12, 'sine', 0.25 * pow, 45); tone(1700, 0.03, 'square', 0.05); dust(p, 0xffa040, 4, dir.clone().negate()); if (src) pulse(src, 1, 70); }
+  return did;
+}
+function vrPunches(h, src) {
+  if (!gauntletsOn || h.held || !h.hist.length) return;
+  const now = performance.now() / 1000; if (now - (h.punchT || 0) < 0.18) return;
+  const old = h.hist.find(e => now - e.t < 0.06) || h.hist[0], span = Math.max(0.011, now - old.t), v = h.pos.clone().sub(old.p).divideScalar(span), sp = v.length();
+  if (sp < 1.8) return; const dir = v.normalize(), fist = h.pos.clone().addScaledVector(dir, 0.05);
+  if (punchAt(fist, dir, sp, src)) h.punchT = now;
+}
+let flatPunchT = 0;
+function flatPunch() {
+  if (!gauntletsOn || performance.now() - flatPunchT < 260) return; flatPunchT = performance.now(); S.whoosh();
+  const o = camera.getWorldPosition(new V3()), d = camDir(); ray.set(o, d); ray.far = 1.4;
+  const hit = ray.intersectObjects(vobjs.map(v => v.inst).concat(things.filter(t => !t.heldBy).map(t => t.mesh)), true).find(x => !(x.object.layers.mask & 8));
+  flatPunchAnim = 0.22; if (hit) setTimeout(() => punchAt(hit.point.clone().addScaledVector(d, 0.03), d, 3.4, null), 70);
+}
+let flatPunchAnim = 0;
+
+function vrToolGrip(h, other) { // other hand grabs the chainsaw's pull cord
+  const ot = other.held; if (!ot?.tool || ot.tool.kind !== 'chainsaw' || ot.tool.on) return false;
+  if (gunWorldT(ot, ot.cordLocal).distanceTo(h.pos) > 0.08) return false; h.cordPull = { saw: ot }; pulse(h.grip.userData.src, 0.3, 20); return true;
+}
+function vrCord(h, sq) {
+  const cp = h.cordPull; if (!cp) return; const t = cp.saw, tl = t.tool, home = new V3(-0.063, 0.03, 0.06);
+  if (!sq || t.removed || !t.heldBy || tl.on) { h.cordPull = null; tl.cordH.position.copy(home); return; }
+  t.mesh.updateMatrixWorld(true); tl.cordH.position.copy(t.mesh.worldToLocal(h.pos.clone()));
+  if (gunWorldT(t, t.cordLocal).distanceTo(h.pos) > 0.28) { h.cordPull = null; tl.cordH.position.copy(home); const ok = tryStartSaw(t); pulse(h.grip.userData.src, ok ? 1 : 0.6, ok ? 120 : 60); pulseFor(t, 0.8, 100); }
 }
 
 /* ================= PLAYER MOVEMENT ================= */
@@ -1382,7 +1552,7 @@ function updateFlat(dt) {
   rig.updateMatrixWorld(true); playerTarget.set(rig.position.x, 0.75, rig.position.z);
   const held = flatGr.held, cq = camera.getWorldQuaternion(new QT()), cp = camera.getWorldPosition(new V3()), d = camDir();
   // holder pose
-  ads = !!held?.gun && (adsToggle || adsMouse) && !modsOpen; adsT += ((ads ? 1 : 0) - adsT) * Math.min(1, dt * 12);
+  ads = !!held?.gun && held.gun.type !== 'minigun' && (adsToggle || adsMouse) && !modsOpen; adsT += ((ads ? 1 : 0) - adsT) * Math.min(1, dt * 12);
   const scoped = ads && held.gun.att.optic?.k === 'scope' && adsT > 0.85;
   if (held?.gripLocal) { const hip = new V3(0.15, -0.17, -0.42);
     if (held.gun && adsT > 0.01) { const D = held.gun.att.optic?.k === 'scope' ? 0.16 : held.gun.type === 'pistol' ? 0.38 : 0.3; const ad = new V3(0, 0, -D).add(held.gripLocal).sub(eyeLocal(held)); hip.lerp(ad, adsT); }
@@ -1397,8 +1567,9 @@ function updateFlat(dt) {
   // ball hands
   fBalls[1].position.copy(held ? flatGr.pos : camera.localToWorld(new V3(0.18, -0.25, -0.42)));
   fBalls[0].position.copy(camera.localToWorld(new V3(-0.18, -0.25, -0.42)));
+  if (flatPunchAnim > 0 && !held) { flatPunchAnim -= dt; const k = Math.sin((1 - flatPunchAnim / 0.22) * Math.PI); fBalls[1].position.copy(camera.localToWorld(new V3(0.18 - 0.16 * k, -0.25 + 0.15 * k, -0.42 - 0.4 * k))); }
   for (const kk in offMagVis) { const v = offMagVis[kk]; v.visible = !!offMag && offMag.type === kk; if (v.visible) { v.position.copy(fBalls[0].position).add(new V3(0, 0.05, 0)); v.quaternion.copy(cq); v.userData.top.visible = offMag.count > 0; } }
-  fBalls.forEach(b => b.visible = true);
+  fBalls.forEach(b => { b.visible = true; b.quaternion.copy(cq); });
   // aim target
   target = null;
   ray2.setFromCamera({ x: 0, y: 0 }, camera);
@@ -1419,14 +1590,14 @@ function updateFlat(dt) {
   if (g) {
     bAct.textContent = 'Shoot'; gMag.style.display = g.type === 'shotgun' ? 'none' : ''; gMag.textContent = 'Mag out';
     gRack.textContent = g.type === 'shotgun' ? 'Pump' : 'Rack'; gLoad.textContent = g.type === 'shotgun' ? 'Load shell' : 'Load round'; gIns.style.display = offMag && g.type !== 'shotgun' ? '' : 'none';
-    ammoEl.textContent = g.type === 'shotgun' ? `Chamber: ${g.chamber ? 'loaded' : 'empty'}\nTube: ${g.tube}/6` : `Chamber: ${g.chamber ? 'loaded' : 'empty'}\nMag: ${g.mag ? g.mag.count + '/' + g.mag.cap : 'none'}` + (offMag ? `\nLeft hand mag: ${offMag.count}/${offMag.cap}` : '');
+    ammoEl.textContent = g.type === 'minigun' ? `Ammo box: ${g.mag ? g.mag.count + '/200' : 'none'}` + (offMag ? `\nLeft hand box: ${offMag.count}/200` : '') : g.type === 'shotgun' ? `Chamber: ${g.chamber ? 'loaded' : 'empty'}\nTube: ${g.tube}/6` : `Chamber: ${g.chamber ? 'loaded' : 'empty'}\nMag: ${g.mag ? g.mag.count + '/' + g.mag.cap : 'none'}` + (offMag ? `\nLeft hand mag: ${offMag.count}/${offMag.cap}` : '');
   } else if (held?.magData) { gMag.style.display = 'none'; gRack.style.display = 'none'; gIns.style.display = 'none'; gLoad.textContent = 'Load round'; ammoEl.textContent = `Mag: ${held.magData.count}/${held.magData.cap}`; }
   else { ammoEl.textContent = offMag ? `Left hand mag: ${offMag.count}/${offMag.cap}` : ''; gMag.style.display = 'none'; gRack.style.display = 'none'; gLoad.style.display = offMag ? '' : 'none'; gLoad.textContent = 'Load round'; gIns.style.display = 'none'; }
-  if (g) { gRack.style.display = ''; gLoad.style.display = ''; }
-  gAim.style.display = g ? '' : 'none'; gAim.textContent = adsToggle ? 'Stop aiming' : 'Aim'; gAim.classList.toggle('on', adsToggle);
+  if (g) { gRack.style.display = g.type === 'minigun' ? 'none' : ''; gLoad.style.display = ''; if (g.type === 'minigun') { gMag.textContent = 'Box off'; gIns.textContent = 'Put box on'; } else gIns.textContent = 'Insert mag'; }
+  gAim.style.display = g && g.type !== 'minigun' ? '' : 'none'; gAim.textContent = adsToggle ? 'Stop aiming' : 'Aim'; gAim.classList.toggle('on', adsToggle);
   bMods.classList.toggle('hide', !(g || held?.wkind));
   if (held) {
-    if (!g) bAct.textContent = (target?.pack || target?.slot) ? 'Put away' : held.gren ? (held.gren.pin ? 'Pull pin' : 'Throw!') : (held.att || held.mmod) ? 'Attach' : held.swing ? 'Swing' : held.use ? 'Use' : 'Drop';
+    if (!g) bAct.textContent = (target?.pack || target?.slot) ? 'Put away' : held.tool ? (held.tool.kind === 'chainsaw' ? (held.tool.on ? 'Rev (hold)' : 'Pull cord') : 'Drill (hold)') : held.gren ? (held.gren.pin ? 'Pull pin' : 'Throw!') : (held.att || held.mmod) ? 'Attach' : held.swing ? 'Swing' : held.use ? 'Use' : 'Drop';
     if (g && (target?.pack || target?.slot)) bAct.textContent = 'Put away';
     bThrow.classList.remove('hide'); bDrop.classList.toggle('hide', !(g || held.swing || held.use)); bAct.classList.remove('dim');
     label.textContent = flashMsgT > 0 ? flashMsg : held.gren && !held.gren.pin ? (held.gren.spoon ? 'PIN PULLED - throw it!' : 'LIVE!') : held.name; cross.classList.add('on'); cross.style.display = scoped ? 'none' : '';
@@ -1434,7 +1605,7 @@ function updateFlat(dt) {
     bThrow.classList.add('hide'); bDrop.classList.add('hide');
     if (target) { bAct.textContent = target.slot ? (target.slot === 'menu' ? 'Menu' : 'Take') : target.interact ? 'Press' : target.pack ? 'Grab bag' : 'Grab'; bAct.classList.toggle('dim', !!target.pack);
       label.textContent = target.slot ? SLOTS.find(s => s[0] === target.slot)[1] : target.interact ? target.interact.name : target.pack ? 'Backpack' : target.thing.name; cross.classList.add('on'); }
-    else { bAct.textContent = 'Grab'; bAct.classList.add('dim'); label.textContent = flashMsgT > 0 ? flashMsg : ''; cross.classList.remove('on'); }
+    else { bAct.textContent = gauntletsOn ? 'Punch' : 'Grab'; bAct.classList.toggle('dim', !gauntletsOn); label.textContent = flashMsgT > 0 ? flashMsg : ''; cross.classList.remove('on'); }
   }
   flashMsgT -= dt;
   if (autoFire && held?.gun?.G.auto) fireGun(held, true);
@@ -1445,13 +1616,14 @@ function flatAction() {
     if ((target?.pack || target?.slot) && pack.state !== 'worn') { storeInPack(held); return; }
     if (held.gun) { fireGun(held, true); autoFire = true; return; }
     if (held.gren) { if (held.gren.pin) pullPin(held, null); else flatThrow(); return; }
+    if (held.tool) { if (held.tool.kind === 'chainsaw' && !held.tool.on) { if (!tryStartSaw(held)) say('It sputtered. Pull again!'); return; } autoFire = true; return; }
     if (held.att || held.mmod) { flatAttachHeld(); return; }
     if (held.swing) { if (!(flatGr.swingT > 0)) { flatGr.swingT = 0.3; S.whoosh(); } return; }
     if (held.use) { held.use(); return; }
     release(flatGr); return;
   }
-  if (!target) return;
-  if (target.slot) { if (target.slot === 'menu') { openMenu(); return; } const t = spawnFromSlot(target.slot, flatGr.pos.clone()); S.zip(); takeFlat(t); return; }
+  if (!target) { if (gauntletsOn) flatPunch(); return; }
+  if (target.slot) { if (target.slot === 'menu') { openMenu(); return; } if (target.slot === 'gauntlets' && gauntletsOn) { setGauntlets(false); say('Gauntlets off'); return; } const t = spawnFromSlot(target.slot, flatGr.pos.clone()); S.zip(); takeFlat(t); return; }
   if (target.interact) { target.interact.use(); return; }
   if (target.thing) takeFlat(target.thing, target);
 }
@@ -1472,7 +1644,7 @@ function flatLoad() {
   if (g?.type === 'shotgun') { if (!nearAmmoBox('shotgun')) { say('Get a SHELLS box out of your backpack first'); return; } if (g.tube >= 6) { say('Tube is full'); return; } g.tube++; S.shellIn(); return; }
   const mag = h?.magData || offMag; if (!mag) { say(g ? 'Take the mag out first (Mag out)' : 'Hold a magazine'); return; }
   if (mag.count >= mag.cap) { say('Magazine is full'); return; }
-  if (!nearAmmoBox(mag.type)) { say(`Get a ${mag.type === 'pistol' ? '9MM' : '7.62'} ammo box out of your backpack first`); return; }
+  if (!nearAmmoBox(mag.type === 'minigun' ? 'ak' : mag.type)) { say(`Get a ${mag.type === 'pistol' ? '9MM' : '7.62'} ammo box out of your backpack first`); return; }
   mag.count++; S.roundIn(); if (h?.magVis) h.magVis.userData.top.visible = true;
 }
 function flatInsert() { const h = flatGr.held; if (!h?.gun || !offMag) return; if (offMag.type !== h.gun.type) { say('Wrong magazine for this gun'); return; } if (magIn(h, offMag)) offMag = null; }
@@ -1500,7 +1672,7 @@ addEventListener('mouseup', e => { mDown = false; autoFire = false; if (e.button
 addEventListener('mousemove', e => { if (document.pointerLockElement === cvs) { input.yaw -= e.movementX * 0.0025; input.pitch = clamp(input.pitch - e.movementY * 0.0025, -1.45, 1.45); return; }
   if (!mDown) return; input.yaw -= (e.clientX - mP.x) * 0.005; input.pitch = clamp(input.pitch - (e.clientY - mP.y) * 0.005, -1.45, 1.45); mP = { x: e.clientX, y: e.clientY }; });
 addEventListener('keydown', e => { if (e.repeat) return; input.keys[e.code] = true; audio();
-  const m = { KeyE: flatAction, KeyF: flatThrow, KeyQ: flatMag, KeyR: flatRack, KeyT: flatLoad, KeyG: flatInsert, KeyX: flatDrop, KeyB: () => { if (pack.state === 'worn') packToFront(); else pack.state = 'worn'; }, Escape: () => modsOpen ? closeMods() : menuOpen ? closeMenu() : openMenu(), KeyM: () => modsOpen ? closeMods() : openMods() };
+  const m = { KeyE: flatAction, KeyF: flatThrow, KeyQ: flatMag, KeyR: flatRack, KeyT: flatLoad, KeyG: flatInsert, KeyX: flatDrop, KeyB: () => { if (pack.state === 'worn') packToFront(); else pack.state = 'worn'; }, Escape: () => modsOpen ? closeMods() : menuOpen ? closeMenu() : openMenu(), KeyM: () => modsOpen ? closeMods() : openMods(), KeyV: flatPunch };
   if (m[e.code]) m[e.code](); if (e.code === 'KeyC') input.crouch = !input.crouch; });
 addEventListener('keyup', e => { input.keys[e.code] = false; if (e.code === 'KeyE') autoFire = false; });
 
@@ -1548,9 +1720,10 @@ function updateVR(dt) {
     if (sq && !h.prev.sq && !h.held) {
       const slot = pack.state !== 'worn' && pack.heldBy !== h ? pack.slots.find(s => pack.g.localToWorld(s.lp.clone()).distanceTo(h.pos) < 0.07) : null;
       const oGun = other.held?.gun ? other.held : null;
-      const manipNear = oGun && gunWorld(oGun, oGun.gun.G.manip).distanceTo(h.pos) < 0.1;
+      const manipNear = oGun && oGun.gun.type !== 'minigun' && gunWorld(oGun, oGun.gun.G.manip).distanceTo(h.pos) < 0.1;
       const box = things.find(t => t.ammoBox && t.heldBy !== h && gunWorldT(t, t.boxTop).distanceTo(h.pos) < 0.08);
-      if (vrGripSpecial(h, other)) {}
+      if (vrToolGrip(h, other) || vrGripSpecial(h, other)) {}
+      else if (slot && slot.k === 'gauntlets' && gauntletsOn) { setGauntlets(false); pulse(src, 0.5, 30); }
       else if (slot && slot.k !== 'menu') { const t = spawnFromSlot(slot.k, h.pos.clone()); S.zip(); grab(h, t, h.pos.clone()); pulse(src, 0.6, 40); }
       else if (manipNear) { h.manip = { gun: oGun, start: h.pos.clone() }; pulse(src, 0.4, 20); }
       else if (box) { const t = makeRound(box.ammoBox, h.pos.clone()); grab(h, t, h.pos.clone()); h.rel.p.set(0, -0.01, -0.03); S.roundIn(); pulse(src, 0.3, 15); }
@@ -1570,8 +1743,9 @@ function updateVR(dt) {
     if (h.pullT > 0) h.pullT -= dt;
     // gun handling
     const g = h.held?.gun;
+    if (h.held?.tool) h.held.tool.trig = trig;
     if (g) { if (trig && (!h.prev.trig || g.G.auto)) fireGun(h.held, false); if (bA && !h.prev.bA && g.mag) magOut(h.held, false); }
-    else if (trig && !h.prev.trig) {
+    else if (trig && !h.prev.trig && !h.held?.tool) {
       if (pack.state !== 'worn' && pack.g.localToWorld(menuSlot().lp.clone()).distanceTo(h.pos) < 0.08) openMenu();
       else { let bi = null, bdist = 0.2; for (const it of interacts) { const dd = it.worldPos().distanceTo(h.pos); if (dd < bdist) { bdist = dd; bi = it; } } if (bi) { bi.use(); pulse(src); } }
     }
@@ -1586,9 +1760,9 @@ function updateVR(dt) {
         updateGunVisual(gt); }
     }
     // loading by hand: round -> mag, shell -> shotgun, mag -> gun
-    vrAttachCheck(h, sq);
+    vrAttachCheck(h, sq); vrCord(h, sq); vrPunches(h, src);
     const ht = h.held;
-    if (ht?.ammo && ht.ammo !== 'shotgun') { const mag = things.find(t => t.magData && t.magData.type === ht.ammo && gunWorldT(t, t.magTop).distanceTo(h.pos) < 0.07); if (mag && mag.magData.count < mag.magData.cap) { mag.magData.count++; mag.magVis.userData.top.visible = true; removeThing(ht); S.roundIn(); pulse(src, 0.4, 20); } }
+    if (ht?.ammo && ht.ammo !== 'shotgun') { const mag = things.find(t => t.magData && (t.magData.type === ht.ammo || (t.magData.type === 'minigun' && ht.ammo === 'ak')) && gunWorldT(t, t.magTop).distanceTo(h.pos) < 0.07); if (mag && mag.magData.count < mag.magData.cap) { mag.magData.count++; mag.magVis.userData.top.visible = true; removeThing(ht); S.roundIn(); pulse(src, 0.4, 20); } }
     if (ht?.ammo === 'shotgun') { const sg = things.find(t => t.gun?.type === 'shotgun' && gunWorld(t, t.gun.G.well).distanceTo(h.pos) < 0.09); if (sg && sg.gun.tube < 6) { sg.gun.tube++; removeThing(ht); S.shellIn(); pulse(src, 0.5, 25); } }
     if (ht?.magData) { const top = gunWorldT(ht, ht.magTop); const gun = things.find(t => t.gun && !t.gun.mag && t.gun.type === ht.magData.type && gunWorld(t, t.gun.G.well).distanceTo(top) < 0.07); if (gun && magIn(gun, ht.magData)) removeThing(ht); }
     h.ballMat.color.setHex(h.held ? 0x8fc8ff : (best || h.manip) ? 0x9df0a8 : HAND_COL);
@@ -1692,7 +1866,7 @@ function frame() {
   physics(dt);
   for (const t of things) { t.mesh.position.copy(t.body.position); t.mesh.quaternion.copy(t.body.quaternion); }
   for (const t of things.slice()) if (t.body.position.y < -5 && !t.removed) removeThing(t);
-  updateGrenades(dt * TS); updateAttachments(dt);
+  updateGrenades(dt * TS); updateAttachments(dt); updateTools(dt);
   processVoxels(); updateDebris(dt * TS); updatePack(dt, inVR); updatePackLook(dt);
   for (const t of things) if (t.gun) { const g = t.gun; g.cool -= dt; g.recoil = Math.max(0, g.recoil - dt * 6); if (g.slideT > 0) { g.slideT -= dt; updateGunVisual(t); } }
   for (let i = casings.length - 1; i >= 0; i--) { const c = casings[i]; c.life += dt * TS; if (c.life > 8 || c.removed) { if (!c.removed) removeThing(c); casings.splice(i, 1); } }
@@ -1703,7 +1877,7 @@ function frame() {
   renderer.render(scene, camera);
 }
 renderer.setAnimationLoop(frame);
-window.__dbg = { things, vobjs, world, input, rig, flatGr, buildRoom, hitVoxels, WEAP, makeGun, makeMag, makeAmmoBox, spawnFromSlot, pack, fireGun, flatAction, flatMag, flatRack, flatLoad, flatInsert, menuPick, takeFlat, flatThrow, magOut, storeInPack, get target() { return target; }, get offMag() { return offMag; }, get frames() { return frames; }, get TS() { return TS; }, hands, renderer, camera, attachTo, addMod, makeGrenade, pullPin, explode, openMods, get ads() { return ads; }, set adsToggle(v) { adsToggle = v; }, slowHeld, debris, room: () => room };
+window.__dbg = { things, vobjs, world, input, rig, flatGr, buildRoom, hitVoxels, WEAP, makeGun, makeMag, makeAmmoBox, spawnFromSlot, pack, fireGun, flatAction, flatMag, flatRack, flatLoad, flatInsert, menuPick, takeFlat, flatThrow, magOut, storeInPack, get target() { return target; }, get offMag() { return offMag; }, get frames() { return frames; }, get TS() { return TS; }, setGauntlets, flatPunch, get gauntletsOn() { return gauntletsOn; }, voxAt, tryStartSaw, set autoFire(v) { autoFire = v; }, hands, renderer, camera, attachTo, addMod, makeGrenade, pullPin, explode, openMods, get ads() { return ads; }, set adsToggle(v) { adsToggle = v; }, slowHeld, debris, room: () => room };
 </script>
 </body>
 </html>
