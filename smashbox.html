@@ -754,7 +754,7 @@ const hands = [0, 1].map(i => {
 });
 const fBalls = [0, 1].map(() => { const m = noRay(M(SPH, new THREE.MeshLambertMaterial({ color: HAND_COL }), 0, 0, 0, { s: [0.04, 0.04, 0.04] })); scene.add(m); return m; });
 const grabbers = [flatGr, ...hands];
-const playerBody = (() => { const b = new CANNON.Body({ mass: 0, type: CANNON.Body.KINEMATIC, material: defMat, collisionFilterGroup: G_HAND, collisionFilterMask: G_VOX | G_FREE, allowSleep: false });
+const playerBody = (() => { const b = new CANNON.Body({ mass: 0, type: CANNON.Body.KINEMATIC, material: defMat, collisionFilterGroup: G_HAND, collisionFilterMask: 0, allowSleep: false }); // the body never force-pushes; see softPushPlayer
   b.addShape(new CANNON.Sphere(0.22), new CANNON.Vec3(0, -0.25, 0)); b.addShape(new CANNON.Sphere(0.22), new CANNON.Vec3(0, 0.25, 0)); b.position.set(0, -50, 0); world.addBody(b); return b; })();
 const playerTarget = new V3(0, -50, 0);
 const bodyQuat = b => new QT(b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w);
@@ -1479,7 +1479,7 @@ function setGauntlets(on) {
 function punchAt(p, dir, speed, src) {
   const pow = clamp(speed / 3.2, 0.6, 1.5); let did = false;
   const vo = voxNear(p, 0.06) || voxAt(p.clone().addScaledVector(dir, 0.06));
-  if (vo) { hitVoxels(vo, p, 0.11, 3.6 * pow, dir, 0.9); did = true; }
+  if (vo) { hitVoxels(vo, p, 0.14, 4.6 * pow, dir, 0.9); did = true; }
   for (const t of things) { if (t.heldBy || t.removed) continue; if (distTo(t, p) < 0.06) { t.body.wakeUp(); t.body.applyImpulse(cv(dir.clone().multiplyScalar(3.5 * pow)), cv(p).vsub(t.body.position)); did = true; } }
   if (did) { noise(0.12, 0.3 * pow, 700, 150); tone(90, 0.12, 'sine', 0.25 * pow, 45); tone(1700, 0.03, 'square', 0.05); dust(p, 0xffa040, 4, dir.clone().negate()); if (src) pulse(src, 1, 70); }
   return did;
@@ -1488,7 +1488,7 @@ function vrPunches(h, src) {
   if (!gauntletsOn || h.held || !h.hist.length) return;
   const now = performance.now() / 1000; if (now - (h.punchT || 0) < 0.18) return;
   const old = h.hist.find(e => now - e.t < 0.06) || h.hist[0], span = Math.max(0.011, now - old.t), v = h.pos.clone().sub(old.p).divideScalar(span), sp = v.length();
-  if (sp < 1.8) return; const dir = v.normalize(), fist = h.pos.clone().addScaledVector(dir, 0.05);
+  if (sp < 1.5) return; const dir = v.normalize(), fist = h.pos.clone().addScaledVector(dir, 0.05);
   if (punchAt(fist, dir, sp, src)) h.punchT = now;
 }
 let flatPunchT = 0;
@@ -1519,9 +1519,19 @@ function solidStatic(p) {
     const [gx, gy, gz] = vo.toGrid(p), i = Math.floor(gx), j = Math.floor(gy), k = Math.floor(gz); if (vo.isSolid(i, j, k)) return true; }
   return false;
 }
+function solidDyn(p) { // loose furniture / big chunks block you too, so you can't shove them through walls
+  for (const vo of vobjs) { if (!vo.dynamic || vo.dead || vo.nx * vo.ny * vo.nz < 6) continue; const b = vo.body.position, R = Math.max(vo.nx, vo.ny, vo.nz) * vo.s;
+    if (Math.abs(b.x - p.x) > R || Math.abs(b.z - p.z) > R || Math.abs(b.y - p.y) > R) continue;
+    const [gx, gy, gz] = vo.toGrid(p); if (vo.isSolid(Math.floor(gx), Math.floor(gy), Math.floor(gz))) return true; }
+  return false;
+}
+function softPushPlayer(p, dt) { // nudge small loose items out of your way gently instead of ramming them
+  for (const t of things) { if (t.heldBy || t.removed) continue; const b = t.body.position; if (b.y > 1.5) continue; const dx = b.x - p.x, dz = b.z - p.z, d = Math.hypot(dx, dz); if (d > 0.3 || d < 1e-4) continue;
+    b.wakeUp?.(); t.body.wakeUp(); const s = Math.min(1.2, (0.3 - d) * 12); t.body.velocity.x += (dx / d * s - t.body.velocity.x) * 0.25; t.body.velocity.z += (dz / d * s - t.body.velocity.z) * 0.25; }
+}
 const DIRS8 = Array.from({ length: 8 }, (_, i) => new V3(Math.cos(i * Math.PI / 4), 0, Math.sin(i * Math.PI / 4)));
 function resolve(p) {
-  for (let it = 0; it < 3; it++) for (const d of DIRS8) for (const h of [0.35, 1.1]) { const q = new V3(p.x + d.x * 0.24, h, p.z + d.z * 0.24); if (solidStatic(q)) { p.x -= d.x * 0.03; p.z -= d.z * 0.03; } }
+  for (let it = 0; it < 3; it++) for (const d of DIRS8) for (const h of [0.35, 1.1]) { const q = new V3(p.x + d.x * 0.24, h, p.z + d.z * 0.24); if (solidStatic(q) || solidDyn(q)) { p.x -= d.x * 0.03; p.z -= d.z * 0.03; } }
   if (room) { const b = room.bounds; p.x = clamp(p.x, b.minx, b.maxx); p.z = clamp(p.z, b.minz, b.maxz); }
   if (room?.ped) { const dx = p.x - room.ped.x, dz = p.z - room.ped.z, dd = Math.hypot(dx, dz); if (dd < 0.42 && dd > 1e-4) { p.x = room.ped.x + dx / dd * 0.42; p.z = room.ped.z + dz / dd * 0.42; } }
 }
@@ -1549,7 +1559,7 @@ function updateFlat(dt) {
   const y = input.yaw, fx = -Math.sin(y), fz = -Math.cos(y), rx = Math.cos(y), rz = -Math.sin(y), sp = 2.8;
   moveStep(rig.position, (rx * mx - fx * my) * sp * dt, (rz * mx - fz * my) * sp * dt);
   camera.position.y += ((input.crouch ? 0.95 : 1.6) - camera.position.y) * Math.min(1, dt * 10);
-  rig.updateMatrixWorld(true); playerTarget.set(rig.position.x, 0.75, rig.position.z);
+  rig.updateMatrixWorld(true); playerTarget.set(rig.position.x, 0.75, rig.position.z); softPushPlayer(rig.position, dt);
   const held = flatGr.held, cq = camera.getWorldQuaternion(new QT()), cp = camera.getWorldPosition(new V3()), d = camDir();
   // holder pose
   ads = !!held?.gun && held.gun.type !== 'minigun' && (adsToggle || adsMouse) && !modsOpen; adsT += ((ads ? 1 : 0) - adsT) * Math.min(1, dt * 12);
@@ -1690,7 +1700,7 @@ function updateVR(dt) {
   rig.updateMatrixWorld(true);
   const hp = camera.getWorldPosition(new V3()), before = hp.clone(); moveStep(hp, (r.x * mx - d.x * my) * 2.4 * dt, (r.z * mx - d.z * my) * 2.4 * dt);
   rig.position.x += hp.x - before.x; rig.position.z += hp.z - before.z; rig.updateMatrixWorld(true);
-  playerTarget.set(hp.x, 0.75, hp.z);
+  playerTarget.set(hp.x, 0.75, hp.z); softPushPlayer(hp, dt);
   fBalls.forEach(b => b.visible = false); for (const k in offMagVis) offMagVis[k].visible = false;
   if (menuOpen) keepVRMenuInView();
   hands.forEach((h, hi) => {
