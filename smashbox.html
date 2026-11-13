@@ -835,18 +835,18 @@ function makeGun(type, pos) {
     parts.push({ p: [0, 0.015, -0.01], s: [0.034, 0.06, 0.2], c: 0, hidden: true }, { p: [0, -0.065, 0.05], s: [0.03, 0.11, 0.05], c: 0, hidden: true });
     slide = new THREE.Group(); slide.add(M(rbox(0.032, 0.032, 0.195, 0.005), 0x55595f, 0, 0.03, -0.02), M(BOX, 0x222222, 0, 0.049, -0.105, { s: [0.004, 0.008, 0.006] }), M(BOX, 0x222222, 0, 0.049, 0.07, { s: [0.016, 0.008, 0.006] }));
     for (let i = 0; i < 5; i++) slide.add(M(BOX, 0x3a3d42, 0, 0.03, 0.05 + i * 0.008, { s: [0.034, 0.024, 0.002] }));
-    vis.push(M(rbox(0.03, 0.03, 0.17, 0.005), DARK, 0, 0.0, -0.015), M(rbox(0.028, 0.11, 0.046, 0.008), DARK, 0, -0.06, 0.05, { rx: 0.22 }), M(BOX, DARK, 0, -0.03, -0.015, { s: [0.008, 0.005, 0.05] }), M(BOX, 0x111111, 0, -0.022, 0.0, { s: [0.006, 0.02, 0.006] }), M(CYL, 0x1a1a1a, 0, 0.03, -0.118, { s: [0.006, 0.01, 0.006], rx: Math.PI / 2 }), slide);
-    magMesh = makeMagVisual('pistol'); magMesh.position.set(0, -0.07, 0.052); magMesh.rotation.x = 0.22; vis.push(magMesh);
+    vis.push(M(rbox(0.03, 0.03, 0.17, 0.005), DARK, 0, 0.0, -0.015), M(rbox(0.028, 0.11, 0.046, 0.008), DARK, 0, -0.06, 0.05, { rx: -0.22 }), M(BOX, DARK, 0, -0.03, -0.015, { s: [0.008, 0.005, 0.05] }), M(BOX, 0x111111, 0, -0.022, 0.0, { s: [0.006, 0.02, 0.006] }), M(CYL, 0x1a1a1a, 0, 0.03, -0.118, { s: [0.006, 0.01, 0.006], rx: Math.PI / 2 }), slide);
+    magMesh = makeMagVisual('pistol'); magMesh.position.set(0, -0.07, 0.052); magMesh.rotation.x = -0.22; vis.push(magMesh);
   } else if (type === 'ak') {
     parts.push({ p: [0, 0.02, -0.15], s: [0.05, 0.07, 0.5], c: 0, hidden: true }, { p: [0, -0.02, 0.2], s: [0.04, 0.08, 0.26], c: 0, hidden: true }, { p: [0, -0.05, 0.065], s: [0.03, 0.09, 0.04], c: 0, hidden: true });
     vis.push(M(rbox(0.045, 0.055, 0.3, 0.006), 0x3a3c40, 0, 0.02, -0.05), M(rbox(0.05, 0.05, 0.17, 0.012), WOODG, 0, 0.025, -0.27), M(CYL, 0x222428, 0, 0.035, -0.42, { s: [0.009, 0.24, 0.009], rx: Math.PI / 2 }),
-      M(CYL, 0x222428, 0, 0.058, -0.3, { s: [0.008, 0.2, 0.008], rx: Math.PI / 2 }), M(rbox(0.04, 0.065, 0.27, 0.01), WOODG, 0, -0.01, 0.22, { rx: 0.12 }), M(rbox(0.03, 0.09, 0.04, 0.008), WOODG, 0, -0.05, 0.065, { rx: 0.3 }),
+      M(CYL, 0x222428, 0, 0.058, -0.3, { s: [0.008, 0.2, 0.008], rx: Math.PI / 2 }), M(rbox(0.04, 0.065, 0.27, 0.01), WOODG, 0, -0.01, 0.22, { rx: 0.12 }), M(rbox(0.03, 0.09, 0.04, 0.008), WOODG, 0, -0.05, 0.065, { rx: -0.3 }),
       M(BOX, 0x222222, 0, 0.07, -0.5, { s: [0.004, 0.025, 0.008] }), M(BOX, 0x222222, 0, -0.012, 0.03, { s: [0.006, 0.02, 0.006] }), M(CYL, 0x111111, 0, 0.035, -0.545, { s: [0.012, 0.03, 0.012], rx: Math.PI / 2 }));
     slide = new THREE.Group(); slide.add(M(rbox(0.016, 0.012, 0.03, 0.004), 0x55595f, 0.03, 0.045, -0.05)); vis.push(slide);
     magMesh = makeMagVisual('ak'); magMesh.position.set(0, -0.035, -0.09); vis.push(magMesh);
   } else if (type === 'minigun') {
     parts.push({ p: [0, 0, -0.25], s: [0.09, 0.09, 0.82], c: 0, hidden: true }, { p: [0, -0.06, 0.16], s: [0.04, 0.1, 0.05], c: 0, hidden: true });
-    vis.push(M(rbox(0.11, 0.11, 0.22, 0.02), 0x3a3d42, 0, 0, 0.05), M(CYL, 0x2a2c30, 0, 0, 0.19, { s: [0.045, 0.06, 0.045], rx: Math.PI / 2 }), M(rbox(0.035, 0.1, 0.045, 0.008), 0x1d1e21, 0, -0.08, 0.16, { rx: 0.2 }),
+    vis.push(M(rbox(0.11, 0.11, 0.22, 0.02), 0x3a3d42, 0, 0, 0.05), M(CYL, 0x2a2c30, 0, 0, 0.19, { s: [0.045, 0.06, 0.045], rx: Math.PI / 2 }), M(rbox(0.035, 0.1, 0.045, 0.008), 0x1d1e21, 0, -0.08, 0.16, { rx: -0.2 }),
       M(BOX, 0x1d1e21, 0, 0.085, 0.05, { s: [0.02, 0.012, 0.16] }), M(BOX, 0x1d1e21, 0, 0.065, -0.02, { s: [0.016, 0.04, 0.012] }), M(BOX, 0x1d1e21, 0, 0.065, 0.12, { s: [0.016, 0.04, 0.012] }), M(BOX, 0x111111, 0, -0.045, 0.12, { s: [0.006, 0.025, 0.008] }));
     slide = new THREE.Group(); slide.position.z = -0.06; const bar = new THREE.Group(); slide.add(bar); slide.userData.barrels = bar;
     for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; bar.add(M(CYL, 0x2a2c30, Math.cos(a) * 0.022, Math.sin(a) * 0.022, -0.3, { s: [0.0085, 0.56, 0.0085], rx: Math.PI / 2 })); }

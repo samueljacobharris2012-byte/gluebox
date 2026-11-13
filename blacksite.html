@@ -41,7 +41,7 @@
   <div class="row">VR hand angle <button id="aDn">-</button><span id="aV">35°</span><button id="aUp">+</button></div>
   <div class="row">Height <button id="hDn">-</button><span id="hV">+0 cm</span><button id="hUp">+</button></div>
   <div id="best"></div><div id="msg"></div>
-  <p style="font-size:12px;margin-top:14px">VR: left stick move (push all the way), right stick turn. Grip = grab, trigger = shoot / pull grenade pin. Your AK stays slung on your chest. Push the red button by the base door to open it. A/X drops the mag; reach to your LEFT POCKET (left thigh) and grip for a new mag, push it in, grab the charging handle and pull it back. Hold the foregrip with your other hand. Knife on your chest, grenades on your right hip. B/Y = menu.<br>PC: WASD, mouse aim, click shoot, right click aim down the scope, R reload, G grenade, F knife, E use, Shift sprint, Esc menu.</p>
+  <p style="font-size:12px;margin-top:14px">VR: left stick move (push all the way), right stick turn. Grip = grab, trigger = shoot / pull grenade pin. Your AK stays slung on your chest. Push the red button by the base door to open it. A/X drops the mag; reach to your LEFT POCKET (left thigh) and grip for a new mag, push it in, grab the charging handle and pull it back. Hold the foregrip with your other hand. Knife on the left of your chest, grenades on the right of your chest. DESERT EAGLE in the holster on your right hip; its mags are in your RIGHT POCKET. B/Y = menu.<br>PC: WASD, mouse aim, click shoot, 1/2 or Q or mouse wheel to swap AK and Deagle, right click aim down the scope, R reload, G grenade, F knife, E use, Shift sprint, Esc menu.</p>
 </div></div>
 <script type="module">
 import * as THREE from 'three';
@@ -459,7 +459,7 @@ function applySet() { SET.angle = clamp(SET.angle, 0, 70); SET.height = clamp(Ma
   $('aV').textContent = SET.angle + '°'; $('hV').textContent = (SET.height >= 0 ? '+' : '') + Math.round(SET.height * 100) + ' cm'; if (renderer.xr.isPresenting) rig.position.y = SET.height; try { localStorage.setItem('blacksite-set', JSON.stringify(SET)); } catch (e) {} }
 
 /* ================= PLAYER STATE ================= */
-const player = { hp: 100, mags: 6, grenades: 3, hurtT: -99, dead: false, keycard: false, kills: 0, sector: 0, yaw: 0, pitch: 0, bodyYaw: 0, flatWeapon: 'gun', anim: null };
+const player = { dmags: 4, hp: 100, mags: 6, grenades: 3, hurtT: -99, dead: false, keycard: false, kills: 0, sector: 0, yaw: 0, pitch: 0, bodyYaw: 0, flatWeapon: 'gun', anim: null };
 const CAMO = canvasTex(128, 128, (x, w, h) => { x.fillStyle = '#4c5638'; x.fillRect(0, 0, w, h); const cs = ['#2f3826', '#6b6a48', '#3a2f22', '#5d6b45']; for (let i = 0; i < 70; i++) { x.fillStyle = cs[i % 4]; x.beginPath(); const cx = rnd(0, w), cy = rnd(0, h); for (let k = 0; k < 7; k++) { const a = k / 7 * 6.28, r = rnd(5, 14); x.lineTo(cx + Math.cos(a) * r * 1.4, cy + Math.sin(a) * r); } x.fill(); } }, true);
 const camoM = new THREE.MeshLambertMaterial({ map: CAMO }), gloveM = mat(0x2a2722), vestM = mat(0x5a5a40), strapM = mat(0x3a3a2a), bootM = mat(0x1d1a16), skinM = mat(0xc89070);
 
@@ -475,11 +475,12 @@ const bp = {};
   bp.cardSlot = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.085, 0.006), new THREE.MeshBasicMaterial({ color: 0xf0d040 })); bp.cardSlot.position.set(0.1, 0.07, -0.128); bp.cardSlot.visible = false; bp.vest.add(bp.cardSlot);
   bp.hips = new THREE.Mesh(new RoundedBoxGeometry(0.34, 0.2, 0.2, 2, 0.04), pants); body.add(bp.hips);
   bp.belt = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.05, 0.22), strapM); bp.hips.add(bp.belt); bp.belt.position.y = 0.08;
-  bp.nade = new THREE.Group(); bp.hips.add(bp.nade); bp.nade.position.set(0.19, -0.02, -0.04); bp.nade.add(new THREE.Mesh(new RoundedBoxGeometry(0.07, 0.1, 0.1, 2, 0.015), vestM));
+  bp.holster = new THREE.Mesh(new RoundedBoxGeometry(0.05, 0.17, 0.08, 2, 0.015), mat(0x1d1e20)); bp.holster.position.set(0.2, -0.03, 0.03); bp.hips.add(bp.holster);
+  bp.nade = new THREE.Group(); bp.vest.add(bp.nade); bp.nade.position.set(0.11, 0.07, -0.16); bp.nade.add(new THREE.Mesh(new RoundedBoxGeometry(0.07, 0.1, 0.1, 2, 0.015), vestM));
   bp.legs = [-1, 1].map(s => { const th = new THREE.Group(), thM = new THREE.Mesh(new RoundedBoxGeometry(0.15, 0.44, 0.16, 2, 0.04), pants); thM.position.y = -0.22; th.add(thM);
     const sh = new THREE.Group(); sh.position.y = -0.44; th.add(sh); const shM = new THREE.Mesh(new RoundedBoxGeometry(0.13, 0.42, 0.14, 2, 0.035), pants); shM.position.y = -0.21; sh.add(shM);
     const boot = new THREE.Mesh(new RoundedBoxGeometry(0.13, 0.11, 0.27, 2, 0.03), bootM); boot.position.set(0, -0.41, -0.05); sh.add(boot);
-    if (s < 0) { const pocket = new THREE.Mesh(new RoundedBoxGeometry(0.06, 0.16, 0.13, 2, 0.015), vestM); pocket.position.set(-0.085, -0.22, 0); th.add(pocket); const tab = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.06, 0.1), mat(0x8a7a3a)); tab.position.set(-0.075, -0.13, 0); th.add(tab); }
+    { const pocket = new THREE.Mesh(new RoundedBoxGeometry(0.06, 0.16, 0.13, 2, 0.015), vestM); pocket.position.set(s * 0.085, -0.22, 0); th.add(pocket); const tab = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.06, 0.1), mat(s < 0 ? 0x8a7a3a : 0x9a9aa0)); tab.position.set(s * 0.075, -0.13, 0); th.add(tab); }
     body.add(th); return { th, sh, side: s }; });
 }
 // arms: upper + fore, solved with 2-bone IK every frame
@@ -538,7 +539,7 @@ const scopeRT = new THREE.WebGLRenderTarget(256, 256), scopeCam = new THREE.Pers
   add(M(rbox(0.056, 0.06, 0.26, 0.01), blk, 0, -0.005, -0.32)); for (let i = 0; i < 9; i++) add(B(0.06, 0.006, 0.012, 0x111214, 0, 0.028, -0.21 - i * 0.025)); // rail handguard
   add(C(0.012, 0.42, metal, 0, 0.025, -0.43, { rx: Math.PI / 2 })); add(C(0.009, 0.25, metal, 0, 0.055, -0.33, { rx: Math.PI / 2 })); // barrel + gas tube
   add(M(rbox(0.026, 0.026, 0.07, 0.004), blk, 0, 0.025, -0.65)); for (let i = 0; i < 3; i++) add(B(0.03, 0.006, 0.008, 0x0a0a0a, 0, 0.034, -0.63 - i * 0.017)); // muzzle brake
-  add(M(rbox(0.035, 0.11, 0.045, 0.01), blk, 0, -0.07, 0.085, { rx: 0.28 })); add(B(0.012, 0.03, 0.035, blk, 0, -0.04, 0.035)); add(B(0.005, 0.025, 0.005, 0x111111, 0, -0.03, 0.04)); // grip + guard + trigger
+  add(M(rbox(0.035, 0.11, 0.045, 0.01), blk, 0, -0.07, 0.085, { rx: -0.28 })); add(B(0.012, 0.03, 0.035, blk, 0, -0.04, 0.035)); add(B(0.005, 0.025, 0.005, 0x111111, 0, -0.03, 0.04)); // grip + guard + trigger
   add(M(rbox(0.04, 0.07, 0.04, 0.01), blk, 0, -0.07, -0.27)); add(C(0.017, 0.1, blk2, 0, -0.085, -0.27)); // vertical foregrip
   add(M(rbox(0.04, 0.05, 0.3, 0.012), blk, 0, -0.015, 0.29)); add(M(rbox(0.045, 0.1, 0.04, 0.01), blk, 0, -0.03, 0.43)); add(B(0.03, 0.03, 0.12, blk2, 0, 0.015, 0.2)); // stock
   add(M(rbox(0.02, 0.025, 0.05, 0.004), blk, -0.037, 0.0, -0.34)); const ld = add(new THREE.Mesh(new THREE.CircleGeometry(0.005, 10), new THREE.MeshBasicMaterial({ color: 0xff2020 }))); ld.position.set(-0.037, 0, -0.366); ld.rotation.y = Math.PI; // laser box
@@ -577,7 +578,7 @@ const heldVis = new Map(); // hand -> mesh for mag/grenade/card in hand
 const grenades = []; // live (thrown) grenades
 const pickups = [];  // glowing things to walk over: mags, grenades, keycard
 function addPickup(kind, pos) {
-  const g = new THREE.Group(); if (kind === 'mag') { const m = makeMagMesh(); m.scale.setScalar(1.4); m.rotation.z = Math.PI / 2; m.position.y = 0.1; g.add(m); } else if (kind === 'grenade') { const m = grenadeMesh(); m.scale.setScalar(1.6); m.position.y = 0.08; g.add(m); } else { const m = cardMesh(); m.scale.setScalar(2); m.rotation.x = -Math.PI / 2.3; m.position.y = 0.08; g.add(m); }
+  const g = new THREE.Group(); if (kind === 'mag') { const m = makeMagMesh(); m.scale.setScalar(1.4); m.rotation.z = Math.PI / 2; m.position.y = 0.1; g.add(m); } else if (kind === 'dmag') { const m = makeDMagMesh(); m.scale.setScalar(1.6); m.rotation.z = Math.PI / 2; m.position.y = 0.1; g.add(m); } else if (kind === 'grenade') { const m = grenadeMesh(); m.scale.setScalar(1.6); m.position.y = 0.08; g.add(m); } else { const m = cardMesh(); m.scale.setScalar(2); m.rotation.x = -Math.PI / 2.3; m.position.y = 0.08; g.add(m); }
   const glow = new THREE.Mesh(new THREE.RingGeometry(0.16, 0.22, 24), new THREE.MeshBasicMaterial({ color: kind === 'card' ? 0xffd040 : 0x6aff9a, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false })); glow.rotation.x = -Math.PI / 2; glow.position.y = 0.02; g.add(glow);
   g.position.copy(pos).setY(0); noRay(g); scene.add(g); pickups.push({ kind, g, t: 0 });
 }
@@ -585,9 +586,9 @@ function addPickup(kind, pos) {
 /* ================= HUD: wrist watch + floating messages (VR), html (PC) ================= */
 const watch = (() => { const c = document.createElement('canvas'); c.width = 256; c.height = 160; const x = c.getContext('2d'); const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
   const m = noRay(new THREE.Mesh(new THREE.PlaneGeometry(0.075, 0.047), new THREE.MeshBasicMaterial({ map: tex }))); scene.add(m); const frame = noRay(new THREE.Mesh(new RoundedBoxGeometry(0.085, 0.057, 0.012, 2, 0.006), mat(0x111214))); scene.add(frame);
-  let last = ''; return { m, frame, draw() { const s = [player.hp | 0, player.mags, player.grenades, player.sector, gun.mag ? gun.mag.count + (gun.chamber ? 1 : 0) : (gun.chamber ? 1 : 0), objective].join('|'); if (s === last) return; last = s;
+  let last = ''; return { m, frame, draw() { const s = [player.hp | 0, player.mags, player.dmags, dg.mag?.count, player.grenades, player.sector, gun.mag ? gun.mag.count + (gun.chamber ? 1 : 0) : (gun.chamber ? 1 : 0), objective].join('|'); if (s === last) return; last = s;
     x.fillStyle = '#05140c'; x.fillRect(0, 0, 256, 160); x.fillStyle = player.hp > 35 ? '#4aff8a' : '#ff4a3a'; x.fillRect(12, 12, 232 * player.hp / 100, 18); x.strokeStyle = '#4aff8a'; x.strokeRect(12, 12, 232, 18);
-    x.fillStyle = '#c8ffd8'; x.font = 'bold 22px monospace'; x.fillText(`MAGS ${player.mags}  GRN ${player.grenades}`, 12, 62); x.fillText(`RNDS ${gun.mag ? gun.mag.count + (gun.chamber ? 1 : 0) : (gun.chamber ? '1' : '0')}`, 12, 90); x.fillText(`SECTOR ${player.sector}`, 12, 118);
+    x.fillStyle = '#c8ffd8'; x.font = 'bold 22px monospace'; x.fillText(`AK ${player.mags}  DE ${player.dmags}  G ${player.grenades}`, 12, 62); x.fillText(`RNDS ${gun.mag ? gun.mag.count + (gun.chamber ? 1 : 0) : (gun.chamber ? '1' : '0')}`, 12, 90); x.fillText(`SECTOR ${player.sector}`, 12, 118);
     x.font = '15px monospace'; x.fillStyle = '#8affb8'; x.fillText(objective.slice(0, 28), 12, 148); tex.needsUpdate = true; } }; })();
 let objective = '';
 const vrMsg = (() => { const c = document.createElement('canvas'); c.width = 512; c.height = 128; const x = c.getContext('2d'); const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
@@ -644,9 +645,9 @@ function rayWorld(o, d, far = 100, skipEnemy) {
   const h = hs[0]; if (!h) return null; const ud = h.object.userData; const n = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : d.clone().negate();
   return { point: h.point, normal: n, distance: h.distance, enemy: ud.enemy, part: ud.part, object: h.object };
 }
-function playerShot(origin, dir, dmg) {
+function playerShot(origin, dir, dmg, muzzleW) {
   const h = rayWorld(origin, dir, 120); const end = h ? h.point : origin.clone().addScaledVector(dir, 120);
-  if (Math.random() < 0.45) tracer(gunW(GUN.muzzle), end);
+  if (Math.random() < 0.45) tracer(muzzleW || gunW(GUN.muzzle), end);
   if (!h) return; if (h.enemy) { damageEnemy(h.enemy, dmg, h.point, dir, h.part); return; }
   decal(holes, h.point, h.normal); sparks(h.point, h.normal); playAt(h.point, () => noise(0.05, 0.12, 2500, null, 'bandpass', 0, 2), 0.6);
 }
@@ -674,7 +675,7 @@ function fireGun(flat) {
   playerShot(o, d, 34); ejectCasing(); if (gun.hand) pulse(gun.hand, 0.9, 30); if (gun.support) pulse(gun.support, 0.6, 25);
 }
 const casings = []; const casingMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.0056, 0.0056, 0.039, 6), mat(0xc8a050), 40); casingMesh.count = 0; noRay(casingMesh); casingMesh.frustumCulled = false; scene.add(casingMesh);
-function ejectCasing() { const p = gunW(new V3(0.03, 0.04, -0.06)), r = new V3(1, 0, 0).applyQuaternion(gun.g.quaternion); if (casings.length >= 40) casings.shift(); casings.push({ p, v: r.multiplyScalar(rnd(2, 3)).add(new V3(0, rnd(1.5, 2.5), 0)), q: new QT().random(), w: new V3(rnd(-20, 20), rnd(-20, 20), rnd(-20, 20)), life: 0, landed: false }); }
+function ejectCasing(obj = gun.g, at = new V3(0.03, 0.04, -0.06)) { const p = obj.localToWorld(at.clone()), r = new V3(1, 0, 0).applyQuaternion(obj.quaternion); if (casings.length >= 40) casings.shift(); casings.push({ p, v: r.multiplyScalar(rnd(2, 3)).add(new V3(0, rnd(1.5, 2.5), 0)), q: new QT().random(), w: new V3(rnd(-20, 20), rnd(-20, 20), rnd(-20, 20)), life: 0, landed: false }); }
 function updateCasings(dt) { for (let i = casings.length - 1; i >= 0; i--) { const c = casings[i]; c.life += dt; if (c.life > 6) { casings.splice(i, 1); continue; } if (!c.landed) { c.v.y -= 9.8 * dt; c.p.addScaledVector(c.v, dt); c.q.multiply(new QT().setFromEuler(new THREE.Euler(c.w.x * dt, c.w.y * dt, c.w.z * dt))); if (c.p.y < 0.006) { c.p.y = 0.006; if (c.v.length() > 1) { c.v.multiplyScalar(0.35); c.v.y = Math.abs(c.v.y); playAt(c.p, S.casing, 0.5); } else { c.landed = true; c.q.setFromEuler(new THREE.Euler(0, rnd(0, 6), Math.PI / 2)); } } } }
   casingMesh.count = casings.length; casings.forEach((c, i) => { _m4.compose(c.p, c.q, _s.set(1, 1, 1)); casingMesh.setMatrixAt(i, _m4); }); casingMesh.instanceMatrix.needsUpdate = true; }
 function magOut(toLoose = true) { if (!gun.mag) return null; const m = gun.mag; gun.mag = null; S.magOut(); gun.magMesh.visible = false;
@@ -755,10 +756,10 @@ function renderScope() {
 }
 
 /* ---------- held-item visuals ---------- */
-function heldMesh(h, kind) { let m = heldVis.get(h); if (m && m.userData.kind !== kind) { scene.remove(m); m = null; } if (!m && kind) { m = kind === 'mag' ? makeMagMesh() : kind === 'grenade' ? (h.gren?.mesh || grenadeMesh()) : kind === 'card' ? cardMesh() : null; if (m) { m.userData.kind = kind; scene.add(m); } heldVis.set(h, m); } if (!kind && m) { scene.remove(m); heldVis.delete(h); m = null; } return m; }
+function heldMesh(h, kind) { let m = heldVis.get(h); if (m && m.userData.kind !== kind) { scene.remove(m); m = null; } if (!m && kind) { m = kind === 'mag' ? makeMagMesh() : kind === 'dmag' ? makeDMagMesh() : kind === 'grenade' ? (h.gren?.mesh || grenadeMesh()) : kind === 'card' ? cardMesh() : null; if (m) { m.userData.kind = kind; scene.add(m); } heldVis.set(h, m); } if (!kind && m) { scene.remove(m); heldVis.delete(h); m = null; } return m; }
 function poseHeld(h) {
-  const m = heldMesh(h, ['mag', 'grenade', 'card'].includes(h.held) ? h.held : null); if (!m) return;
-  if (h.held === 'mag') { m.quaternion.copy(h.quat).multiply(new QT().setFromAxisAngle(new V3(1, 0, 0), -0.5)); m.position.copy(h.pos).add(new V3(0, 0.07, -0.05).applyQuaternion(h.quat)); }
+  const m = heldMesh(h, ['mag', 'dmag', 'grenade', 'card'].includes(h.held) ? h.held : null); if (!m) return;
+  if (h.held === 'mag' || h.held === 'dmag') { m.quaternion.copy(h.quat).multiply(new QT().setFromAxisAngle(new V3(1, 0, 0), -0.5)); m.position.copy(h.pos).add(new V3(0, 0.07, -0.05).applyQuaternion(h.quat)); }
   else if (h.held === 'grenade') { m.quaternion.copy(h.quat); m.position.copy(h.pos).add(new V3(0, 0.0, -0.045).applyQuaternion(h.quat)); }
   else { m.quaternion.copy(h.quat).multiply(new QT().setFromAxisAngle(new V3(1, 0, 0), -1.2)); m.position.copy(h.pos).add(new V3(0, 0.02, -0.07).applyQuaternion(h.quat)); }
 }
@@ -789,9 +790,10 @@ function updateVR(dt) {
     if (bB && !h.prev.bB) toggleVRMenu();
     if (vrMenuOpen()) { vrMenuHand(h, trig && !h.prev.trig); h.prev = { trig, sq, bA, bB }; poseGloves(h, sqV); return; }
     // ---- grip pressed
-    if (sq && !h.prev.sq && !h.held && !h.support && !h.manip) {
+    if (sq && !h.prev.sq && !h.held && !h.support && !h.manip && !h.dsupport && !h.dmanip) {
       let did = true;
-      if (other.held === 'grenade' && other.gren && !other.gren.pinOut && other.gren.mesh && other.gren.mesh.localToWorld(new V3(-0.03, 0.05, 0)).distanceTo(h.pos) < 0.08) { pullPin(other); pulse(h, 0.6, 30); }
+      if (vrDeagleGrip(h, other)) {}
+      else if (other.held === 'grenade' && other.gren && !other.gren.pinOut && other.gren.mesh && other.gren.mesh.localToWorld(new V3(-0.03, 0.05, 0)).distanceTo(h.pos) < 0.08) { pullPin(other); pulse(h, 0.6, 30); }
       else if (other.held === 'gun' && gunW(GUN.charge).distanceTo(h.pos) < 0.08) { h.manip = { start: h.pos.clone() }; pulse(h, 0.4, 20); }
       else if (other.held === 'gun' && gun.mag && gunW(GUN.well.clone().add(new V3(0, -0.09, -0.01))).distanceTo(h.pos) < 0.08) { h.magData = magOut(false); h.held = 'mag'; pulse(h, 0.5, 30); }
       else if (other.held === 'gun' && (gunW(GUN.fore).distanceTo(h.pos) < 0.13 || gunW(new V3(0, 0, -0.32)).distanceTo(h.pos) < 0.12)) { h.support = true; gun.support = h; pulse(h, 0.4, 20); }
@@ -801,10 +803,11 @@ function updateVR(dt) {
       else if (player.keycard && cardW().distanceTo(h.pos) < 0.12) { h.held = 'card'; pulse(h, 0.3, 20); }
       else if (!gun.hand && (gunW(GUN.grip).distanceTo(h.pos) < 0.16 || gun.g.position.distanceTo(h.pos) < 0.2)) { gun.hand = h; h.held = 'gun'; S.pouch(); pulse(h, 0.6, 30); }
       else { let best = null, bd = 0.14; for (const it of loose) { const dd = it.mesh.position.distanceTo(h.pos); if (dd < bd) { bd = dd; best = it; } }
-        if (best) { if (best.kind === 'mag') { h.held = 'mag'; h.magData = { count: best.count ?? 30 }; } else { h.held = 'grenade'; h.gren = { pinOut: !!best.pinOut, mesh: best.mesh, fuse: best.fuse }; const gi = grenades.indexOf(best); if (gi >= 0) grenades.splice(gi, 1); world.removeBody(best.body); loose.splice(loose.indexOf(best), 1); best = null; } if (best) removeLoose(best); pulse(h, 0.4, 20); } else did = false; }
+        if (best) { if (best.kind === 'mag') { h.held = best.dmag ? 'dmag' : 'mag'; h.magData = { count: best.count ?? (best.dmag ? 7 : 30) }; } else { h.held = 'grenade'; h.gren = { pinOut: !!best.pinOut, mesh: best.mesh, fuse: best.fuse }; const gi = grenades.indexOf(best); if (gi >= 0) grenades.splice(gi, 1); world.removeBody(best.body); loose.splice(loose.indexOf(best), 1); best = null; } if (best) removeLoose(best); pulse(h, 0.4, 20); } else did = false; }
     }
     // ---- grip released
     if (!sq && h.prev.sq) {
+      vrDeagleRelease(h);
       if (h.manip) { if (gun.chargeBack) { rackFwd(); gun.chargeBack = false; } gun.chargeT = 0; h.manip = null; }
       if (h.support) { h.support = false; if (gun.support === h) gun.support = null; }
       if (h.held === 'gun') { gun.hand = null; if (gun.support) { gun.support.support = false; gun.support = null; } }
@@ -823,10 +826,11 @@ function updateVR(dt) {
     if (h.manip && gun.hand === other) { const back = new V3(0, 0, 1).applyQuaternion(gun.g.quaternion), v = clamp(h.pos.clone().sub(h.manip.start).dot(back) / 0.075, 0, 1); gun.chargeT = v;
       if (v > 0.85 && !gun.chargeBack) { gun.chargeBack = true; rackBack(); pulse(h, 0.6, 30); } if (gun.chargeBack && v < 0.2) { gun.chargeBack = false; rackFwd(); pulse(h, 0.7, 30); } }
     else if (h.manip && gun.hand !== other) { h.manip = null; gun.chargeT = 0; }
+    vrDeagleHold(h, other, trig, bA);
     h.prev = { trig, sq, bA, bB };
     poseGloves(h, sqV);
   });
-  poseGun(dt);
+  poseGun(dt); poseDeagle(dt);
   hands.forEach((h, hi) => { if (!h.active) return; poseHeld(h); armTo(hi, wristOf(h.glove.position, h.glove.quaternion), h.side); });
   poseKnife(knife.hand);
   // watch on the left wrist
@@ -838,9 +842,9 @@ let stepT = 0;
 function gripPose(local, side, tilt) { const gq = gun.g.quaternion; const q = gq.clone().multiply(new QT().setFromAxisAngle(new V3(1, 0, 0), tilt)).multiply(new QT().setFromAxisAngle(new V3(0, 0, 1), -Math.PI / 2));
   return { pos: gunW(local.clone().add(new V3(side * 0.031, 0.014, 0.014))), quat: q, scale: side > 0 ? [1, 1, 1] : [1, -1, 1] }; }
 function poseGloves(h, sqV) {
-  const g = h.glove; let pos = h.pos, q = h.quat;
+  const g = h.glove; let pos = h.pos, q = h.quat; const dP = deagleGlove(h); if (dP) { g.position.copy(dP.pos); g.quaternion.copy(dP.quat); g.scale.set(...dP.scale); setCurl(g, 1); return; }
   let sc = [h.side < 0 ? -1 : 1, 1, 1];
-  if (h.held === 'gun' || h.support) { const P = gripPose(h.held === 'gun' ? GUN.grip : GUN.fore, h.side, h.held === 'gun' ? 0.28 : 0); pos = P.pos; q = P.quat; sc = P.scale; }
+  if (h.held === 'gun' || h.support) { const P = gripPose(h.held === 'gun' ? GUN.grip : GUN.fore, h.side, h.held === 'gun' ? -0.28 : 0); pos = P.pos; q = P.quat; sc = P.scale; }
   else if (h.manip) { pos = gunW(GUN.charge).add(new V3(0.03, 0, 0).applyQuaternion(gun.g.quaternion)); }
   g.position.copy(pos); g.quaternion.copy(q); g.scale.set(...sc);
   const c = h.held || h.support || h.manip ? 1 : sqV * 0.9; setCurl(g, c, (h.grip.userData.src?.gamepad?.buttons[0]?.value || 0) < 0.2 && !h.held);
@@ -863,10 +867,12 @@ function updateFlat(dt) {
   if (moving) { stepT -= dt * (k.ShiftLeft ? 1.5 : 1); if (stepT < 0) { stepT = 0.4; S.step(0.04); } }
   rig.rotation.set(0, player.yaw, 0); camera.rotation.set(player.pitch, 0, 0, 'YXZ'); camera.position.set(shake ? rnd(-1, 1) * shake * 0.02 : 0, (k.KeyC ? 1.1 : 1.7) + Math.sin(performance.now() * 0.011) * (moving ? 0.018 : 0), 0);
   rig.updateMatrixWorld(true); updateBody(dt, moving);
+  if (player.flatWeapon === 'deagle') { flatDeagle(dt, moving); return; }
+  poseDeagle(dt); gun.g.visible = true; if (swapT > 0) swapT = Math.max(0, swapT - dt);
   // --- gun placement in the view
   adsT += ((ads && !reload && !knifeAnim && !nadeAnim ? 1 : 0) - adsT) * Math.min(1, dt * 10);
   const bob = moving ? Math.sin(performance.now() * 0.011) * 0.012 : Math.sin(performance.now() * 0.002) * 0.003;
-  const hip = new V3(0.16, -0.2 + bob, -0.36), aim = new V3(0, 0, -0.16).sub(GUN.eye); const local = hip.lerp(aim, smooth(adsT));
+  const hip = new V3(0.16, -0.2 + bob, -0.36), aim = new V3(0, 0, -0.16).sub(GUN.eye); const local = hip.lerp(aim, smooth(adsT)); local.y -= swapT * 0.5;
   let rot = new THREE.Euler(0, 0, 0), left = null; gun.kick = Math.max(0, gun.kick - dt * 14); local.z += gun.kick * 0.02; rot.x += gun.kick * 0.04;
   if (reload) { reload.t += dt; const t = reload.t, T = reload.needRack ? 2.25 : 1.75; const tilt = smooth(clamp(t / 0.3, 0, 1)) * smooth(clamp((T - t) / 0.35, 0, 1)); rot.z += tilt * 0.55; rot.x += tilt * 0.22; local.x -= tilt * 0.04; local.y += tilt * 0.03;
     const ev = reload.ev, once = (n, at, fn) => { if (t >= at && !ev[n]) { ev[n] = 1; fn(); } };
@@ -896,7 +902,7 @@ function updateFlat(dt) {
     if (t > 1.05) nadeAnim = null; }
   // gloves + arms
   const rq = gun.g.quaternion.clone();
-  { const P = gripPose(GUN.grip, 1, 0.28); fhand[1].glove.position.copy(P.pos); fhand[1].glove.quaternion.copy(P.quat); fhand[1].glove.scale.set(...P.scale); setCurl(fhand[1].glove, 1); }
+  { const P = gripPose(GUN.grip, 1, -0.28); fhand[1].glove.position.copy(P.pos); fhand[1].glove.quaternion.copy(P.quat); fhand[1].glove.scale.set(...P.scale); setCurl(fhand[1].glove, 1); }
   if (!reload && !knifeAnim && !nadeAnim) { const P = gripPose(GUN.fore, -1, 0); lp = P.pos; lq = P.quat; fhand[0].glove.scale.set(...P.scale); } else fhand[0].glove.scale.set(-1, 1, 1);
   fhand[0].glove.position.copy(lp); fhand[0].glove.quaternion.copy(lq); setCurl(fhand[0].glove, reload && reload.left > 0.75 && reload.left < 0.85 ? 0.8 : 1);
   if (knifeAnim) { knife.mesh.position.copy(lp); knife.mesh.quaternion.copy(lq).multiply(new QT().setFromAxisAngle(new V3(1, 0, 0), -Math.PI / 2)); } else poseKnife(null);
@@ -920,8 +926,119 @@ addEventListener('mouseup', e => { if (e.button === 0) firing = false; if (e.but
 cvs.addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('mousemove', e => { if (document.pointerLockElement !== cvs) return; const s = ads ? 0.0011 : 0.0022; player.yaw -= e.movementX * s; player.pitch = clamp(player.pitch - e.movementY * s, -1.45, 1.45); });
 addEventListener('keydown', e => { input.keys[e.code] = true; if (e.repeat || gameState !== 'play' || renderer.xr.isPresenting) return;
-  if (e.code === 'KeyR') startReload(); if (e.code === 'KeyF' && !knifeAnim && !reload) { knifeAnim = { t: 0 }; S.slash(); } if (e.code === 'KeyG' && !nadeAnim && !reload) { if (player.grenades > 0) { player.grenades--; nadeAnim = { t: 0 }; } else S.deny(); } if (e.code === 'KeyE') tryUse(); });
+  if (e.code === 'Digit1') switchWeapon('gun'); if (e.code === 'Digit2') switchWeapon('deagle'); if (e.code === 'KeyQ') switchWeapon(player.flatWeapon === 'gun' ? 'deagle' : 'gun');
+  if (e.code === 'KeyR') { if (player.flatWeapon === 'deagle') startDReload(); else startReload(); } if ((e.code === 'KeyF' || e.code === 'KeyG') && player.flatWeapon === 'deagle') { player.flatWeapon = 'gun'; swapT = 0.25; }
+  if (e.code === 'KeyF' && !knifeAnim && !reload) { knifeAnim = { t: 0 }; S.slash(); } if (e.code === 'KeyG' && !nadeAnim && !reload) { if (player.grenades > 0) { player.grenades--; nadeAnim = { t: 0 }; } else S.deny(); } if (e.code === 'KeyE') tryUse(); });
 addEventListener('keyup', e => { input.keys[e.code] = false; });
+
+addEventListener('wheel', e => { if (gameState === 'play' && !renderer.xr.isPresenting && document.pointerLockElement === cvs) switchWeapon(player.flatWeapon === 'gun' ? 'deagle' : 'gun'); });
+
+/* ================= DESERT EAGLE (sidearm, right hip holster, mags in the right pocket) ================= */
+S.deagle = () => { noise(0.25, 0.75, 2400, 140); tone(78, 0.22, 'sine', 0.65, 32); tone(2100, 0.025, 'square', 0.09); noise(0.8, 0.16, 800, 120, 'lowpass', 0.05); };
+const DG = { grip: new V3(0, -0.062, 0.074), well: new V3(0, -0.132, 0.09), seat: new V3(0, -0.012, 0.06), muzzle: new V3(0, 0.028, -0.18), slide: new V3(0.025, 0.03, 0.08), eye: new V3(0, 0.056, 0.095), eject: new V3(0.02, 0.045, -0.01) };
+const dg = { g: new THREE.Group(), mag: { count: 7 }, chamber: true, locked: false, hand: null, support: null, kick: 0, cool: 0, slideT: 0, manipT: 0, manipBack: false, slide: null, magMesh: null };
+function buildDMag() { const g = new THREE.Group(); g.add(M(rbox(0.024, 0.118, 0.038, 0.004), 0x8a8f96, 0, -0.059, 0)); g.add(M(rbox(0.03, 0.013, 0.05, 0.004), 0x1d1e20, 0, -0.121, 0.003));
+  g.add(M(CYLG, 0xc8a050, 0, 0.004, 0.004, { s: [0.0065, 0.026, 0.0065], rx: Math.PI / 2 })); g.add(M(new THREE.ConeGeometry(0.0055, 0.012, 10), 0xb8703a, 0, 0.004, -0.014, { rx: -Math.PI / 2 })); return g; }
+{
+  const g = dg.g, silver = 0x9ba1a8, dark = 0x26282c;
+  const slide = new THREE.Group(); slide.add(M(rbox(0.036, 0.034, 0.27, 0.006), silver, 0, 0.03, -0.04)); for (let i = 0; i < 7; i++) slide.add(B(0.038, 0.022, 0.003, 0x6a7078, 0, 0.03, 0.05 + i * 0.008));
+  slide.add(B(0.006, 0.011, 0.01, 0x111111, 0, 0.052, -0.165), B(0.02, 0.011, 0.009, 0x111111, 0, 0.052, 0.088), B(0.004, 0.004, 0.002, 0xffffff, 0, 0.054, -0.17)); g.add(slide); dg.slide = slide;
+  g.add(M(rbox(0.033, 0.027, 0.225, 0.005), dark, 0, 0.0, -0.045), B(0.028, 0.022, 0.025, dark, 0, 0.006, -0.165));
+  g.add(M(rbox(0.012, 0.036, 0.056, 0.006), dark, 0, -0.03, 0.012), B(0.006, 0.024, 0.007, 0x111111, 0, -0.024, 0.022));
+  g.add(M(rbox(0.035, 0.128, 0.054, 0.012), 0x161719, 0, -0.07, 0.075, { rx: -0.25 })); g.add(B(0.012, 0.024, 0.014, 0x111111, 0, 0.036, 0.108));
+  const mg = buildDMag(); mg.position.copy(DG.seat); mg.rotation.x = -0.25; g.add(mg); dg.magMesh = mg;
+  noRay(g); scene.add(g);
+}
+const dgW = l => dg.g.localToWorld(l.clone());
+const dgFwd = () => new V3(0, 0, -1).applyQuaternion(dg.g.quaternion);
+const holsterW = () => bp.holster.getWorldPosition(new V3()).add(new V3(0, 0.1, 0));
+const rpocketW = () => bodyPt(0.17, Math.max(0.4, headY() * 0.53) - 0.13, -0.03);
+function makeDMagMesh() { const m = buildDMag(); noRay(m); return m; }
+function dgPose(local, side, tilt) { const q = dg.g.quaternion.clone().multiply(new QT().setFromAxisAngle(new V3(1, 0, 0), tilt)).multiply(new QT().setFromAxisAngle(new V3(0, 0, 1), -Math.PI / 2));
+  return { pos: dgW(local.clone().add(new V3(side * 0.03, 0.012, 0.012))), quat: q, scale: side > 0 ? [1, 1, 1] : [1, -1, 1] }; }
+function cupPose(side) { // support hand cupped under and around the grip
+  const q = dg.g.quaternion.clone().multiply(new QT().setFromEuler(new THREE.Euler(-0.25, 0, side > 0 ? -1.15 : 1.15)));
+  return { pos: dgW(new V3(-side * 0.036, -0.075, 0.07)), quat: q, scale: side > 0 ? [1, 1, 1] : [-1, 1, 1] }; }
+function fireDeagle(flat) {
+  if (dg.cool > 0) return; if (!dg.chamber) { S.dry(); dg.cool = 0.2; return; }
+  dg.cool = 0.17; dg.chamber = false; if (dg.mag && dg.mag.count > 0) { dg.mag.count--; dg.chamber = true; } else dg.locked = true;
+  S.deagle(); dg.kick = 1; dg.slideT = 0.07; alertAll(dg.g.getWorldPosition(new V3()), 35);
+  const muz = dgW(DG.muzzle), fwd = dgFwd(); muzzleFlash(muz, fwd, 1.5); muzzleLight.intensity = 9;
+  let o = muz, d = fwd.clone(); if (flat) { o = camera.getWorldPosition(new V3()); d = camDir(); const sp = ads ? 0.002 : 0.01; d.add(new V3(rnd(-sp, sp), rnd(-sp, sp), rnd(-sp, sp))).normalize(); player.pitch += 0.05 * (ads ? 0.7 : 1); player.yaw += rnd(-0.01, 0.01); }
+  playerShot(o, d, 95, muz); ejectCasing(dg.g, DG.eject); if (dg.hand) pulse(dg.hand, 1, 60); if (dg.support) pulse(dg.support, 0.7, 40);
+}
+function dMagOut(toLoose) { if (!dg.mag) return null; const m = dg.mag; dg.mag = null; S.magOut(); if (toLoose) makeLoose('mag', makeDMagMesh(), dgW(DG.seat), new V3(0, -1, 0), { count: m.count, dmag: true }); return m; }
+function dMagIn(m) { if (dg.mag) return false; dg.mag = m; S.magIn(); if (dg.locked && m.count > 0) { setTimeout(() => S.rackFwd(), 90); dg.locked = false; m.count--; dg.chamber = true; } if (dg.hand) pulse(dg.hand, 0.8, 40); return true; }
+function poseDeagle(dt) {
+  dg.kick = Math.max(0, dg.kick - dt * 9); dg.slideT -= dt;
+  if (dg.hand) { const h = dg.hand, R = h.quat.clone().multiply(new QT().setFromAxisAngle(new V3(1, 0, 0), dg.kick * (dg.support ? 0.18 : 0.32)));
+    dg.g.quaternion.copy(R); dg.g.position.copy(h.pos).sub(DG.grip.clone().applyQuaternion(R)).add(new V3(0, 0, dg.kick * 0.03).applyQuaternion(R)); }
+  else if (renderer.xr.isPresenting || player.flatWeapon !== 'deagle') { const p = holsterW(), q = yawQ(player.bodyYaw).multiply(new QT().setFromAxisAngle(new V3(1, 0, 0), -Math.PI / 2)); dg.g.position.lerp(p, Math.min(1, dt * 14)); dg.g.quaternion.slerp(q, Math.min(1, dt * 14)); }
+  dg.slide.position.z = (dg.locked || dg.slideT > 0 ? 0.05 : 0) + dg.manipT * 0.05; dg.magMesh.visible = !!dg.mag;
+}
+// ---- VR hooks
+function vrDeagleGrip(h, other) {
+  if (other.held === 'deagle') {
+    if (dgW(DG.slide).distanceTo(h.pos) < 0.07) { h.dmanip = { start: h.pos.clone() }; pulse(h, 0.4, 20); return true; }
+    if (dg.mag && dgW(DG.well).distanceTo(h.pos) < 0.07) { h.magData = dMagOut(false); h.held = 'dmag'; pulse(h, 0.5, 30); return true; }
+    if (dgW(DG.grip).distanceTo(h.pos) < 0.12) { h.dsupport = true; dg.support = h; pulse(h, 0.3, 20); return true; } }
+  if (!dg.hand && holsterW().distanceTo(h.pos) < 0.14) { dg.hand = h; h.held = 'deagle'; S.pouch(); pulse(h, 0.6, 30); return true; }
+  if (rpocketW().distanceTo(h.pos) < 0.17) { if (player.dmags > 0) { player.dmags--; h.held = 'dmag'; h.magData = { count: 7 }; S.pouch(); pulse(h, 0.5, 30); } else { S.deny(); msg('Out of Deagle mags', 1.5); } return true; }
+  return false;
+}
+function vrDeagleRelease(h) {
+  if (h.dmanip) { if (dg.manipBack) { S.rackFwd(); dg.manipBack = false; if (!dg.chamber && dg.mag && dg.mag.count > 0) { dg.mag.count--; dg.chamber = true; } dg.locked = false; } dg.manipT = 0; h.dmanip = null; }
+  if (h.dsupport) { h.dsupport = false; if (dg.support === h) dg.support = null; }
+  if (h.held === 'deagle') { dg.hand = null; if (dg.support) { dg.support.dsupport = false; dg.support = null; } h.held = null; }
+  else if (h.held === 'dmag') { makeLoose('mag', makeDMagMesh(), h.pos.clone(), h.vel.clone(), { count: h.magData.count, dmag: true }); heldMesh(h, null); h.held = null; }
+}
+function vrDeagleHold(h, other, trig, bA) {
+  if (h.held === 'deagle') { if (trig && !h.prev.trig) fireDeagle(false); if (bA && !h.prev.bA && dg.mag) { dMagOut(true); pulse(h, 0.4, 20); } }
+  if (h.held === 'dmag' && !dg.mag && heldVis.get(h)) { if (heldVis.get(h).position.distanceTo(dgW(DG.well)) < 0.075) { dMagIn(h.magData); h.held = null; h.magData = null; heldMesh(h, null); } }
+  if (h.dmanip) { if (dg.hand !== other) { h.dmanip = null; dg.manipT = 0; return; } const back = new V3(0, 0, 1).applyQuaternion(dg.g.quaternion), v = clamp(h.pos.clone().sub(h.dmanip.start).dot(back) / 0.05, 0, 1); dg.manipT = v;
+    if (v > 0.85 && !dg.manipBack) { dg.manipBack = true; S.rackBack(); if (dg.chamber) { dg.chamber = false; ejectCasing(dg.g, DG.eject); } pulse(h, 0.6, 30); }
+    if (dg.manipBack && v < 0.2) { dg.manipBack = false; S.rackFwd(); dg.locked = false; if (!dg.chamber && dg.mag && dg.mag.count > 0) { dg.mag.count--; dg.chamber = true; } pulse(h, 0.7, 30); } }
+}
+function deagleGlove(h) { // returns a pose when this hand is doing something with the Deagle
+  if (h.held === 'deagle') return dgPose(DG.grip, h.side, -0.25);
+  if (h.dsupport) return cupPose(h.side);
+  if (h.dmanip) return { pos: dgW(DG.slide).add(new V3(0.02, 0, 0).applyQuaternion(dg.g.quaternion)), quat: h.quat, scale: [h.side < 0 ? -1 : 1, 1, 1] };
+  return null;
+}
+
+/* ---------- PC: Deagle in your hands ---------- */
+let dReload = null, swapT = 0, lastFiring = false;
+function switchWeapon(w) { if (player.flatWeapon === w || reload || dReload || knifeAnim || nadeAnim) return; player.flatWeapon = w; swapT = 0.35; S.pouch(); }
+function startDReload() { if (dReload || (dg.mag && dg.mag.count >= 7 && dg.chamber)) return; if (player.dmags <= 0) { S.deny(); msg('Out of Deagle mags!', 1.2); return; } dReload = { t: 0, ev: {} }; }
+function flatDeagle(dt, moving) {
+  gun.g.visible = false; laser.beam.visible = laser.dot.visible = false; flashSpot.intensity = 0;
+  adsT += ((ads && !dReload && swapT <= 0 ? 1 : 0) - adsT) * Math.min(1, dt * 10); swapT = Math.max(0, swapT - dt);
+  const bob = moving ? Math.sin(performance.now() * 0.011) * 0.012 : Math.sin(performance.now() * 0.002) * 0.003;
+  const hip = new V3(0.12, -0.17 + bob, -0.33), aim = new V3(0, 0, -0.26).sub(DG.eye); const local = hip.lerp(aim, smooth(adsT)); local.y -= swapT * 0.5;
+  const rot = new THREE.Euler(dg.kick * 0.35 - swapT * 1.2, 0, 0); dg.kick = Math.max(0, dg.kick - dt * 9); dg.slideT -= dt; local.z += dg.kick * 0.04;
+  let lp = null, lq = null;
+  if (dReload) { const t = (dReload.t += dt), T = 1.45, tilt = smooth(clamp(t / 0.25, 0, 1)) * smooth(clamp((T - t) / 0.3, 0, 1)); rot.z -= tilt * 0.45; rot.x += tilt * 0.25; local.x += tilt * 0.02;
+    const ev = dReload.ev, once = (n, at, fn) => { if (t >= at && !ev[n]) { ev[n] = 1; fn(); } };
+    once('out', 0.22, () => { if (dg.mag) dMagOut(true); }); once('take', 0.62, () => { player.dmags--; S.pouch(); dReload.mesh = makeDMagMesh(); scene.add(dReload.mesh); }); once('in', 1.02, () => { scene.remove(dReload.mesh); dReload.mesh = null; dMagIn({ count: 7 }); });
+    if (t > T) { if (dReload.mesh) scene.remove(dReload.mesh); dReload = null; } }
+  dg.g.position.copy(camera.localToWorld(local.clone())); dg.g.quaternion.copy(camera.getWorldQuaternion(new QT())).multiply(new QT().setFromEuler(rot)); dg.g.updateMatrixWorld(true);
+  dg.slide.position.z = (dg.locked || dg.slideT > 0 ? 0.05 : 0); dg.magMesh.visible = !!dg.mag;
+  const cup = cupPose(-1);
+  if (dReload) { const t = dReload.t, well = dgW(DG.well.clone().add(new V3(0, -0.07, 0))), pocket = camera.localToWorld(new V3(0.2, -0.64, 0.03)); const keys = [[0, cup.pos], [0.2, well], [0.26, well], [0.62, pocket], [0.68, pocket], [1.02, dgW(DG.well)], [1.1, well], [1.4, cup.pos]];
+    let a = keys[0], b = keys[keys.length - 1]; for (let i = 0; i < keys.length - 1; i++) if (t >= keys[i][0] && t <= keys[i + 1][0]) { a = keys[i]; b = keys[i + 1]; break; } lp = a[1].clone().lerp(b[1], smooth(clamp((t - a[0]) / Math.max(0.001, b[0] - a[0]), 0, 1))); lq = camera.getWorldQuaternion(new QT()).multiply(new QT().setFromEuler(new THREE.Euler(-0.6, 0, 0.6)));
+    if (dReload?.mesh) { dReload.mesh.position.copy(lp).add(new V3(0, 0.07, 0).applyQuaternion(dg.g.quaternion)); dReload.mesh.quaternion.copy(dg.g.quaternion).multiply(new QT().setFromAxisAngle(new V3(1, 0, 0), -0.25)); }
+    fhand[0].glove.scale.set(-1, 1, 1); } else { lp = cup.pos; lq = cup.quat; fhand[0].glove.scale.set(...cup.scale); }
+  const P = dgPose(DG.grip, 1, -0.25); fhand[1].glove.position.copy(P.pos); fhand[1].glove.quaternion.copy(P.quat); fhand[1].glove.scale.set(...P.scale); setCurl(fhand[1].glove, 1);
+  fhand[0].glove.position.copy(lp); fhand[0].glove.quaternion.copy(lq); setCurl(fhand[0].glove, 0.9);
+  const sh = s => camera.localToWorld(new V3(s * 0.21, -0.3, 0.16)), pole = s => camera.localToWorld(new V3(s * 0.6, -0.9, 0.2));
+  solveArm(arms[1], sh(1), wristOf(P.pos, P.quat), pole(1)); solveArm(arms[0], sh(-1), wristOf(lp, lq), pole(-1)); for (const a of arms) a.up.visible = a.fo.visible = a.cuff.visible = true;
+  poseKnife(null);
+  if (firing && !lastFiring && !dReload && swapT <= 0) fireDeagle(true); lastFiring = firing;
+  if (!dg.chamber && !dReload && firing && player.dmags > 0 && (!dg.mag || dg.mag.count === 0)) startDReload();
+  camera.fov += ((adsT > 0.5 ? 60 : 75) - camera.fov) * Math.min(1, dt * 10); camera.updateProjectionMatrix();
+  $('ammoH').textContent = `DEAGLE ${dg.mag ? dg.mag.count + (dg.chamber ? 1 : 0) : (dg.chamber ? 1 : 0)} / ${player.dmags} mags\nGRENADES ${player.grenades}`;
+  $('stats').textContent = `HEALTH ${player.hp | 0}\nSECTOR ${player.sector}\n${objective}`;
+}
 
 /* ================= ENEMIES ================= */
 const enemies = [];
@@ -977,7 +1094,7 @@ function buildEnemyModel(type, e) {
     for (const sd of [-1, 1]) add(j.sh[sd > 0 ? 1 : 0].up, M(rbox(0.18, 0.12, 0.18, 0.03), 0x40454c, 0, -0.03, 0)); for (const L of j.leg) add(L.th, M(rbox(0.18, 0.2, 0.06, 0.02), 0x40454c, 0, -0.2, -0.09)); }
   // weapon
   let wpn; const wg = new THREE.Group();
-  if (type === 'guard') { wg.add(M(rbox(0.03, 0.035, 0.17, 0.005), 0x1d1e20, 0, 0.0, -0.06), M(rbox(0.028, 0.09, 0.04, 0.006), 0x1d1e20, 0, -0.05, 0.0, { rx: 0.2 })); wg.userData.muz = new V3(0, 0.005, -0.15); }
+  if (type === 'guard') { wg.add(M(rbox(0.03, 0.035, 0.17, 0.005), 0x1d1e20, 0, 0.0, -0.06), M(rbox(0.028, 0.09, 0.04, 0.006), 0x1d1e20, 0, -0.05, 0.02, { rx: -0.2 })); wg.userData.muz = new V3(0, 0.005, -0.15); }
   else if (type === 'rusher') { wg.add(M(rbox(0.03, 0.12, 0.035, 0.008), 0x3a2414, 0, 0, 0)); const bl = M(BOXG, 0xc8ccd2, 0, 0.3, 0, { s: [0.006, 0.5, 0.06] }); wg.add(bl); wg.add(M(BOXG, 0xc8ccd2, 0, 0.56, -0.015, { s: [0.006, 0.05, 0.03], rx: 0.6 })); wg.rotation.x = -Math.PI / 2 - 0.2; }
   else if (type === 'heavy') { wg.add(M(rbox(0.09, 0.11, 0.5, 0.012), 0x1d1e20, 0, 0, -0.1), M(CYLG, 0x2a2c30, 0, 0.0, -0.5, { s: [0.02, 0.32, 0.02], rx: Math.PI / 2 }), M(CYLG, 0x2a2c30, 0, -0.1, 0.0, { s: [0.09, 0.07, 0.09], rz: Math.PI / 2 }), M(BOXG, 0x1d1e20, 0, -0.08, 0.15, { s: [0.04, 0.12, 0.05] })); wg.userData.muz = new V3(0, 0, -0.67); }
   else { const sup = type === 'elite'; wg.add(M(rbox(0.045, 0.06, 0.42, 0.008), 0x1a1b1d, 0, 0, -0.08), M(CYLG, 0x232527, 0, 0.01, sup ? -0.42 : -0.38, { s: [sup ? 0.022 : 0.01, sup ? 0.2 : 0.14, sup ? 0.022 : 0.01], rx: Math.PI / 2 }), M(rbox(0.035, 0.12, 0.05, 0.006), 0x1a1b1d, 0, -0.08, -0.08, { rx: -0.25 }), M(BOXG, 0x1a1b1d, 0, -0.03, 0.18, { s: [0.04, 0.08, 0.16] }));
@@ -1067,7 +1184,7 @@ function killEnemy(e, impulse, at, part) {
   e.root.visible = false; e.wpn && scene.attach(e.wpn);
   if (e.wpn) { const wb = new CANNON.Body({ mass: 3, material: defMat, collisionFilterGroup: G_RAG, collisionFilterMask: G_STATIC }); const bb = new THREE.Box3().setFromObject(e.wpn), sz = bb.getSize(new V3()); wb.addShape(new CANNON.Box(new CANNON.Vec3(Math.max(0.02, sz.x / 2), Math.max(0.02, sz.y / 2), Math.max(0.02, sz.z / 2)))); wb.position.copy(cv(e.wpn.position)); wb.quaternion.set(e.wpn.quaternion.x, e.wpn.quaternion.y, e.wpn.quaternion.z, e.wpn.quaternion.w); wb.velocity.set(impulse.x * 0.3, 1, impulse.z * 0.3); world.addBody(wb); rag.parts.push({ b: wb, m: e.wpn }); }
   rags.push(rag); while (rags.filter(r => !r.frozen).length > 7) freezeRag(rags.find(r => !r.frozen));
-  if (e.keycard) addPickup('card', e.pos.clone().add(new V3(0.3, 0, 0.2))); else { const r = Math.random(); if (r < 0.55) addPickup('mag', e.pos.clone().add(new V3(rnd(-0.4, 0.4), 0, rnd(-0.4, 0.4)))); else if (r < 0.7) addPickup('grenade', e.pos.clone()); }
+  if (e.keycard) addPickup('card', e.pos.clone().add(new V3(0.3, 0, 0.2))); else { const r = Math.random(); if (r < 0.5) addPickup('mag', e.pos.clone().add(new V3(rnd(-0.4, 0.4), 0, rnd(-0.4, 0.4)))); else if (r < 0.62) addPickup('grenade', e.pos.clone()); else if (r < 0.82) addPickup('dmag', e.pos.clone().add(new V3(rnd(-0.4, 0.4), 0, rnd(-0.4, 0.4)))); }
   onEnemyKilled(e);
 }
 function freezeRag(r) { if (!r || r.frozen) return; r.frozen = true; for (const c of r.cons) world.removeConstraint(c); for (const p of r.parts) world.removeBody(p.b); }
@@ -1174,10 +1291,10 @@ const bestKey = 'blacksite-best'; let best = 0; try { best = +localStorage.getIt
 function clearWorld() {
   for (const e of enemies.slice()) e.remove(); clearRags(true); for (const it of loose.slice()) removeLoose(it); grenades.length = 0; for (const p of pickups) scene.remove(p.g); pickups.length = 0; clearDecals(); parts.length = 0; casings.length = 0;
   for (const ch of chunks.slice()) ch.dispose(); rooms = []; outside = null; briefcase && scene.remove(briefcase); briefcase = null;
-  for (const h of hands) { heldMesh(h, null); h.held = null; h.support = false; h.manip = null; } knife.hand = null; gun.hand = null; gun.support = null;
+  for (const h of hands) { heldMesh(h, null); h.held = null; h.support = false; h.manip = null; h.dsupport = false; h.dmanip = null; } knife.hand = null; gun.hand = null; gun.support = null;
 }
 function startGame() {
-  clearWorld(); Object.assign(player, { hp: 100, mags: 6, grenades: 3, hurtT: -99, dead: false, keycard: false, kills: 0, sector: 0 }); gun.mag = { count: 30 }; gun.chamber = true; gun.chargeT = 0; reload = knifeAnim = nadeAnim = null; diff = 1; lastTurn = null; recent = []; roomCount = 0; roomRng = mulberry32((Math.random() * 1e9) | 0);
+  clearWorld(); Object.assign(player, { dmags: 4, flatWeapon: 'gun', hp: 100, mags: 6, grenades: 3, hurtT: -99, dead: false, keycard: false, kills: 0, sector: 0 }); gun.mag = { count: 30 }; gun.chamber = true; gun.chargeT = 0; dg.mag = { count: 7 }; dg.chamber = true; dg.locked = false; dg.hand = null; dg.support = null; dg.manipT = 0; dReload = null; swapT = 0; reload = knifeAnim = nadeAnim = null; diff = 1; lastTurn = null; recent = []; roomCount = 0; roomRng = mulberry32((Math.random() * 1e9) | 0);
   outside = buildOutside(); activeChunk = outside; sky.visible = true; scene.fog.density = 0.02;
   const kc = Math.random() < 0.5 ? 0 : 1; outside.guardPaths.forEach((path, i) => new Enemy('guard', path[0].clone(), outside, { patrol: path, flashlight: true, keycard: false }));
   const sp = outside.spawnPlayer; player.yaw = 0; player.pitch = 0; player.bodyYaw = 0; rig.rotation.set(0, 0, 0);
@@ -1240,7 +1357,7 @@ function updatePickups(dt) {
   const head = camera.getWorldPosition(new V3());
   for (const p of pickups.slice()) { p.t += dt; p.g.children[0].rotation.y += dt * 1.5; p.g.children[0].position.y = (p.kind === 'card' ? 0.12 : 0.1) + Math.sin(p.t * 3) * 0.03;
     if (Math.hypot(p.g.position.x - head.x, p.g.position.z - head.z) < 0.85) {
-      if (p.kind === 'mag') { if (player.mags >= 12) continue; player.mags++; msg('+1 MAG', 0.8); } else if (p.kind === 'grenade') { if (player.grenades >= 5) continue; player.grenades++; msg('+1 GRENADE', 0.8); } else { player.keycard = true; objective = 'Use the keycard on the door'; msg('Got the KEYCARD.\nHold it to the reader by the big door.', 3.5); }
+      if (p.kind === 'mag') { if (player.mags >= 12) continue; player.mags++; msg('+1 AK MAG', 0.8); } else if (p.kind === 'dmag') { if (player.dmags >= 8) continue; player.dmags++; msg('+1 DEAGLE MAG', 0.8); } else if (p.kind === 'grenade') { if (player.grenades >= 5) continue; player.grenades++; msg('+1 GRENADE', 0.8); } else { player.keycard = true; objective = 'Use the keycard on the door'; msg('Got the KEYCARD.\nHold it to the reader by the big door.', 3.5); }
       S.pickup(); scene.remove(p.g); pickups.splice(pickups.indexOf(p), 1); } }
 }
 function updateBriefcase(dt) {
@@ -1316,7 +1433,7 @@ function frame() {
     for (const d of doors()) d.update(dt, h1); updateProgress(dt); updatePickups(dt); updateBriefcase(dt);
     const tnow = now / 1000; if (!player.dead && tnow - player.hurtT > 4.5 && player.hp < 100) player.hp = Math.min(100, player.hp + 14 * dt);
     if (player.hp < 30 && !player.dead) { heartT -= dt; if (heartT < 0) { heartT = 0.9; S.heart(); } }
-    godT -= dt; gun.cool -= dt;
+    godT -= dt; gun.cool -= dt; dg.cool -= dt;
   } else if (gameState === 'paused' && vr) updateVRMenuOnly(dt);
   else if (gameState === 'menu' && !vr) { menuSpin += dt * 0.05; if (!outside) { /* backdrop */ } camera.position.set(0, 1.7, 0); rig.position.set(Math.sin(menuSpin) * 3, 0, 14); rig.rotation.set(0, menuSpin * 0.3, 0); camera.rotation.set(0.05, 0, 0); }
   if (gameState !== 'play' && vr && gameState !== 'paused') updateVRMenuOnly(dt);
@@ -1329,7 +1446,7 @@ function frame() {
   hurtQuad.material.opacity = vr ? hv : 0; $('hurt').style.opacity = vr ? 0 : hv;
   if (vrMsg.t > 0) { vrMsg.t -= dt; vrMsg.m.visible = vr; vrMsg.m.material.opacity = Math.min(1, vrMsg.t * 2); } else vrMsg.m.visible = false;
   lightT -= dt; if (lightT <= 0) { lightT = 0.2; assignLights(); }
-  const showGear = gameState !== 'menu' || vr; body.visible = showGear && (vr || true); gun.g.visible = showGear; knife.mesh.visible = showGear; arms.forEach(a => { if (!showGear) a.up.visible = a.fo.visible = a.cuff.visible = false; }); fhand.forEach(f => f.glove.visible = showGear && !vr); hands.forEach(h => { if (!vr) h.glove.visible = false; }); watch.m.visible = watch.frame.visible = vr && showGear && watch.m.visible;
+  const showGear = gameState !== 'menu' || vr; body.visible = showGear && (vr || true); gun.g.visible = showGear && (vr || player.flatWeapon !== 'deagle'); dg.g.visible = showGear; knife.mesh.visible = showGear; arms.forEach(a => { if (!showGear) a.up.visible = a.fo.visible = a.cuff.visible = false; }); fhand.forEach(f => f.glove.visible = showGear && !vr); hands.forEach(h => { if (!vr) h.glove.visible = false; }); watch.m.visible = watch.frame.visible = vr && showGear && watch.m.visible;
   if (showGear) renderScope();
   renderer.render(scene, camera);
 }
@@ -1338,7 +1455,7 @@ applySet(); $('best').textContent = best ? `Deepest sector reached: ${best}` : '
 // menu backdrop: build the compound behind the title screen
 outside = buildOutside(); activeChunk = outside; outside.guardPaths.forEach((path, i) => new Enemy('guard', path[0].clone(), outside, { patrol: path, flashlight: true }));
 renderer.setAnimationLoop(frame);
-window.__bs = { pocketW, nadeW, sheathW, cardW, GUN, gunW, readerPos, knife, player, gun, enemies, rooms: () => rooms, chunks, startGame, useKeycard, nextRoom, enterRoom, rig, camera, hands, ETYPES, Enemy, damageEnemy, explode, input, SET, applySet, get state() { return gameState; }, get frames() { return frames; }, get active() { return activeChunk; }, startReload, knifeHit, pickups, roomCleared, buildRoom, ROOM_KEYS, renderer, set firing(v) { firing = v; }, set ads(v) { ads = v; }, throwGrenade, fireGun, loose };
+window.__bs = { dg, DG, dgW, holsterW, rpocketW, switchWeapon, startDReload, pocketW, nadeW, sheathW, cardW, GUN, gunW, readerPos, knife, player, gun, enemies, rooms: () => rooms, chunks, startGame, useKeycard, nextRoom, enterRoom, rig, camera, hands, ETYPES, Enemy, damageEnemy, explode, input, SET, applySet, get state() { return gameState; }, get frames() { return frames; }, get active() { return activeChunk; }, startReload, knifeHit, pickups, roomCleared, buildRoom, ROOM_KEYS, renderer, set firing(v) { firing = v; }, set ads(v) { ads = v; }, throwGrenade, fireGun, loose };
 </script>
 </body>
 </html>
