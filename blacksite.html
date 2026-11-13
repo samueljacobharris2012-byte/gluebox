@@ -480,7 +480,7 @@ const bp = {};
   bp.legs = [-1, 1].map(s => { const th = new THREE.Group(), thM = new THREE.Mesh(new RoundedBoxGeometry(0.15, 0.44, 0.16, 2, 0.04), pants); thM.position.y = -0.22; th.add(thM);
     const sh = new THREE.Group(); sh.position.y = -0.44; th.add(sh); const shM = new THREE.Mesh(new RoundedBoxGeometry(0.13, 0.42, 0.14, 2, 0.035), pants); shM.position.y = -0.21; sh.add(shM);
     const boot = new THREE.Mesh(new RoundedBoxGeometry(0.13, 0.11, 0.27, 2, 0.03), bootM); boot.position.set(0, -0.41, -0.05); sh.add(boot);
-    { const pocket = new THREE.Mesh(new RoundedBoxGeometry(0.06, 0.16, 0.13, 2, 0.015), vestM); pocket.position.set(s * 0.085, -0.22, 0); th.add(pocket); const tab = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.06, 0.1), mat(s < 0 ? 0x8a7a3a : 0x9a9aa0)); tab.position.set(s * 0.075, -0.13, 0); th.add(tab); }
+    { const pocket = new THREE.Mesh(new RoundedBoxGeometry(0.06, 0.16, 0.13, 2, 0.015), vestM); pocket.position.set(s * 0.085, -0.22, 0); th.add(pocket); bp[s < 0 ? 'pocketL' : 'pocketR'] = pocket; const tab = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.06, 0.1), mat(s < 0 ? 0x8a7a3a : 0x9a9aa0)); tab.position.set(s * 0.075, -0.13, 0); th.add(tab); }
     body.add(th); return { th, sh, side: s }; });
 }
 // arms: upper + fore, solved with 2-bone IK every frame
@@ -723,7 +723,7 @@ function updateBody(dt, moving) {
   for (const L of bp.legs) { L.th.position.set(L.side * 0.085, hip - 0.06, 0.02); const sw = moving ? Math.sin(phase + (L.side > 0 ? Math.PI : 0)) * 0.45 : 0; L.th.rotation.x = -crouch * 1.1 + sw; L.sh.rotation.x = crouch * 1.9 + (moving ? Math.max(0, -Math.sin(phase + (L.side > 0 ? Math.PI : 0))) * 0.6 : 0); L.th.scale.set(1, k, 1); }
   bp.cardSlot.visible = player.keycard && !hands.some(h => h.held === 'card');
 }
-const pocketW = () => bodyPt(-0.17, Math.max(0.4, headY() * 0.53) - 0.13, -0.03);
+const pocketW = () => bp.pocketL.getWorldPosition(new V3());
 const nadeW = () => bp.nade.getWorldPosition(new V3());
 const sheathW = () => bp.sheath.getWorldPosition(new V3());
 const cardW = () => bp.cardSlot.getWorldPosition(new V3());
@@ -789,6 +789,8 @@ function updateVR(dt) {
     const trigV = gp.buttons[0]?.value || 0, trig = trigV > 0.55, sqV = gp.buttons[1]?.value || 0, sq = sqV > 0.5, bA = !!gp.buttons[4]?.pressed, bB = !!gp.buttons[5]?.pressed, other = hands[1 - hi];
     if (bB && !h.prev.bB) toggleVRMenu();
     if (vrMenuOpen()) { vrMenuHand(h, trig && !h.prev.trig); h.prev = { trig, sq, bA, bB }; poseGloves(h, sqV); return; }
+    // ---- a little buzz when your empty hand is over something you can grab
+    if (!h.held && !h.support) { const zones = [[pocketW(), 0.2], [rpocketW(), 0.2], [holsterW(), 0.14], [nadeW(), 0.15], [sheathW(), 0.14]]; const over = zones.some(([p, r]) => p.distanceTo(h.pos) < r); if (over && !h.hover) pulse(h, 0.25, 18); h.hover = over; }
     // ---- grip pressed
     if (sq && !h.prev.sq && !h.held && !h.support && !h.manip && !h.dsupport && !h.dmanip) {
       let did = true;
@@ -797,7 +799,7 @@ function updateVR(dt) {
       else if (other.held === 'gun' && gunW(GUN.charge).distanceTo(h.pos) < 0.08) { h.manip = { start: h.pos.clone() }; pulse(h, 0.4, 20); }
       else if (other.held === 'gun' && gun.mag && gunW(GUN.well.clone().add(new V3(0, -0.09, -0.01))).distanceTo(h.pos) < 0.08) { h.magData = magOut(false); h.held = 'mag'; pulse(h, 0.5, 30); }
       else if (other.held === 'gun' && (gunW(GUN.fore).distanceTo(h.pos) < 0.13 || gunW(new V3(0, 0, -0.32)).distanceTo(h.pos) < 0.12)) { h.support = true; gun.support = h; pulse(h, 0.4, 20); }
-      else if (pocketW().distanceTo(h.pos) < 0.18) { if (player.mags > 0) { player.mags--; h.held = 'mag'; h.magData = { count: 30 }; S.pouch(); pulse(h, 0.5, 30); } else { S.deny(); msg('Out of mags!\nEnemies drop them', 1.5); } }
+      else if (pocketW().distanceTo(h.pos) < 0.2) { if (player.mags > 0) { player.mags--; h.held = 'mag'; h.magData = { count: 30 }; S.pouch(); pulse(h, 0.5, 30); } else { S.deny(); msg('Out of mags!\nEnemies drop them', 1.5); } }
       else if (nadeW().distanceTo(h.pos) < 0.15) { if (player.grenades > 0) { player.grenades--; h.held = 'grenade'; h.gren = { pinOut: false, mesh: grenadeMesh(), fuse: -1 }; S.pouch(); pulse(h, 0.5, 30); } else S.deny(); }
       else if (!knife.hand && sheathW().distanceTo(h.pos) < 0.14) { knife.hand = h; h.held = 'knife'; S.knife(); pulse(h, 0.4, 20); }
       else if (player.keycard && cardW().distanceTo(h.pos) < 0.12) { h.held = 'card'; pulse(h, 0.3, 20); }
@@ -952,7 +954,7 @@ function buildDMag() { const g = new THREE.Group(); g.add(M(rbox(0.024, 0.118, 0
 const dgW = l => dg.g.localToWorld(l.clone());
 const dgFwd = () => new V3(0, 0, -1).applyQuaternion(dg.g.quaternion);
 const holsterW = () => bp.holster.getWorldPosition(new V3()).add(new V3(0, 0.1, 0));
-const rpocketW = () => bodyPt(0.17, Math.max(0.4, headY() * 0.53) - 0.13, -0.03);
+const rpocketW = () => bp.pocketR.getWorldPosition(new V3());
 function makeDMagMesh() { const m = buildDMag(); noRay(m); return m; }
 function dgPose(local, side, tilt) { const q = dg.g.quaternion.clone().multiply(new QT().setFromAxisAngle(new V3(1, 0, 0), tilt)).multiply(new QT().setFromAxisAngle(new V3(0, 0, 1), -Math.PI / 2));
   return { pos: dgW(local.clone().add(new V3(side * 0.03, 0.012, 0.012))), quat: q, scale: side > 0 ? [1, 1, 1] : [1, -1, 1] }; }
@@ -983,7 +985,7 @@ function vrDeagleGrip(h, other) {
     if (dg.mag && dgW(DG.well).distanceTo(h.pos) < 0.07) { h.magData = dMagOut(false); h.held = 'dmag'; pulse(h, 0.5, 30); return true; }
     if (dgW(DG.grip).distanceTo(h.pos) < 0.12) { h.dsupport = true; dg.support = h; pulse(h, 0.3, 20); return true; } }
   if (!dg.hand && holsterW().distanceTo(h.pos) < 0.14) { dg.hand = h; h.held = 'deagle'; S.pouch(); pulse(h, 0.6, 30); return true; }
-  if (rpocketW().distanceTo(h.pos) < 0.17) { if (player.dmags > 0) { player.dmags--; h.held = 'dmag'; h.magData = { count: 7 }; S.pouch(); pulse(h, 0.5, 30); } else { S.deny(); msg('Out of Deagle mags', 1.5); } return true; }
+  if (rpocketW().distanceTo(h.pos) < 0.2) { if (player.dmags > 0) { player.dmags--; h.held = 'dmag'; h.magData = { count: 7 }; S.pouch(); pulse(h, 0.5, 30); } else { S.deny(); msg('Out of Deagle mags', 1.5); } return true; }
   return false;
 }
 function vrDeagleRelease(h) {
