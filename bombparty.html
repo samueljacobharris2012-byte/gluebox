@@ -360,7 +360,7 @@ function audioInit() {
     AU.master = AU.ctx.createGain(); AU.master.gain.value = SAVE.vol / 100 * 0.6;
     const comp = AU.ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 6;
     AU.master.connect(comp); comp.connect(AU.ctx.destination);
-    AU.musicGain = AU.ctx.createGain(); AU.musicGain.gain.value = 0.32; AU.musicGain.connect(AU.master);
+    AU.musicGain = AU.ctx.createGain(); AU.musicGain.gain.value = 0.5; AU.musicGain.connect(AU.master);
     const len = AU.ctx.sampleRate * 1.5; const b = AU.ctx.createBuffer(1, len, AU.ctx.sampleRate); const d = b.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1; AU.noise = b;
     musicStart();
@@ -417,7 +417,7 @@ function sfx(name, vol = 1) {
   }
 }
 // ---- music: simple sequencer
-const MUS = { step: 0, next: 0, bpm: 124, timer: null };
+const MUS = { step: 0, next: 0, bpm: 132, timer: null };
 function musicStart() {
   if (MUS.timer) return; MUS.next = AU.ctx.currentTime + 0.1;
   MUS.timer = setInterval(() => {
@@ -426,19 +426,39 @@ function musicStart() {
     while (MUS.next < AU.ctx.currentTime + 0.15) { if (SAVE.music) musicStep(MUS.step, MUS.next - AU.ctx.currentTime); MUS.step++; MUS.next += spb; }
   }, 50);
 }
-const BASS = [0, 0, 12, 0, 0, 0, 10, 0, 7, 0, 7, 12, 5, 0, 3, 0];
-const ROOTS = [45, 45, 41, 43];
+// energetic chiptune-rock loop: A minor, F, C, G
+const ROOTS = [45, 41, 48, 43];
+const CHORD = [[0, 3, 7], [0, 4, 7], [0, 4, 7], [0, 4, 7]];
+// 2-bar hook in semitones above the chord root (-1 = rest)
+const HOOK = [12, -1, 15, 12, 19, -1, 17, 15, 12, -1, 10, 12, 15, -1, 12, -1, 7, -1, 10, 12, 15, -1, 19, 17, 15, -1, 12, 10, 12, -1, -1, -1];
+const HOOK2 = [24, -1, 22, 19, 24, -1, 22, 19, 22, -1, 19, 17, 19, -1, 15, -1, 12, -1, 15, 17, 19, -1, 22, 24, 22, -1, 19, 17, 19, -1, -1, -1];
+const mtof = n => 440 * Math.pow(2, (n - 69) / 12);
 function musicStep(s, t0) {
-  const inGame = G.phase === 'play';
-  const disco = G.ev && EVENTS[G.ev.i].id === 'disco';
-  const st = s % 16, bar = Math.floor(s / 16) % 4, d = AU.musicGain;
-  const kick = st % 4 === 0; if (kick) { tone('sine', 150, 40, 0.16, 0.6, t0, d); }
-  if (inGame || disco) {
-    if (st % 4 === 2) noise(0.04, 0.12, 'highpass', 8000, 0, t0, 1, d);
-    if (st === 4 || st === 12) noise(0.14, 0.3, 'bandpass', 1800, 900, t0, 0.8, d);
-  } else if (st % 8 === 4) noise(0.05, 0.08, 'highpass', 7000, 0, t0, 1, d);
-  const n = BASS[st]; if (n !== 0 || st === 0) { const f = 440 * Math.pow(2, (ROOTS[bar] + n - 69) / 12); tone('sawtooth', f, f, 0.12, 0.09, t0, d); tone('square', f / 2, f / 2, 0.14, 0.07, t0, d); }
-  if (st % 8 === 0 && (inGame || disco)) { const f = 440 * Math.pow(2, (ROOTS[bar] + 24 + [0, 7, 3, 10][Math.floor(st / 4) % 4] - 69) / 12); tone('triangle', f, f, 0.25, 0.05, t0, d); }
+  const inGame = G.phase === 'play' || G.phase === 'count' || G.phase === 'roundEnd';
+  const evid = G.ev ? EVENTS[G.ev.i].id : null;
+  const lvl = inGame ? G.level : 0;
+  MUS.bpm = !inGame ? 132 : evid === 'disco' ? 128 : Math.min(172, 150 + lvl * 2);
+  const st = s % 16, bar = Math.floor(s / 16) % 4, phrase = Math.floor(s / 64) % 2, d = AU.musicGain;
+  const root = ROOTS[bar], ch = CHORD[bar];
+  // drums
+  if (st % 4 === 0 || (inGame && st === 14)) { tone('sine', 165, 42, 0.18, 0.75, t0, d); noise(0.02, 0.25, 'highpass', 3000, 0, t0, 1, d); }
+  if (st === 4 || st === 12) { noise(0.16, 0.42, 'bandpass', 1900, 1100, t0, 0.9, d); tone('triangle', 220, 150, 0.08, 0.18, t0, d); }
+  if (inGame && (st === 15 && bar === 3)) for (let k = 0; k < 4; k++) noise(0.06, 0.25, 'bandpass', 1600 + k * 300, 900, t0 + k * 0.035, 1, d);
+  if (inGame) { noise(0.03, st % 2 ? 0.07 : 0.12, 'highpass', 9000, 0, t0, 1, d); if (st % 4 === 2) noise(0.12, 0.09, 'highpass', 7000, 0, t0, 1, d); }
+  else if (st % 2 === 0) noise(0.03, 0.06, 'highpass', 9000, 0, t0, 1, d);
+  // pumping 8th-note bass
+  if (st % 2 === 0) { const n = root - 12 + (st % 4 === 2 ? 12 : 0); tone('sawtooth', mtof(n), mtof(n), 0.13, 0.13, t0, d); tone('square', mtof(n - 12), mtof(n - 12), 0.12, 0.09, t0, d); }
+  // power chord stabs
+  if (inGame && (st === 0 || st === 6 || st === 10)) for (const iv of [0, 7, 12]) tone('sawtooth', mtof(root + 12 + iv), mtof(root + 12 + iv), 0.16, 0.035, t0, d);
+  // arpeggio (gets busier as the waves go up)
+  if (inGame && lvl >= 2 || evid === 'disco') { const n = root + 24 + ch[st % 3] + (st % 6 >= 3 ? 12 : 0); tone('square', mtof(n), mtof(n), 0.06, 0.03, t0, d); }
+  // lead hook
+  if (inGame) {
+    const hk = (lvl >= 4 && phrase === 1 ? HOOK2 : HOOK)[s % 32];
+    if (hk >= 0) { const f = mtof(57 + hk); tone('square', f, f, 0.14, 0.07, t0, d); tone('sawtooth', f * 1.005, f * 1.005, 0.14, 0.035, t0, d); }
+  } else if (st % 4 === 0) { const n = root + 24 + ch[(st / 4) % 3]; tone('triangle', mtof(n), mtof(n), 0.3, 0.06, t0, d); }
+  // riser at the end of every 4 bars in game
+  if (inGame && bar === 3 && st === 8) noise(0.5, 0.12, 'bandpass', 600, 6000, t0, 2, d);
 }
 window.addEventListener('pointerdown', audioInit); window.addEventListener('keydown', audioInit);
 
