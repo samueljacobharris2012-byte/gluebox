@@ -266,6 +266,17 @@ input[type=range]{width:160px}
   </div>
 </div>
 
+<script>
+// startup watchdog: show the real reason if the game fails to start
+(function () {
+  var shown = false;
+  function show(msg) { var el = document.getElementById('loading'); if (!el || shown) return; shown = true; el.style.cssText += ';flex-direction:column;gap:14px;padding:24px;text-align:center;font-size:22px'; el.innerHTML = '<div>Bomb Party could not start</div><div style="font-family:Nunito,sans-serif;font-size:15px;max-width:560px;opacity:.85;user-select:text;-webkit-user-select:text">' + String(msg).replace(/[<>&]/g, '') + '</div><button onclick="location.reload()" style="font:inherit;font-size:18px;padding:10px 20px;border-radius:12px;border:0;background:#ff5a36;color:#fff">Try again</button>'; }
+  window.bpFail = show;
+  window.addEventListener('error', function (e) { if (document.getElementById('loading')) show((e.message || 'Script error') + (e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : '') + ' | ' + navigator.userAgent); });
+  window.addEventListener('unhandledrejection', function (e) { if (document.getElementById('loading')) show('Error: ' + (e.reason && e.reason.message || e.reason) + ' | ' + navigator.userAgent); });
+  setTimeout(function () { if (document.getElementById('loading')) show('It is taking a long time. The 3D library (from cdn.jsdelivr.net) may be blocked or slow on this network, or this browser is too old. | ' + navigator.userAgent); }, 20000);
+})();
+</script>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 window.THREE = THREE;
@@ -292,12 +303,14 @@ function segDist(px, pz, ax, az, bx, bz) {
 // ===================== SETTINGS =====================
 const SAVE = (() => { try { return JSON.parse(localStorage.getItem('bombparty') || '{}'); } catch (e) { return {}; } })();
 function save() { try { localStorage.setItem('bombparty', JSON.stringify(SAVE)); } catch (e) { } }
-SAVE.vol ??= 70; SAVE.music ??= true; SAVE.quality ??= (isTouch ? 'low' : 'high'); SAVE.shake ??= true;
-SAVE.name ??= 'PLAYER'; SAVE.col ??= 0; SAVE.hat ??= 1; SAVE.best ??= {}; SAVE.events ??= true;
+SAVE.vol = SAVE.vol ?? 70; SAVE.music = SAVE.music ?? true; SAVE.quality = SAVE.quality ?? (isTouch ? 'low' : 'high'); SAVE.shake = SAVE.shake ?? true;
+SAVE.name = SAVE.name ?? 'PLAYER'; SAVE.col = SAVE.col ?? 0; SAVE.hat = SAVE.hat ?? 1; SAVE.best = SAVE.best ?? {}; SAVE.events = SAVE.events ?? true;
 
 // ===================== RENDERER =====================
 const canvas = $('#c');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: SAVE.quality === 'high', powerPreference: 'high-performance' });
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias: SAVE.quality === 'high', powerPreference: 'high-performance' }); }
+catch (e) { try { renderer = new THREE.WebGLRenderer({ canvas }); } catch (e2) { window.bpFail && window.bpFail('This browser could not start 3D graphics (WebGL). Try Chrome, or turn on hardware acceleration in the browser settings.'); throw e2; } }
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, SAVE.quality === 'high' ? 2 : 1.25));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -2298,7 +2311,7 @@ function rawDev(dev) {
     o.mx = TOUCH.mx; o.mz = TOUCH.mz; o.jump = TOUCH.jump; o.dash = TOUCH.dash; o.swing = TOUCH.swing;
   } else if (dev === 'any') {
     const list = ['kbA', 'kbB', 'touch', ...PADS.map(p => 'gp' + p.index)].map(rawDev);
-    for (const r of list) { if (Math.hypot(r.mx, r.mz) > Math.hypot(o.mx, o.mz)) { o.mx = r.mx; o.mz = r.mz; } o.jump ||= r.jump; o.dash ||= r.dash; o.swing ||= r.swing; o.pause ||= r.pause; o.top ||= r.top; if (r.aim != null) o.aim = r.aim; }
+    for (const r of list) { if (Math.hypot(r.mx, r.mz) > Math.hypot(o.mx, o.mz)) { o.mx = r.mx; o.mz = r.mz; } o.jump = o.jump || r.jump; o.dash = o.dash || r.dash; o.swing = o.swing || r.swing; o.pause = o.pause || r.pause; o.top = o.top || r.top; if (r.aim != null) o.aim = r.aim; }
   }
   const l = Math.hypot(o.mx, o.mz); if (l > 1) { o.mx /= l; o.mz /= l; }
   return o;
@@ -2329,8 +2342,8 @@ function navEdges() {
   const r = { up: false, down: false, left: false, right: false, ok: false, back: false };
   const k = c => KEYS.has(c);
   const cur = { up: k('ArrowUp'), down: k('ArrowDown'), left: k('ArrowLeft'), right: k('ArrowRight'), ok: k('Enter'), back: k('Escape') };
-  if (!typing()) { cur.up ||= k('KeyW'); cur.down ||= k('KeyS'); cur.left ||= k('KeyA'); cur.right ||= k('KeyD'); cur.ok ||= k('Space'); }
-  for (const gp of PADS) { const ax = gp.axes[0] || 0, ay = gp.axes[1] || 0; cur.up ||= btn(gp, 12) || ay < -0.6; cur.down ||= btn(gp, 13) || ay > 0.6; cur.left ||= btn(gp, 14) || ax < -0.6; cur.right ||= btn(gp, 15) || ax > 0.6; cur.ok ||= btn(gp, 0); cur.back ||= btn(gp, 1); }
+  if (!typing()) { cur.up = cur.up || k('KeyW'); cur.down = cur.down || k('KeyS'); cur.left = cur.left || k('KeyA'); cur.right = cur.right || k('KeyD'); cur.ok = cur.ok || k('Space'); }
+  for (const gp of PADS) { const ax = gp.axes[0] || 0, ay = gp.axes[1] || 0; cur.up = cur.up || btn(gp, 12) || ay < -0.6; cur.down = cur.down || btn(gp, 13) || ay > 0.6; cur.left = cur.left || btn(gp, 14) || ax < -0.6; cur.right = cur.right || btn(gp, 15) || ax > 0.6; cur.ok = cur.ok || btn(gp, 0); cur.back = cur.back || btn(gp, 1); }
   const now = performance.now();
   for (const key in cur) {
     const was = NAV.prev[key];
