@@ -598,7 +598,7 @@ function tileColor(t) {
 function setTile(t, st, perm) {
   if (!t || t.st === st) return;
   const was = t.st; t.st = st;
-  if (st === 2) { t.fall = 0; t.rx = rand(-0.2, 0.2); t.rz = rand(-0.2, 0.2); TILE.anim.add(t); t.t = rand(14, 20); t.perm = perm ? 1 : 0; if (Math.random() < 0.5) part(GEO.box, t.base.getHex(), t.x + rand(-0.5, 0.5), 0.1, t.z + rand(-0.5, 0.5), rand(-2, 2), rand(2, 5), rand(-2, 2), 0.7, 0.3, 0.2, { g: 20, spin: 8 }); }
+  if (st === 2) { t.fall = 0; t.rx = rand(-0.2, 0.2); t.rz = rand(-0.2, 0.2); TILE.anim.add(t); t.t = rand(40, 55); t.perm = perm ? 1 : 0; if (Math.random() < 0.5) part(GEO.box, t.base.getHex(), t.x + rand(-0.5, 0.5), 0.1, t.z + rand(-0.5, 0.5), rand(-2, 2), rand(2, 5), rand(-2, 2), 0.7, 0.3, 0.2, { g: 20, spin: 8 }); }
   else if (st === 1) { t.rx = rand(-0.06, 0.06); t.rz = rand(-0.06, 0.06); }
   else if (st === 0 && was === 2) { t.rise = 0; t.fall = -1; TILE.anim.add(t); }
   tileMatrix(t); tileColor(t); TILE.mesh.instanceMatrix.needsUpdate = true; TILE.mesh.instanceColor.needsUpdate = true;
@@ -610,8 +610,8 @@ function breakFloor(x, z, r) {
   for (let i = ci - R; i <= ci + R; i++) for (let j = cj - R; j <= cj + R; j++) {
     const t = TILE.map.get(tkey(i, j)); if (!t || t.st === 2) continue;
     const d = dist(t.x, t.z, x, z);
-    if (d < r * 0.45 + 0.5) ch.push(t.idx * 3 + 2);
-    else if (d < r * 0.75 + 0.5) ch.push(t.idx * 3 + (t.st === 1 ? 2 : 1));
+    if (d < r * 0.7 + 0.7) ch.push(t.idx * 3 + 2);
+    else if (d < r * 1.05 + 0.8) ch.push(t.idx * 3 + (t.st === 1 ? 2 : 1));
   }
   if (ch.length) fx('tiles', ch);
 }
@@ -818,7 +818,7 @@ function animChar(c, p, dt, multi) {
   // hp bar
   const showHp = multi && alive;
   c.hpbg.visible = c.hpfg.visible = showHp;
-  if (showHp) { const k = clamp(p.hp / 100, 0, 1); c.hpfg.scale.x = 1.24 * k; c.hpfg.material.color.setHex(k > 0.5 ? 0x4ade80 : k > 0.25 ? 0xfacc15 : 0xef4444); }
+  if (showHp) { const k = clamp(p.hp / MAXHP, 0, 1); c.hpfg.scale.x = 1.24 * k; c.hpfg.material.color.setHex(k > 0.5 ? 0x4ade80 : k > 0.25 ? 0xfacc15 : 0xef4444); }
   c.tag.visible = multi;
   // blob shadow
   const onPlat = insidePlat(p.x, p.z);
@@ -1143,7 +1143,7 @@ const mi = id => MOBS.indexOf(id);
 
 // ===================== POWER-UPS =====================
 const POW = [
-  { id: 'health', name: 'Health Pack', col: 0xff4d6d, txt: '+', dur: 0, w: 10, desc: 'Heals 35 health.' },
+  { id: 'health', name: 'Health Pack', col: 0xff4d6d, txt: '+', dur: 0, w: 10, desc: 'Heals 25 health.' },
   { id: 'speed', name: 'Speed Boost', col: 0xffd23f, txt: '>>', dur: 7, w: 6, desc: 'Run way faster for 7 seconds.' },
   { id: 'jump', name: 'Jump Boost', col: 0x3ddc97, txt: '^', dur: 8, w: 5, desc: 'Jump super high for 8 seconds. Great for shockwaves.' },
   { id: 'shield', name: 'Shield', col: 0x4cc9f0, txt: 'O', dur: 15, w: 5, desc: 'Blocks the next hit.' },
@@ -1188,6 +1188,7 @@ const MODES = [
 
 // ===================== GAME STATE =====================
 const KINDS = ['bomb', 'hz', 'pk', 'mob'];
+const MAXHP = 60;
 const G = {
   phase: 'menu', mode: 'survival', map: 'island', time: 0, level: 1, R: 13, R0: 13, players: [], ents: [], nextId: 1, ev: null, evNext: 30,
   spawnT: 2, pickT: 6, weapT: 8, isHost: true, online: false, round: 1, labType: 0, labT: 0, labAuto: true, slow: 0, stop: 0, netq: [], bq: [], water: -3,
@@ -1200,7 +1201,7 @@ const evId = () => G.ev ? EVENTS[G.ev.i].id : null;
 function newPlayer(o) {
   return {
     id: o.id, name: (o.name || 'PLAYER').slice(0, 10), col: o.col | 0, hat: o.hat | 0, dev: o.dev || null, local: !!o.local, peer: o.peer || null,
-    x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, kx: 0, kz: 0, ry: 0, spd: 0, hp: 100, alive: true, inv: 0, shield: 0, buf: new Array(POW.length).fill(0),
+    x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, kx: 0, kz: 0, ry: 0, spd: 0, hp: MAXHP, alive: true, inv: 0, shield: 0, buf: new Array(POW.length).fill(0),
     frozen: 0, trap: 0, bat: 0, gun: 0, dashT: 0, dashCD: 0, onG: true, lives: 3, wins: 0, hurtT: 0, swingCD: 0, fireCD: 0, respawn: 0, flags: 1,
     ghost: false, mini: false, ch: null, kills: 0, firing: false, nx: 0, nz: 0, ny: 0
   };
@@ -1295,7 +1296,7 @@ function hurt(p, dmg, sx, sz, o = {}) {
   if (o.knock !== 0) knock(p, sx, sz, o.knock ?? (7 + dmg * 0.25), o.kv ?? 3.5);
   fx('hit', p.id, Math.round(dmg));
   if (o.owner) { p.lastBy = o.owner; p.lastByT = G.time; }
-  if (p.hp <= 0) { if (G.mode === 'lab') { p.hp = 100; fx('msg', 'You would have been blown up! (Lab mode, so you get to keep going)'); } else killPlayer(p, o.owner || (G.time - (p.lastByT || -9) < 4 ? p.lastBy : 0)); }
+  if (p.hp <= 0) { if (G.mode === 'lab') { p.hp = MAXHP; fx('msg', 'You would have been blown up! (Lab mode, so you get to keep going)'); } else killPlayer(p, o.owner || (G.time - (p.lastByT || -9) < 4 ? p.lastBy : 0)); }
   return true;
 }
 function killPlayer(p, by) {
@@ -1317,13 +1318,13 @@ function handleFall(p) {
   }
   const wasHit = G.time - (p.lastByT || -9) < 5 ? p.lastBy : 0;
   p.inv = 0; p.dashT = 0;
-  hurt(p, 25 / G.dmgMul, p.x, p.z, { knock: 0, noInv: 1, owner: wasHit });
-  if (p.alive) { const [x, z] = randNear(2.5, 7); fx('tp', p.id, r2(x), 7, r2(z)); p.inv = 1.5; fx('msg', p.name + ' fell off! -25'); }
+  hurt(p, 20 / G.dmgMul, p.x, p.z, { knock: 0, noInv: 1, owner: wasHit });
+  if (p.alive) { const [x, z] = randNear(2.5, 7); fx('tp', p.id, r2(x), 7, r2(z)); p.inv = 1.5; fx('msg', p.name + ' fell off! -20'); }
 }
 function applyPow(p, i) {
   const d = POW[i];
   switch (d.id) {
-    case 'health': p.hp = Math.min(100, p.hp + 35); break;
+    case 'health': p.hp = Math.min(MAXHP, p.hp + 25); break;
     case 'bat': p.bat = d.dur; p.gun = 0; fx('msg', p.name + ' grabbed a BAT!'); break;
     case 'gun': p.gun = d.dur; p.bat = 0; fx('msg', p.name + ' grabbed the BLASTER!'); break;
     case 'shield': p.shield = 1; p.buf[i] = d.dur; break;
@@ -1429,7 +1430,7 @@ function tickPlayerTimers(p, dt) {
   p.fireKick = Math.max(0, (p.fireKick || 0) - dt * 8);
   for (let i = 0; i < p.buf.length; i++) if (p.buf[i] > 0) p.buf[i] -= dt;
   p.mini = p.buf[6] > 0; if (p.buf[3] <= 0) p.shield = 0;
-  if (G.isHost && p.buf[7] > 0 && p.alive) p.hp = Math.min(100, p.hp + 5 * dt);
+  if (G.isHost && p.buf[7] > 0 && p.alive) p.hp = Math.min(MAXHP, p.hp + 3.5 * dt);
 }
 
 // ===================== HOST UPDATE =====================
@@ -1454,7 +1455,7 @@ function hostUpdate(dt) {
     if (!p.alive && p.respawn > 0 && G.phase === 'play') {
       p.respawn -= dt;
       if (p.respawn <= 0 && (G.mode === 'brawl' || alivePlayers().length > 0)) {
-        p.alive = true; p.hp = 100; p.inv = 2; const [x, z] = randNear(2.5, 6); fx('tp', p.id, r2(x), 8, r2(z)); fx('msg', p.name + ' is back!');
+        p.alive = true; p.hp = MAXHP; p.inv = 2; const [x, z] = randNear(2.5, 6); fx('tp', p.id, r2(x), 8, r2(z)); fx('msg', p.name + ' is back!');
       }
     }
     // pickups
@@ -1729,7 +1730,7 @@ function placePlayers(reviveAll) {
   const n = G.players.length; const r = Math.min(4, 1.2 + n) + (ARENA.map.hole ? ARENA.map.hole + 1 : 0);
   G.players.forEach((p, i) => {
     const a = i / n * TAU + 0.3;
-    if (reviveAll) { p.alive = true; p.hp = 100; p.lives = 3; p.respawn = 0; p.buf.fill(0); p.bat = p.gun = 0; p.shield = 0; p.frozen = p.trap = 0; p.inv = 1.5; }
+    if (reviveAll) { p.alive = true; p.hp = MAXHP; p.lives = 3; p.respawn = 0; p.buf.fill(0); p.bat = p.gun = 0; p.shield = 0; p.frozen = p.trap = 0; p.inv = 1.5; }
     fx('tp', p.id, r2(Math.sin(a) * r), 0, r2(Math.cos(a) * r));
     p.ry = a + Math.PI;
   });
@@ -2598,7 +2599,7 @@ function buildHUD() {
   const w = $('#hpwrap'); w.innerHTML = ''; HUDEL = { me: {}, other: {} };
   for (const p of G.players.filter(q => q.local)) {
     const d = document.createElement('div'); d.className = 'hp';
-    d.innerHTML = `<div class="nm"><span style="color:#${new THREE.Color(COLORS[p.col % COLORS.length]).getHexString()}">${escapeHtml(p.name)}</span><span class="v">100</span></div><div class="bar"><div class="lag"></div><div class="fill"></div></div><div class="ic"></div>`;
+    d.innerHTML = `<div class="nm"><span style="color:#${new THREE.Color(COLORS[p.col % COLORS.length]).getHexString()}">${escapeHtml(p.name)}</span><span class="v">${MAXHP}</span></div><div class="bar"><div class="lag"></div><div class="fill"></div></div><div class="ic"></div>`;
     w.appendChild(d); HUDEL.me[p.id] = { d, v: d.querySelector('.v'), f: d.querySelector('.fill'), l: d.querySelector('.lag'), ic: d.querySelector('.ic'), last: '' };
   }
   $('#others').innerHTML = '';
@@ -2613,10 +2614,10 @@ function updateHUD(dt) {
   for (const p of G.players) {
     const h = HUDEL.me[p.id];
     if (h) {
-      const hp = Math.max(0, Math.round(p.hp)); const pct = hp + '%';
+      const hp = Math.max(0, Math.round(p.hp)); const pct = Math.round(hp / MAXHP * 100) + '%';
       h.v.textContent = p.alive ? hp : (p.respawn > 0 ? 'back in ' + Math.ceil(p.respawn) : 'OUT');
       if (h.f.style.width !== pct) { h.f.style.width = pct; h.l.style.width = pct; }
-      h.f.className = 'fill' + (hp < 30 ? ' low' : hp < 60 ? ' mid' : '');
+      h.f.className = 'fill' + (hp < MAXHP * 0.3 ? ' low' : hp < MAXHP * 0.6 ? ' mid' : '');
       const icons = [];
       if (G.mode === 'brawl') icons.push('LIVES ' + p.lives);
       if (['royale', 'brawl', 'potato'].includes(G.mode) && isMulti()) icons.push('WINS ' + p.wins);
@@ -2630,7 +2631,7 @@ function updateHUD(dt) {
   const others = G.players.filter(p => !p.local);
   const oe = $('#others');
   const sig = others.map(p => p.id + ':' + Math.round(p.hp) + ':' + p.alive + ':' + p.wins + ':' + p.lives).join(',');
-  if (oe.dataset.sig !== sig) { oe.dataset.sig = sig; oe.innerHTML = others.map(p => `<div class="o" style="opacity:${p.alive ? 1 : 0.5}"><span style="color:#${new THREE.Color(COLORS[p.col % COLORS.length]).getHexString()}">${escapeHtml(p.name)}</span>${G.mode === 'brawl' ? ' x' + p.lives : ''}${['royale', 'brawl', 'potato'].includes(G.mode) ? ' W' + p.wins : ''}<div class="b"><div style="width:${Math.max(0, p.hp)}%"></div></div></div>`).join(''); }
+  if (oe.dataset.sig !== sig) { oe.dataset.sig = sig; oe.innerHTML = others.map(p => `<div class="o" style="opacity:${p.alive ? 1 : 0.5}"><span style="color:#${new THREE.Color(COLORS[p.col % COLORS.length]).getHexString()}">${escapeHtml(p.name)}</span>${G.mode === 'brawl' ? ' x' + p.lives : ''}${['royale', 'brawl', 'potato'].includes(G.mode) ? ' W' + p.wins : ''}<div class="b"><div style="width:${Math.max(0, p.hp / MAXHP * 100)}%"></div></div></div>`).join(''); }
 }
 
 // ===================== CAMERA =====================
