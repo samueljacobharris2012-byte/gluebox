@@ -29,6 +29,9 @@
   #home.on{display:block}
   #tiltBtn{position:fixed;left:72px;top:10px;display:none;background:rgba(20,26,60,.7);border:1px solid #3a4590;color:#fff;border-radius:10px;padding:7px 11px;font:inherit;font-size:13px;font-weight:700}
   #tiltBtn.on{display:block}
+  #centerBtn{position:fixed;right:10px;bottom:14px;display:none;background:rgba(20,26,60,.8);border:1px solid #3a4590;color:#fff;border-radius:12px;padding:10px 14px;font:inherit;font-size:14px;font-weight:800}
+  #centerBtn.on{display:block}
+  #centerBtn:active{transform:scale(.95)}
   #tiltBtn.active{background:#ff8a1f;color:#1a0b00;border-color:#ff8a1f}
   .newbest{color:#ffd23f;font-weight:900;font-size:18px}
 </style>
@@ -37,6 +40,7 @@
 <canvas id="c"></canvas>
 <button id="home">Menu</button>
 <button id="tiltBtn">Tilt: Off</button>
+<button id="centerBtn">Recenter</button>
 
 <div class="ov on" id="menu">
   <div class="title">SKY<span>PARK</span></div>
@@ -157,14 +161,26 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => keys.delete(e.code));
 // ---------- tilt ----------
-const tilt = { x: 0, last: -99 };
+const tilt = { x: 0, raw: 0, zero: 0, last: -99, src: '' };
+try { tilt.zero = +(localStorage.getItem('skypark_tiltzero') || 0); } catch (e) {}
+// angle in degrees -> gentle steering value
+function setTilt(deg, src) {
+  tilt.raw = deg; tilt.last = performance.now(); tilt.src = src;
+  let v = deg - tilt.zero;
+  if (Math.abs(v) < 4) v = 0; else v -= Math.sign(v) * 4;
+  const n = clamp(v / 45, -1, 1);
+  tilt.x = Math.sign(n) * Math.pow(Math.abs(n), 1.6) * 0.75;
+}
+function recenterTilt() {
+  tilt.zero = tilt.raw;
+  try { localStorage.setItem('skypark_tiltzero', String(tilt.zero)); } catch (e) {}
+}
 window.addEventListener('deviceorientation', e => {
   if (e.gamma == null) return;
   const ang = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
   let v = e.gamma;
   if (ang === 90) v = e.beta; else if (ang === -90 || ang === 270) v = -e.beta;
-  if (Math.abs(v) < 3) v = 0; else v -= Math.sign(v) * 3;
-  tilt.x = clamp(v / 22, -1, 1); tilt.last = performance.now(); tilt.src = 'o';
+  setTilt(v, 'o');
 });
 // fallback: some phones only send motion (gravity) data
 window.addEventListener('devicemotion', e => {
@@ -174,8 +190,7 @@ window.addEventListener('devicemotion', e => {
   let v = -g.x;
   if (ang === 90) v = g.y; else if (ang === -90 || ang === 270) v = -g.y;
   v = Math.asin(clamp(v / 9.81, -1, 1)) * 180 / Math.PI;
-  if (Math.abs(v) < 3) v = 0; else v -= Math.sign(v) * 3;
-  tilt.x = clamp(v / 22, -1, 1); tilt.last = performance.now(); tilt.src = 'm';
+  setTilt(v, 'm');
 });
 const tiltOn = () => performance.now() - tilt.last < 1000;
 let tiltAskedAt = 0;
@@ -1594,12 +1609,13 @@ function refreshMenu() {
   const f = (id, k, suf) => { const v = getBest(k); $(id).textContent = v ? 'Best: ' + v + (suf || '') : ''; };
   f('bestFlip', 'skypark_flip'); f('bestDodge', 'skypark_dodge'); f('bestClimb', 'skypark_climb', ' pts'); f('bestDunk', 'skypark_dunk');
 }
-function showMenu() { scene = 'menu'; tapHandler = null; $('tiltBtn').classList.remove('on'); $('menu').classList.add('on'); $('over').classList.remove('on'); $('home').classList.remove('on'); refreshMenu(); }
+function showMenu() { scene = 'menu'; tapHandler = null; $('tiltBtn').classList.remove('on'); $('centerBtn').classList.remove('on'); $('menu').classList.add('on'); $('over').classList.remove('on'); $('home').classList.remove('on'); refreshMenu(); }
 function start(which) {
   audioInit();
   $('menu').classList.remove('on'); $('over').classList.remove('on'); $('home').classList.add('on');
   touches.clear(); ptr = null;
   $('tiltBtn').classList.toggle('on', which === 'flip');
+  paintCenter(which);
   const g = GAMES[which];
   bestCache[g.key] = getBest(g.key);
   g.start(); scene = which;
@@ -1609,7 +1625,13 @@ let tiltMode = false;
 try { tiltMode = localStorage.getItem('skypark_tilt') === '1'; } catch (e) {}
 function paintTilt() { $('tiltBtn').textContent = 'Tilt: ' + (tiltMode ? 'On' : 'Off'); $('tiltBtn').classList.toggle('active', tiltMode); }
 paintTilt();
-$('tiltBtn').onclick = () => { tiltMode = !tiltMode; if (tiltMode) askTilt(); try { localStorage.setItem('skypark_tilt', tiltMode ? '1' : '0'); } catch (e) {} paintTilt(); };
+function paintCenter(which) { $('centerBtn').classList.toggle('on', which === 'dunk' || which === 'climb' || (which === 'flip' && tiltMode)); }
+$('centerBtn').addEventListener('pointerdown', e => { e.stopPropagation(); });
+$('centerBtn').onclick = () => {
+  recenterTilt();
+  const b = $('centerBtn'); b.textContent = 'Centered'; setTimeout(() => { b.textContent = 'Recenter'; }, 900);
+};
+$('tiltBtn').onclick = () => { tiltMode = !tiltMode; if (tiltMode) askTilt(); try { localStorage.setItem('skypark_tilt', tiltMode ? '1' : '0'); } catch (e) {} paintTilt(); paintCenter(scene); };
 $('goFlip').onclick = () => { if (tiltMode) askTilt(); start('flip'); };
 $('goDodge').onclick = () => start('dodge');
 $('goClimb').onclick = () => { askTilt(); start('climb'); };
