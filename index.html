@@ -2792,7 +2792,7 @@ function glueObjs0(a,b,who){
   let rec,anchor=null;
   if(b.isStatic){anchor=new CANNON.Body({mass:0,type:CANNON.Body.STATIC,collisionResponse:false});anchor.collisionFilterGroup=0;anchor.collisionFilterMask=0;anchor.position.copy(a.body.position);world.addBody(anchor);}
   const isW=x=>!!(x.def&&x.def.wheel);
-  const spr=a.def.springpart&&!b.def.springpart?a:b.def.springpart&&!a.def.springpart?b:null;
+  const ad=a.def||{},bd=b.def||{};const spr=ad.springpart&&!bd.springpart?a:bd.springpart&&!ad.springpart?b:null;
   rec=anchor||spr?null:pinRec(a,b);if(rec);
   else if(spr&&!isW(a)&&!isW(b)){const ot=spr===a?b:a,ob=ot===b?(anchor||b.body):ot.body;const L=.6*(spr.rs||1);const wp=spr.body.position.clone();let top;
     if(!ot.isStatic&&aabbGap(spr,ot)<.12){top=wp.clone();spr.body.position.y-=L;spr.body.velocity.set(0,0,0);}else top=V(wp.x,wp.y+L,wp.z);
@@ -8257,7 +8257,7 @@ function idCss(id){return `hsl(${hue(id)},70%,70%)`;}
 async function sbClient(){if(NET.sb)return NET.sb;const m=await import(SB_LIB);NET.sb=m.createClient(SB_URL,SB_KEY,{realtime:{params:{eventsPerSecond:40},worker:true,heartbeatIntervalMs:15000},auth:{persistSession:false,autoRefreshToken:false}});return NET.sb;}
 async function freshChannel(name,opts){const sb=await sbClient();try{for(const c of (sb.getChannels?sb.getChannels():[]))if(c.topic==='realtime:'+name||c.subTopic===name)await sb.removeChannel(c);}catch(e){console.warn(e);}return sb.channel(name,opts);}
 function subscribeCh(ch){return new Promise((res,rej)=>{let done=false;const to=setTimeout(()=>{if(!done){done=true;rej(new Error('timeout'));}},10000);ch.subscribe((st,err)=>{const tn=String(ch.topic||'').replace('realtime:','').replace(/^gw-/,'').slice(0,22);if(st!=='SUBSCRIBED'||!done||ch._gwErr)netLog(`${tn}: ${st}${st==='SUBSCRIBED'&&ch._gwErr?' again (reconnected)':''}${err?' '+(err.message||err):''}`);ch._gwErr=st!=='SUBSCRIBED';if(done)return;if(st==='SUBSCRIBED'){done=true;clearTimeout(to);res(ch);}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED'){done=true;clearTimeout(to);rej(new Error(st));}});});}
-const GAME_VERSION='402';const UPDATE_NAME='The Random Fun Update';
+const GAME_VERSION='403';const UPDATE_NAME='The Random Fun Update';
 const NETLOG=[];function netLog(m){const t=new Date();NETLOG.push(`${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')} ${m}`);if(NETLOG.length>14)NETLOG.shift();for(const id of ['netlog','netlog2']){const el=document.getElementById(id);if(el)el.textContent=NETLOG.join('\n');}}
 function bsend0(ch,ev,payload){if(!ch)return;try{const r=ch.send({type:'broadcast',event:ev,payload});if(r&&r.then)r.then(res=>{if(res&&res!=='ok'&&ev!=='s'&&ev!=='st')netLog(`send ${ev} → ${res}`);}).catch(e=>netLog(`send ${ev} failed ${e&&e.message||e}`));}catch(e){netLog(`send ${ev} threw ${e&&e.message||e}`);}}
 let CK_SEQ=0;
