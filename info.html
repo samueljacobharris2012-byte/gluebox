@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gluebox Info</title>
+<meta name="description" content="Everything about Gluebox: how to play, the items, the objects, the maps, and Mark the Alien Gaming on YouTube.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=IBM+Plex+Sans+Condensed:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#0E0C0A;--panel:#17140F;--panel2:#1E1A14;--ink:#EEE7D7;--dim:#B3AA97;--faint:rgba(238,231,215,.55);
+  --edge:rgba(238,231,215,.14);--glue:#F2A93B;--glue-deep:#B9741A;
+  --item:#6FD98A;--obj:#F2A93B;--key:#7FB6FF;--enemy:#FF6B5B;--map:#C59CFF;--mat:#F5DC6A;
+  --f-body:'IBM Plex Sans Condensed','Arial Narrow',system-ui,sans-serif;
+  --f-display:'Big Shoulders Display','Arial Narrow',Impact,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  /* Mark colors */
+  --m-red:#FF5C5C;--m-red-deep:#D93E3E;--m-hair:#ECEDAE;--m-blue:#2F6EF2;--m-bulb:#FFF6A0;--m-ink:#111;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:18px;line-height:1.6;
+  background-image:radial-gradient(circle at 20% -10%,rgba(242,169,59,.12),transparent 45%),radial-gradient(circle at 100% 30%,rgba(242,169,59,.05),transparent 40%)}
+a{color:var(--glue)}
+.wrap{max-width:900px;margin:0 auto;padding:0 22px}
+
+/* top bar */
+.top{position:sticky;top:0;z-index:10;background:rgba(14,12,10,.88);backdrop-filter:blur(8px);border-bottom:1px solid var(--edge)}
+.top .wrap{display:flex;align-items:center;gap:18px;height:58px}
+.logo{font-family:var(--f-display);font-weight:900;font-size:30px;letter-spacing:.02em;color:var(--ink);text-decoration:none;text-transform:uppercase}
+.logo span{color:var(--glue)}
+.nav{display:flex;gap:16px;margin-left:auto;flex-wrap:wrap}
+.nav a{font-family:var(--f-mono);font-size:13px;color:var(--dim);text-decoration:none;text-transform:uppercase;letter-spacing:.06em}
+.nav a:hover{color:var(--glue)}
+@media(max-width:640px){.nav{display:none}}
+
+/* hero + tutorial */
+.hero{padding:64px 0 30px;text-align:center}
+.hero h1{font-family:var(--f-display);font-weight:900;font-size:clamp(56px,11vw,110px);line-height:.9;margin:0;text-transform:uppercase;letter-spacing:.01em}
+.hero h1 span{color:var(--glue);text-shadow:0 0 30px rgba(242,169,59,.35)}
+.hero p{color:var(--dim);font-size:20px;max-width:620px;margin:16px auto 0}
+.tut{margin:34px auto 0;max-width:640px;background:var(--panel);border:2px solid var(--glue);border-radius:16px;padding:26px 24px;box-shadow:0 0 0 6px rgba(242,169,59,.08)}
+.tut h2{margin:0 0 6px;font-family:var(--f-display);font-size:34px;text-transform:uppercase}
+.tut p{margin:0 0 18px;color:var(--dim);font-size:17px}
+.bigbtn{display:inline-block;font-family:var(--f-display);font-weight:900;font-size:30px;text-transform:uppercase;letter-spacing:.03em;
+  padding:16px 40px;border-radius:12px;background:var(--glue);color:#1a1206;text-decoration:none;border:3px solid #1a1206;box-shadow:0 6px 0 var(--glue-deep);transition:transform .08s,box-shadow .08s}
+.bigbtn:hover{transform:translateY(2px);box-shadow:0 4px 0 var(--glue-deep)}
+.bigbtn:active{transform:translateY(6px);box-shadow:0 0 0 var(--glue-deep)}
+.bigbtn.soon{background:#3a3226;color:var(--faint);border-color:#2a241b;box-shadow:0 6px 0 #241f17;cursor:default}
+.bigbtn.soon:hover,.bigbtn.soon:active{transform:none;box-shadow:0 6px 0 #241f17}
+.soontag{display:block;margin-top:14px;font-family:var(--f-mono);font-size:13px;color:var(--glue);text-transform:uppercase;letter-spacing:.08em}
+.playline{margin-top:20px;font-size:16px;color:var(--dim)}
+
+/* sections */
+section{padding:50px 0 10px}
+h2.sec{font-family:var(--f-display);font-weight:900;font-size:46px;text-transform:uppercase;margin:0 0 6px;line-height:1}
+h2.sec::before{content:"";display:inline-block;width:16px;height:16px;border-radius:50%;background:var(--glue);margin-right:12px;vertical-align:middle;box-shadow:0 0 12px var(--glue)}
+.lead{color:var(--dim);margin:0 0 22px}
+.card{background:var(--panel);border:1px solid var(--edge);border-radius:14px;padding:22px 26px;margin:0 0 18px}
+.card h3{font-family:var(--f-display);font-size:26px;text-transform:uppercase;margin:0 0 8px;letter-spacing:.02em}
+ul{margin:0;padding-left:22px}
+li{margin:0 0 10px}
+li::marker{color:var(--glue)}
+ol.steps{counter-reset:s;list-style:none;padding:0;margin:0}
+ol.steps li{counter-increment:s;position:relative;padding-left:52px;margin-bottom:18px}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:36px;height:36px;border-radius:9px;background:var(--glue);color:#1a1206;
+  font-family:var(--f-display);font-weight:900;font-size:22px;display:flex;align-items:center;justify-content:center}
+
+/* color words */
+.it{color:var(--item);font-weight:600}
+.ob{color:var(--obj);font-weight:600}
+.en{color:var(--enemy);font-weight:600}
+.mp{color:var(--map);font-weight:600}
+.mt{color:var(--mat);font-weight:600}
+kbd{font-family:var(--f-mono);font-size:.82em;color:var(--key);background:#101820;border:1px solid #2c4560;border-bottom-width:3px;border-radius:6px;padding:1px 7px;white-space:nowrap}
+
+.legend{display:flex;flex-wrap:wrap;gap:10px 22px;background:var(--panel2);border:1px dashed var(--edge);border-radius:12px;padding:14px 18px;margin:0 0 22px;font-size:16px}
+.legend b{font-weight:400;color:var(--dim)}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:720px){.grid2{grid-template-columns:1fr}}
+.maps{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.map{background:var(--panel);border:1px solid var(--edge);border-left:4px solid var(--map);border-radius:10px;padding:14px 16px;font-size:16px}
+.map .mp{display:block;font-family:var(--f-display);font-size:24px;text-transform:uppercase;font-weight:900}
+
+.tbl{width:100%;border-collapse:collapse;font-size:16px}
+.tbl td{padding:9px 6px;border-bottom:1px solid var(--edge);vertical-align:top}
+.tbl td:first-child{width:150px;white-space:nowrap}
+
+/* credits */
+.credit{display:flex;gap:18px;align-items:flex-start}
+.credit .badge{flex:none;width:58px;height:58px;border-radius:14px;background:var(--glue);color:#1a1206;display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-weight:900;font-size:30px}
+
+/* ===== YouTube area in Mark's colors ===== */
+.yt{margin-top:60px;background:var(--m-red);color:var(--m-ink);border-top:8px solid var(--m-ink);border-bottom:8px solid var(--m-ink);position:relative;overflow:hidden}
+.yt::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.18) 2px,transparent 2.5px);background-size:26px 26px;pointer-events:none}
+.yt .wrap{position:relative;padding-top:52px;padding-bottom:60px}
+.ythead{display:flex;align-items:center;gap:26px;flex-wrap:wrap}
+.pfp{width:150px;height:150px;border-radius:50%;object-fit:cover;background:#fff;border:7px solid var(--m-ink);box-shadow:0 0 0 7px var(--m-hair),0 0 0 14px var(--m-ink),0 10px 0 14px rgba(0,0,0,.25);flex:none}
+.ythead h2{font-family:var(--f-display);font-weight:900;font-size:clamp(38px,7vw,58px);line-height:.95;text-transform:uppercase;margin:0;color:#fff;
+  -webkit-text-stroke:2px var(--m-ink);paint-order:stroke fill;text-shadow:4px 4px 0 var(--m-ink)}
+.ythead p{margin:10px 0 0;font-size:18px;font-weight:600}
+.subbtn{display:inline-flex;align-items:center;gap:10px;margin-top:16px;background:var(--m-hair);color:var(--m-ink);text-decoration:none;font-family:var(--f-display);font-weight:900;font-size:24px;
+  text-transform:uppercase;padding:10px 22px;border:4px solid var(--m-ink);border-radius:999px;box-shadow:0 5px 0 var(--m-ink);transition:transform .08s,box-shadow .08s}
+.subbtn:hover{transform:translateY(2px);box-shadow:0 3px 0 var(--m-ink)}
+.subbtn .dot{width:14px;height:14px;border-radius:50%;background:var(--m-bulb);border:3px solid var(--m-ink)}
+.yt h3{font-family:var(--f-display);font-weight:900;font-size:32px;text-transform:uppercase;color:#fff;-webkit-text-stroke:1.5px var(--m-ink);paint-order:stroke fill;text-shadow:3px 3px 0 var(--m-ink);margin:44px 0 16px}
+.vids{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.shorts{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:720px){.vids{grid-template-columns:1fr}.shorts{grid-template-columns:1fr 1fr}}
+.vid{display:block;text-decoration:none;color:var(--m-ink);background:#fff;border:5px solid var(--m-ink);border-radius:16px;overflow:hidden;box-shadow:6px 6px 0 var(--m-ink);transition:transform .1s,box-shadow .1s}
+.vid:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 var(--m-ink)}
+.vid .th{position:relative;aspect-ratio:16/9;background:#222;overflow:hidden}
+.shorts .vid .th{aspect-ratio:9/16}
+.vid img{width:100%;height:100%;object-fit:cover;display:block}
+.vid .play{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:var(--m-red);border:4px solid var(--m-ink);display:flex;align-items:center;justify-content:center}
+.vid .play::after{content:"";border-left:18px solid #fff;border-top:11px solid transparent;border-bottom:11px solid transparent;margin-left:5px}
+.vid .cap{padding:10px 14px;font-family:var(--f-display);font-weight:900;font-size:20px;text-transform:uppercase;border-top:5px solid var(--m-ink);background:var(--m-hair);display:flex;justify-content:space-between;align-items:center}
+.vid .cap small{font-family:var(--f-mono);font-size:12px;font-weight:500;color:#555}
+.rings{display:flex;flex-direction:column;align-items:center;gap:6px;margin:40px auto 0}
+.rings i{display:block;border:5px solid var(--m-blue);border-radius:50%;height:20px}
+.rings i:nth-child(1){width:120px}.rings i:nth-child(2){width:80px;height:16px}.rings i:nth-child(3){width:44px;height:12px}
+.markpeek{position:absolute;right:18px;bottom:-6px;width:110px;transform:rotate(-6deg);pointer-events:none;filter:drop-shadow(4px 4px 0 rgba(0,0,0,.25))}
+@media(max-width:900px){.markpeek{display:none}}
+
+footer{padding:36px 0 50px;text-align:center;color:var(--faint);font-family:var(--f-mono);font-size:13px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="/">Glue<span>box</span></a>
+    <nav class="nav">
+      <a href="#tutorial">Tutorial</a>
+      <a href="#about">About</a>
+      <a href="#items">Items</a>
+      <a href="#objects">Objects</a>
+      <a href="#maps">Maps</a>
+      <a href="#youtube">YouTube</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero" id="tutorial">
+    <h1>Glue<span>box</span> info</h1>
+    <p>A first-person physics sandbox where you glue parts together to build cars, planes, boats, contraptions and whatever else you can think of.</p>
+
+    <div class="tut">
+      <h2>New here? Start the tutorial</h2>
+      <p>The interactive tutorial will walk you through building your first vehicle step by step, inside the game.</p>
+      <span class="bigbtn soon" aria-disabled="true">Interactive Tutorial</span>
+      <span class="soontag">Coming soon. For now, read the quick start below.</span>
+    </div>
+    <div class="playline">Ready to jump in? <a href="/"><b>Play Gluebox at gluebox.net</b></a></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section id="quickstart">
+    <h2 class="sec">Quick start</h2>
+    <p class="lead">Build your first car in about a minute.</p>
+    <div class="card">
+      <ol class="steps">
+        <li>Open <a href="/">gluebox.net</a> and click <b>Play</b>. The game needs a keyboard and mouse. Press <kbd>Esc</kbd> any time to free your mouse.</li>
+        <li>Press <kbd>B</kbd> to open the build menu and pick a <span class="ob">Plywood Panel</span>. Right-click (<kbd>RMB</kbd>) to spawn it.</li>
+        <li>Spawn a <span class="ob">Driver Seat</span>, hold it against the panel with <kbd>LMB</kbd>, and press <kbd>G</kbd> to glue it on.</li>
+        <li>Glue four <span class="ob">Motor Wheels</span> to the sides. A wheel glued to a body turns into a motorized axle.</li>
+        <li>Walk up to the seat and press <kbd>E</kbd> to sit. <kbd>W</kbd>/<kbd>S</kbd> drive and <kbd>A</kbd>/<kbd>D</kbd> steer.</li>
+        <li>Too lazy to build? The build menu has ready-made vehicles like the <span class="ob">Starter Car</span> and <span class="ob">Starter Plane</span>.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="about">
+    <h2 class="sec">About the game</h2>
+    <p class="lead">What Gluebox is and who made it.</p>
+    <div class="card">
+      <ul>
+        <li><b>Gluebox</b> is a sandbox game. There is no right way to play. Build stuff, wreck stuff, mess around.</li>
+        <li>Everything runs on real physics. Glue joints can snap in big crashes and explosions.</li>
+        <li>Play solo, or play <b>multiplayer</b> on public servers or private servers locked with a code. Multiplayer has proximity voice chat.</li>
+        <li>There is a day and night cycle. At night <span class="en">Husks</span> rise out of the ground and crumble at sunrise.</li>
+        <li>You can make your own maps with the <b>Map Creator</b> and record stunts with the <b>Clip Editor</b> (<kbd>F8</kbd> turns the last 5 minutes into a video).</li>
+        <li>Gluebox runs right in your browser. Nothing to download.</li>
+      </ul>
+    </div>
+    <div class="card credit">
+      <div class="badge">C</div>
+      <div>
+        <h3>Who made it</h3>
+        <ul>
+          <li>Gluebox was made by <b>Claude</b>, an AI made by Anthropic. Claude wrote all of the code for the game.</li>
+          <li>The ideas, the design, the testing and every update came from <b>Mark the Alien Gaming</b> (that's me, check out the YouTube section below).</li>
+          <li>It used to be called Gluewright before it got renamed to Gluebox.</li>
+          <li>The game is still getting updates with new random fun stuff.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="colors">
+    <h2 class="sec">How to read this page</h2>
+    <p class="lead">Words are colored by what kind of thing they are.</p>
+    <div class="legend">
+      <span><span class="it">Green</span> <b>= items you hold</b></span>
+      <span><span class="ob">Orange</span> <b>= objects you build with</b></span>
+      <span><span class="mt">Yellow</span> <b>= materials</b></span>
+      <span><span class="en">Red</span> <b>= enemies</b></span>
+      <span><span class="mp">Purple</span> <b>= maps</b></span>
+      <span><kbd>Blue</kbd> <b>= keys</b></span>
+    </div>
+  </section>
+
+  <section id="controls">
+    <h2 class="sec">Controls</h2>
+    <p class="lead">Press <kbd>Tab</kbd> or <kbd>H</kbd> in game to see these again.</p>
+    <div class="card">
+      <table class="tbl">
+        <tr><td><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></td><td>Move</td></tr>
+        <tr><td><kbd>Space</kbd> / <kbd>Shift</kbd></td><td>Jump / sprint</td></tr>
+        <tr><td>hold <kbd>LMB</kbd></td><td>Grab and carry</td></tr>
+        <tr><td><kbd>RMB</kbd></td><td>Throw what you're holding, or spawn a part</td></tr>
+        <tr><td><kbd>G</kbd></td><td>Glue what you're holding to whatever it touches</td></tr>
+        <tr><td><kbd>X</kbd> / <kbd>Z</kbd></td><td>Unglue / delete</td></tr>
+        <tr><td>hold <kbd>R</kbd></td><td>Rotate what you're holding (tap <kbd>R</kbd> / <kbd>T</kbd> to snap)</td></tr>
+        <tr><td><kbd>E</kbd></td><td>Use: sit, turn things on, craft, stash</td></tr>
+        <tr><td><kbd>F</kbd> / <kbd>Q</kbd></td><td>Attack or fire / switch item</td></tr>
+        <tr><td><kbd>1</kbd> to <kbd>0</kbd></td><td>Pick a hotbar slot (or scroll)</td></tr>
+        <tr><td><kbd>I</kbd> / <kbd>B</kbd></td><td>Inventory / build menu</td></tr>
+        <tr><td><kbd>K</kbd></td><td>Look at a part and press any key to bind it to that key</td></tr>
+        <tr><td><kbd>V</kbd> / <kbd>L</kbd></td><td>Jetpack / slow motion</td></tr>
+        <tr><td><kbd>C</kbd> / <kbd>J</kbd></td><td>Crouch / ragdoll</td></tr>
+        <tr><td><kbd>F5</kbd> / <kbd>F9</kbd></td><td>Quick save / quick load</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section id="items">
+    <h2 class="sec">Items</h2>
+    <p class="lead">Things you hold in your hand. Press <kbd>Q</kbd> to switch between them.</p>
+    <div class="grid2">
+      <div class="card">
+        <h3>Tools</h3>
+        <ul>
+          <li><span class="it">Physics Gun</span>: grab anything from far away. Scroll to push or pull it, <kbd>RMB</kbd> freezes it in mid-air.</li>
+          <li><span class="it">Grappling Hook</span>: hook anything up to 95 m away and reel in. Light stuff flies to you, heavy stuff pulls you.</li>
+          <li><span class="it">Duplicator</span>: right-click a build to copy it, left-click the ground to paste it.</li>
+          <li><span class="it">Material Tool</span>: turn a part into stone, steel, gold, glass, ice, rubber and more.</li>
+          <li><span class="it">Size Ray</span>: make things bigger or smaller.</li>
+          <li><span class="it">Wiring Tool</span>: wire buttons and logic parts together.</li>
+          <li><span class="it">Paintbrush</span>: draw on anything. Scroll picks the color.</li>
+          <li><span class="it">Spray Can</span>: spray an image from your computer onto any surface.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Weapons</h3>
+        <ul>
+          <li>You start with a <span class="it">Pistol</span>, <span class="it">Shotgun</span>, <span class="it">SMG</span>, <span class="it">Rocket Launcher</span> and <span class="it">Grenade Launcher</span>.</li>
+          <li><span class="it">Nerf Blaster</span>: super fast, does almost no damage, pushes things around.</li>
+          <li><span class="it">Sniper Rifle</span>: long range, big hits.</li>
+          <li><span class="it">Thunder Staff</span>: a lightning gun that chains between enemies. You get it by beating the <span class="en">Husk Titan</span>.</li>
+          <li>Crafted weapons: <span class="it">Stone Hammer</span>, <span class="it">Spear</span>, <span class="it">Stone Axe</span> and <span class="it">Crystal Sword</span> (see Crafting below).</li>
+          <li>Switch to your fists to grab things again.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="objects">
+    <h2 class="sec">Objects</h2>
+    <p class="lead">Parts you spawn from the build menu (<kbd>B</kbd>) and glue together.</p>
+    <div class="grid2">
+      <div class="card">
+        <h3>Vehicle parts</h3>
+        <ul>
+          <li><span class="ob">Motor Wheel</span>: spins when you glue it onto a vehicle with a seat.</li>
+          <li><span class="ob">Spring Wheel</span>: bouncy wheel with crazy grip. It can climb mountains.</li>
+          <li><span class="ob">Sticky Wheel</span>: drives on walls. Try it at <span class="mp">Sticky Park</span>.</li>
+          <li><span class="ob">Driver Seat</span>: sit in it with <kbd>E</kbd> to drive whatever it's glued to.</li>
+          <li><span class="ob">Thruster</span>: <kbd>E</kbd> turns it on. Pushes away from the nozzle.</li>
+          <li><span class="ob">Wing</span>, <span class="ob">Tail Wing</span>, <span class="ob">Tail Fin</span> and <span class="ob">Propeller Engine</span>: glue them to a body with a seat to make a plane.</li>
+          <li><span class="ob">Helicopter Rotor</span>: glue it on top of anything with a seat and it lifts off.</li>
+          <li><span class="ob">Pontoon</span> and <span class="ob">Boat Propeller</span>: build boats.</li>
+          <li><span class="ob">Ski</span>: slides with almost no friction. Put two under a build with a thruster.</li>
+          <li><span class="ob">Stop Block</span>: stops the whole vehicle dead.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Moving parts</h3>
+        <ul>
+          <li><span class="ob">Hinge</span>: glue the steel side to the base and the brass side to the part that swings.</li>
+          <li><span class="ob">Motor Hinge</span>: same thing, but <kbd>E</kbd> swings it 90 degrees.</li>
+          <li><span class="ob">Piston</span>: <kbd>E</kbd> pushes it out 1.5 m.</li>
+          <li><span class="ob">Hoverball</span>: floats. <kbd>Space</kbd> and <kbd>Shift</kbd> move it up and down while driving.</li>
+          <li><span class="ob">Gyro Stabilizer</span>: keeps your build from flipping over.</li>
+          <li><span class="ob">Spinner</span>: spins whatever is glued to it.</li>
+          <li><span class="ob">Balloon</span>: ties on with a rope and lifts about 7 kg.</li>
+          <li><span class="ob">Release Block</span>: vanishes when you press <kbd>R</kbd>, dropping whatever hangs from it.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Boom</h3>
+        <ul>
+          <li><span class="ob">TNT</span>: <kbd>E</kbd> lights a 3 second fuse. Hard crashes set it off too.</li>
+          <li><span class="ob">Mini Nuke</span>: <kbd>E</kbd> arms a 5 second fuse. Get far away.</li>
+          <li><span class="ob">Firework</span>: <kbd>E</kbd> launches it.</li>
+          <li>Turrets like the <span class="ob">Shotgun Turret</span> and <span class="ob">Sniper Turret</span> aim at whatever your crosshair is on.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Weird science</h3>
+        <ul>
+          <li><span class="ob">Gravity Well</span>: <kbd>E</kbd> turns on a floating black hole.</li>
+          <li><span class="ob">Tesla Coil</span>: zaps <span class="en">Husks</span>.</li>
+          <li><span class="ob">Teleporter Pad</span>: place two or more. Step on one and you pop out of the next.</li>
+          <li><span class="ob">Beat Box</span>: program drums and synths on a 16-step grid. Everyone nearby hears it.</li>
+          <li><span class="ob">Parachute Pack</span>: <kbd>E</kbd> opens it.</li>
+          <li><span class="ob">Torch</span>: lights up the dark. Glue it to a wall or stick it in the ground.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="crafting">
+    <h2 class="sec">Crafting</h2>
+    <p class="lead">Gather stuff, then make weapons at the <span class="ob">Workbench</span>.</p>
+    <div class="card">
+      <ul>
+        <li>Press <kbd>F</kbd> on trees to get <span class="mt">Sticks</span>. Press <kbd>F</kbd> on boulders to get <span class="mt">Stone</span> and <span class="mt">Iron Ore</span>.</li>
+        <li>Press <kbd>E</kbd> on a material to stash it. Press <kbd>I</kbd> to see what you have.</li>
+        <li>Glue materials onto the <span class="ob">Workbench</span>, then press <kbd>E</kbd> at the bench.</li>
+        <li><span class="mt">Stick</span> + <span class="mt">Stone</span> = <span class="it">Stone Hammer</span></li>
+        <li>2 <span class="mt">Sticks</span> + <span class="mt">Stone</span> = <span class="it">Spear</span></li>
+        <li><span class="mt">Stick</span> + 2 <span class="mt">Stones</span> = <span class="it">Stone Axe</span></li>
+        <li><span class="mt">Stick</span> + <span class="mt">Crystal</span> = <span class="it">Crystal Sword</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="enemies">
+    <h2 class="sec">Enemies</h2>
+    <p class="lead">Things that want to get you.</p>
+    <div class="card">
+      <ul>
+        <li><span class="en">Husks</span> rise out of the ground at night and crumble at sunrise. Set the world to <b>Always day</b> if you just want to build.</li>
+        <li><span class="en">Husk Titan</span>: a giant husk that shows up every night. It slams the ground and throws boulders. Beat it for the <span class="it">Thunder Staff</span>.</li>
+        <li><span class="en">Zombies</span> come in waves in <span class="mp">Zombie Town</span>. Every wave is tougher than the last.</li>
+        <li>Storms roll in sometimes. Lightning hits the tallest metal part nearby.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="maps">
+    <h2 class="sec">Maps</h2>
+    <p class="lead">Pick one when you start a world, or make your own in the Map Creator.</p>
+    <div class="maps">
+      <div class="map"><span class="mp">Valley</span>Rolling hills, a lake, a forest and the old husk fort. Deer, cows and sheep roam around.</div>
+      <div class="map"><span class="mp">City</span>Streets, skyscrapers, parks, a parking lot and a stunt plaza.</div>
+      <div class="map"><span class="mp">Mineshaft</span>Timber tunnels underground leading to big caverns, a glowing crystal cave and a gold room.</div>
+      <div class="map"><span class="mp">Sticky Park</span>A skatepark for <span class="ob">Sticky Wheels</span> with a halfpipe, a tube and a loop-the-loop.</div>
+      <div class="map"><span class="mp">Islands</span>Open sea with islands to sail between. Bring a boat.</div>
+      <div class="map"><span class="mp">Canyon</span>Desert mesas, a winding canyon with a bridge, and a salt flat for speed runs.</div>
+      <div class="map"><span class="mp">Frostpeak</span>A snowy mountain to sled down, pine forests and a slippery frozen lake.</div>
+      <div class="map"><span class="mp">Obstacles</span>Courses for cars, boats and planes.</div>
+      <div class="map"><span class="mp">Zombie Town</span>A walled camp in a ruined town. Hit the big red button to start the zombie waves.</div>
+    </div>
+  </section>
+
+  <section id="tips">
+    <h2 class="sec">Tips</h2>
+    <div class="card">
+      <ul>
+        <li>Wood floats, steel and stone sink. Rafts actually work.</li>
+        <li>Look at a <span class="ob">Thruster</span>, gun or lamp and press <kbd>K</kbd> to give it its own key.</li>
+        <li>To glue from far away, press <kbd>G</kbd> on part A, then <kbd>G</kbd> on part B.</li>
+        <li>To break one glue joint, look at the amber glue blob and press <kbd>Z</kbd>.</li>
+        <li>Press <kbd>F5</kbd> before you try something dumb, then <kbd>F9</kbd> to undo it.</li>
+      </ul>
+    </div>
+  </section>
+
+</div>
+
+<!-- ===== YouTube: Mark the Alien colors ===== -->
+<section class="yt" id="youtube">
+  <div class="wrap">
+    <div class="ythead">
+      <img class="pfp" src="img/mark-pfp.png" alt="Mark the Alien">
+      <div>
+        <h2>Mark the Alien<br>Gaming</h2>
+        <p>My YouTube channel. Gluebox videos, other games, shorts and more.</p>
+        <a class="subbtn" href="https://www.youtube.com/@markthealiengaming-p9g" target="_blank" rel="noopener"><span class="dot"></span>Visit my channel</a>
+      </div>
+    </div>
+
+    <h3>Videos</h3>
+    <div class="vids">
+      <a class="vid" href="https://www.youtube.com/watch?v=t28SnYEtrt0" target="_blank" rel="noopener">
+        <div class="th"><img src="https://i.ytimg.com/vi/t28SnYEtrt0/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span></div>
+        <div class="cap">Video 1 <small>YouTube</small></div>
+      </a>
+      <a class="vid" href="https://www.youtube.com/watch?v=74AssyZKoB0" target="_blank" rel="noopener">
+        <div class="th"><img src="https://i.ytimg.com/vi/74AssyZKoB0/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span></div>
+        <div class="cap">Video 2 <small>YouTube</small></div>
+      </a>
+    </div>
+
+    <h3>Shorts</h3>
+    <div class="shorts">
+      <a class="vid" href="https://www.youtube.com/shorts/SHSw2TlmkPU" target="_blank" rel="noopener">
+        <div class="th"><img src="https://i.ytimg.com/vi/SHSw2TlmkPU/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span></div>
+        <div class="cap">Short 1</div>
+      </a>
+      <a class="vid" href="https://www.youtube.com/shorts/49n9OJINilI" target="_blank" rel="noopener">
+        <div class="th"><img src="https://i.ytimg.com/vi/49n9OJINilI/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span></div>
+        <div class="cap">Short 2</div>
+      </a>
+      <a class="vid" href="https://www.youtube.com/shorts/c6ky3q-uwdI" target="_blank" rel="noopener">
+        <div class="th"><img src="https://i.ytimg.com/vi/c6ky3q-uwdI/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span></div>
+        <div class="cap">Short 3</div>
+      </a>
+      <a class="vid" href="https://www.youtube.com/shorts/m8qmmJTG-Ko" target="_blank" rel="noopener">
+        <div class="th"><img src="https://i.ytimg.com/vi/m8qmmJTG-Ko/hqdefault.jpg" alt="" loading="lazy"><span class="play"></span></div>
+        <div class="cap">Short 4</div>
+      </a>
+    </div>
+
+    <div class="rings" aria-hidden="true"><i></i><i></i><i></i></div>
+  </div>
+  <img class="markpeek" src="img/mark-wave.png" alt="" aria-hidden="true">
+</section>
+
+<footer>
+  <div class="wrap">GLUEBOX · made by Claude · ideas by Mark the Alien Gaming · <a href="/">play at gluebox.net</a></div>
+</footer>
+
+</body>
+</html>
