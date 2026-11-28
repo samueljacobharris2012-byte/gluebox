@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gluebox Tutorial</title>
+<meta name="description" content="Learn Gluebox step by step: glue, build a car, fly a plane, make things move, survive the night.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=IBM+Plex+Sans+Condensed:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#0E0C0A;--panel:#17140F;--panel2:#1E1A14;--ink:#EEE7D7;--dim:#B3AA97;--faint:rgba(238,231,215,.55);
+  --edge:rgba(238,231,215,.14);--glue:#F2A93B;--glue-deep:#B9741A;
+  --item:#6FD98A;--obj:#F2A93B;--key:#7FB6FF;--enemy:#FF6B5B;--map:#C59CFF;--mat:#F5DC6A;
+  --f-body:'IBM Plex Sans Condensed','Arial Narrow',system-ui,sans-serif;
+  --f-display:'Big Shoulders Display','Arial Narrow',Impact,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  /* Mark colors */
+  --m-red:#FF5C5C;--m-red-deep:#D93E3E;--m-hair:#ECEDAE;--m-blue:#2F6EF2;--m-bulb:#FFF6A0;--m-ink:#111;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:18px;line-height:1.6;
+  background-image:radial-gradient(circle at 20% -10%,rgba(242,169,59,.12),transparent 45%),radial-gradient(circle at 100% 30%,rgba(242,169,59,.05),transparent 40%)}
+a{color:var(--glue)}
+.wrap{max-width:900px;margin:0 auto;padding:0 22px}
+
+/* top bar */
+.top{position:sticky;top:0;z-index:10;background:rgba(14,12,10,.88);backdrop-filter:blur(8px);border-bottom:1px solid var(--edge)}
+.top .wrap{display:flex;align-items:center;gap:18px;height:58px}
+.logo{font-family:var(--f-display);font-weight:900;font-size:30px;letter-spacing:.02em;color:var(--ink);text-decoration:none;text-transform:uppercase}
+.logo span{color:var(--glue)}
+.nav{display:flex;gap:16px;margin-left:auto;flex-wrap:wrap}
+.nav a{font-family:var(--f-mono);font-size:13px;color:var(--dim);text-decoration:none;text-transform:uppercase;letter-spacing:.06em}
+.nav a:hover{color:var(--glue)}
+@media(max-width:640px){.nav{display:none}}
+
+/* hero + tutorial */
+.hero{padding:64px 0 30px;text-align:center}
+.hero h1{font-family:var(--f-display);font-weight:900;font-size:clamp(56px,11vw,110px);line-height:.9;margin:0;text-transform:uppercase;letter-spacing:.01em}
+.hero h1 span{color:var(--glue);text-shadow:0 0 30px rgba(242,169,59,.35)}
+.hero p{color:var(--dim);font-size:20px;max-width:620px;margin:16px auto 0}
+.tut{margin:34px auto 0;max-width:640px;background:var(--panel);border:2px solid var(--glue);border-radius:16px;padding:26px 24px;box-shadow:0 0 0 6px rgba(242,169,59,.08)}
+.tut h2{margin:0 0 6px;font-family:var(--f-display);font-size:34px;text-transform:uppercase}
+.tut p{margin:0 0 18px;color:var(--dim);font-size:17px}
+.bigbtn{display:inline-block;font-family:var(--f-display);font-weight:900;font-size:30px;text-transform:uppercase;letter-spacing:.03em;
+  padding:16px 40px;border-radius:12px;background:var(--glue);color:#1a1206;text-decoration:none;border:3px solid #1a1206;box-shadow:0 6px 0 var(--glue-deep);transition:transform .08s,box-shadow .08s}
+.bigbtn:hover{transform:translateY(2px);box-shadow:0 4px 0 var(--glue-deep)}
+.bigbtn:active{transform:translateY(6px);box-shadow:0 0 0 var(--glue-deep)}
+.bigbtn.soon{background:#3a3226;color:var(--faint);border-color:#2a241b;box-shadow:0 6px 0 #241f17;cursor:default}
+.bigbtn.soon:hover,.bigbtn.soon:active{transform:none;box-shadow:0 6px 0 #241f17}
+.soontag{display:block;margin-top:14px;font-family:var(--f-mono);font-size:13px;color:var(--glue);text-transform:uppercase;letter-spacing:.08em}
+.playline{margin-top:20px;font-size:16px;color:var(--dim)}
+
+/* sections */
+section{padding:50px 0 10px}
+h2.sec{font-family:var(--f-display);font-weight:900;font-size:46px;text-transform:uppercase;margin:0 0 6px;line-height:1}
+h2.sec::before{content:"";display:inline-block;width:16px;height:16px;border-radius:50%;background:var(--glue);margin-right:12px;vertical-align:middle;box-shadow:0 0 12px var(--glue)}
+.lead{color:var(--dim);margin:0 0 22px}
+.card{background:var(--panel);border:1px solid var(--edge);border-radius:14px;padding:22px 26px;margin:0 0 18px}
+.card h3{font-family:var(--f-display);font-size:26px;text-transform:uppercase;margin:0 0 8px;letter-spacing:.02em}
+ul{margin:0;padding-left:22px}
+li{margin:0 0 10px}
+li::marker{color:var(--glue)}
+ol.steps{counter-reset:s;list-style:none;padding:0;margin:0}
+ol.steps li{counter-increment:s;position:relative;padding-left:52px;margin-bottom:18px}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:36px;height:36px;border-radius:9px;background:var(--glue);color:#1a1206;
+  font-family:var(--f-display);font-weight:900;font-size:22px;display:flex;align-items:center;justify-content:center}
+
+/* color words */
+.it{color:var(--item);font-weight:600}
+.ob{color:var(--obj);font-weight:600}
+.en{color:var(--enemy);font-weight:600}
+.mp{color:var(--map);font-weight:600}
+.mt{color:var(--mat);font-weight:600}
+kbd{font-family:var(--f-mono);font-size:.82em;color:var(--key);background:#101820;border:1px solid #2c4560;border-bottom-width:3px;border-radius:6px;padding:1px 7px;white-space:nowrap}
+
+.legend{display:flex;flex-wrap:wrap;gap:10px 22px;background:var(--panel2);border:1px dashed var(--edge);border-radius:12px;padding:14px 18px;margin:0 0 22px;font-size:16px}
+.legend b{font-weight:400;color:var(--dim)}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:720px){.grid2{grid-template-columns:1fr}}
+.maps{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.map{background:var(--panel);border:1px solid var(--edge);border-left:4px solid var(--map);border-radius:10px;padding:14px 16px;font-size:16px}
+.map .mp{display:block;font-family:var(--f-display);font-size:24px;text-transform:uppercase;font-weight:900}
+
+.tbl{width:100%;border-collapse:collapse;font-size:16px}
+.tbl td{padding:9px 6px;border-bottom:1px solid var(--edge);vertical-align:top}
+.tbl td:first-child{width:150px;white-space:nowrap}
+
+/* credits */
+.credit{display:flex;gap:18px;align-items:flex-start}
+.credit .badge{flex:none;width:58px;height:58px;border-radius:14px;background:var(--glue);color:#1a1206;display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-weight:900;font-size:30px}
+
+/* ===== YouTube area in Mark's colors ===== */
+.yt{margin-top:60px;background:var(--m-red);color:var(--m-ink);border-top:8px solid var(--m-ink);border-bottom:8px solid var(--m-ink);position:relative;overflow:hidden}
+.yt::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.18) 2px,transparent 2.5px);background-size:26px 26px;pointer-events:none}
+.yt .wrap{position:relative;padding-top:52px;padding-bottom:60px}
+.ythead{display:flex;align-items:center;gap:26px;flex-wrap:wrap}
+.pfp{width:150px;height:150px;border-radius:50%;object-fit:cover;background:#fff;border:7px solid var(--m-ink);box-shadow:0 0 0 7px var(--m-hair),0 0 0 14px var(--m-ink),0 10px 0 14px rgba(0,0,0,.25);flex:none}
+.ythead h2{font-family:var(--f-display);font-weight:900;font-size:clamp(38px,7vw,58px);line-height:.95;text-transform:uppercase;margin:0;color:#fff;
+  -webkit-text-stroke:2px var(--m-ink);paint-order:stroke fill;text-shadow:4px 4px 0 var(--m-ink)}
+.ythead p{margin:10px 0 0;font-size:18px;font-weight:600}
+.subbtn{display:inline-flex;align-items:center;gap:10px;margin-top:16px;background:var(--m-hair);color:var(--m-ink);text-decoration:none;font-family:var(--f-display);font-weight:900;font-size:24px;
+  text-transform:uppercase;padding:10px 22px;border:4px solid var(--m-ink);border-radius:999px;box-shadow:0 5px 0 var(--m-ink);transition:transform .08s,box-shadow .08s}
+.subbtn:hover{transform:translateY(2px);box-shadow:0 3px 0 var(--m-ink)}
+.subbtn .dot{width:14px;height:14px;border-radius:50%;background:var(--m-bulb);border:3px solid var(--m-ink)}
+.yt h3{font-family:var(--f-display);font-weight:900;font-size:32px;text-transform:uppercase;color:#fff;-webkit-text-stroke:1.5px var(--m-ink);paint-order:stroke fill;text-shadow:3px 3px 0 var(--m-ink);margin:44px 0 16px}
+.vids{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.shorts{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:720px){.vids{grid-template-columns:1fr}.shorts{grid-template-columns:1fr 1fr}}
+.vid{display:block;text-decoration:none;color:var(--m-ink);background:#fff;border:5px solid var(--m-ink);border-radius:16px;overflow:hidden;box-shadow:6px 6px 0 var(--m-ink);transition:transform .1s,box-shadow .1s}
+.vid:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 var(--m-ink)}
+.vid .th{position:relative;aspect-ratio:16/9;background:#222;overflow:hidden}
+.shorts .vid .th{aspect-ratio:9/16}
+.vid img{width:100%;height:100%;object-fit:cover;display:block}
+.vid .play{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:var(--m-red);border:4px solid var(--m-ink);display:flex;align-items:center;justify-content:center}
+.vid .play::after{content:"";border-left:18px solid #fff;border-top:11px solid transparent;border-bottom:11px solid transparent;margin-left:5px}
+.vid .cap{padding:10px 14px;font-family:var(--f-display);font-weight:900;font-size:20px;text-transform:uppercase;border-top:5px solid var(--m-ink);background:var(--m-hair);display:flex;justify-content:space-between;align-items:center}
+.vid .cap small{font-family:var(--f-mono);font-size:12px;font-weight:500;color:#555}
+.rings{display:flex;flex-direction:column;align-items:center;gap:6px;margin:40px auto 0}
+.rings i{display:block;border:5px solid var(--m-blue);border-radius:50%;height:20px}
+.rings i:nth-child(1){width:120px}.rings i:nth-child(2){width:80px;height:16px}.rings i:nth-child(3){width:44px;height:12px}
+.markpeek{position:absolute;right:18px;bottom:-6px;width:110px;transform:rotate(-6deg);pointer-events:none;filter:drop-shadow(4px 4px 0 rgba(0,0,0,.25))}
+@media(max-width:900px){.markpeek{display:none}}
+
+footer{padding:36px 0 50px;text-align:center;color:var(--faint);font-family:var(--f-mono);font-size:13px}
+
+/* tutorial page */
+.layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:34px;align-items:start}
+@media(max-width:860px){.layout{grid-template-columns:minmax(0,1fr)}.side{display:none}}
+.side{position:sticky;top:80px;background:var(--panel);border:1px solid var(--edge);border-radius:14px;padding:16px 14px}
+.side b{display:block;font-family:var(--f-display);font-size:20px;text-transform:uppercase;margin:0 0 8px}
+.side a{display:flex;gap:8px;align-items:center;color:var(--dim);text-decoration:none;font-size:15px;padding:5px 6px;border-radius:7px}
+.side a:hover{background:var(--panel2);color:var(--ink)}
+.side a i{flex:none;width:22px;height:22px;border-radius:6px;background:#2a241b;color:var(--faint);font-style:normal;font-family:var(--f-display);font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center}
+.side a.done i{background:var(--item);color:#0e1a10}
+.bar{height:10px;background:#2a241b;border-radius:99px;overflow:hidden;margin:12px 0 4px}
+.bar span{display:block;height:100%;width:0;background:var(--glue);transition:width .3s}
+.barlbl{font-family:var(--f-mono);font-size:12px;color:var(--faint)}
+.ch{scroll-margin-top:80px;background:var(--panel);border:1px solid var(--edge);border-radius:16px;padding:26px 28px 22px;margin:0 0 26px}
+.ch.done{border-color:rgba(111,217,138,.5)}
+.chhead{display:flex;gap:16px;align-items:center;margin:0 0 6px}
+.chnum{flex:none;width:52px;height:52px;border-radius:12px;background:var(--glue);color:#1a1206;font-family:var(--f-display);font-weight:900;font-size:30px;display:flex;align-items:center;justify-content:center}
+.ch.done .chnum{background:var(--item);color:#0e1a10}
+.ch h2{font-family:var(--f-display);font-weight:900;font-size:36px;text-transform:uppercase;line-height:1;margin:0}
+.ch .goal{color:var(--dim);margin:4px 0 18px}
+.ch h4{font-family:var(--f-display);font-size:21px;text-transform:uppercase;margin:20px 0 8px;color:var(--glue)}
+.tip{margin:18px 0 0;padding:12px 16px;border-radius:10px;background:rgba(242,169,59,.08);border:1px dashed rgba(242,169,59,.4);font-size:16px}
+.tip b{color:var(--glue)}
+.chfoot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:22px;padding-top:16px;border-top:1px solid var(--edge);flex-wrap:wrap}
+.chk{display:flex;gap:10px;align-items:center;cursor:pointer;font-weight:600;user-select:none;min-height:44px}
+.chk input{width:22px;height:22px;accent-color:var(--item)}
+.next{font-family:var(--f-display);font-weight:900;font-size:20px;text-transform:uppercase;color:var(--glue);text-decoration:none}
+.next:hover{text-decoration:underline}
+.finish{text-align:center;padding:34px 20px}
+.finish h2{font-family:var(--f-display);font-weight:900;font-size:48px;text-transform:uppercase;margin:0 0 8px}
+.hero.small{padding:48px 0 28px}
+.hero.small h1{font-size:clamp(48px,9vw,90px)}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="/">Glue<span>box</span></a>
+    <nav class="nav">
+      <a href="info">Info</a>
+      <a href="info#items">Items</a>
+      <a href="info#objects">Objects</a>
+      <a href="info#maps">Maps</a>
+      <a href="info#youtube">YouTube</a>
+      <a href="/">Play</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero small">
+    <h1>Glue<span>box</span> tutorial</h1>
+    <p>Ten short chapters. By the end you'll be building, driving, flying and surviving the night.</p>
+  </div>
+
+  <div class="legend">
+    <span><span class="it">Green</span> <b>= items you hold</b></span>
+    <span><span class="ob">Orange</span> <b>= objects you build with</b></span>
+    <span><span class="mt">Yellow</span> <b>= materials</b></span>
+    <span><span class="en">Red</span> <b>= enemies</b></span>
+    <span><span class="mp">Purple</span> <b>= maps</b></span>
+    <span><kbd>Blue</kbd> <b>= keys</b></span>
+  </div>
+
+  <div class="layout">
+    <aside class="side">
+      <b>Chapters</b>
+      <a href="#start" data-ch="start"><i>1</i>Get into the game</a><a href="#move" data-ch="move"><i>2</i>Move around</a><a href="#spawn" data-ch="spawn"><i>3</i>Spawn and grab stuff</a><a href="#glue" data-ch="glue"><i>4</i>Glue things together</a><a href="#car" data-ch="car"><i>5</i>Build your first car</a><a href="#fly" data-ch="fly"><i>6</i>Make it fly</a><a href="#move-parts" data-ch="move-parts"><i>7</i>Make things move</a><a href="#items" data-ch="items"><i>8</i>Use your items</a><a href="#night" data-ch="night"><i>9</i>Survive the night</a><a href="#save" data-ch="save"><i>10</i>Save, record and play with friends</a>
+      <div class="bar"><span id="bar"></span></div>
+      <div class="barlbl" id="barlbl">0 of 10 done</div>
+    </aside>
+    <main>
+<article class="ch" id="start">
+<div class="chhead"><div class="chnum">1</div><h2>Get into the game</h2></div>
+<p class="goal">Open Gluebox and find your way around the menus.</p>
+<ul>
+<li>Go to <a href="/">gluebox.net</a> and click <b>Play</b>.</li>
+<li>Gluebox needs a <b>keyboard and mouse</b>. Clicking Play locks your mouse so you can look around.</li>
+<li>Pick a map. <span class="mp">Valley</span> is a good one to start on: lots of flat grass to build on.</li>
+<li>Press <kbd>Esc</kbd> to free your mouse and pause. Press <kbd>Tab</kbd> to open the pause menu, or <kbd>H</kbd> for help.</li>
+</ul>
+<div class="tip"><b>Tip:</b> If you just want to build without enemies, set the clock to <b>Always day</b>. Then the night <span class="en">Husks</span> never show up.</div>
+<div class="chfoot"><label class="chk"><input type="checkbox" data-ch="start"> I did this</label><a class="next" href="#move">Next: Move around &rarr;</a></div>
+</article>
+<article class="ch" id="move">
+<div class="chhead"><div class="chnum">2</div><h2>Move around</h2></div>
+<p class="goal">Get used to walking, jumping and flying.</p>
+<ul>
+<li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to walk, <kbd>Space</kbd> to jump, hold <kbd>Shift</kbd> to sprint.</li>
+<li>Hold <kbd>C</kbd> to crouch. You get shorter and slower, so you can sneak under things.</li>
+<li>Press <kbd>V</kbd> to turn on the jetpack. Hold <kbd>Space</kbd> to fly. Hold <kbd>Shift</kbd> while falling to land softer. Fuel refills on the ground.</li>
+<li>Press <kbd>J</kbd> to go ragdoll. Press <kbd>J</kbd> again to stand back up.</li>
+<li>Press <kbd>L</kbd> for slow motion. Press it again for normal speed.</li>
+</ul>
+<div class="chfoot"><label class="chk"><input type="checkbox" data-ch="move"> I did this</label><a class="next" href="#spawn">Next: Spawn and grab stuff &rarr;</a></div>
+</article>
+<article class="ch" id="spawn">
+<div class="chhead"><div class="chnum">3</div><h2>Spawn and grab stuff</h2></div>
+<p class="goal">Learn how to get parts out and move them around.</p>
+<h4>Pick a part</h4>
+<ul>
+<li>Press <kbd>B</kbd> to open the build menu. It shows every part in the game.</li>
+<li>Click a part to put it on your selected hotbar slot.</li>
+<li>Use <kbd>1</kbd> to <kbd>0</kbd> or the scroll wheel to pick a slot.</li>
+</ul>
+<h4>Spawn it</h4>
+<ul>
+<li>Right-click (<kbd>RMB</kbd>) to spawn the part in front of you. Try spawning a <span class="ob">Plywood Panel</span>.</li>
+</ul>
+<h4>Grab it</h4>
+<ul>
+<li>Hold left-click (<kbd>LMB</kbd>) on a part to pick it up and carry it.</li>
+<li>While holding it, hold <kbd>R</kbd> and move your mouse to rotate it. Tap <kbd>R</kbd> or <kbd>T</kbd> to snap it to a clean angle.</li>
+<li>Right-click while holding something to throw it.</li>
+<li>Press <kbd>Z</kbd> on a part to delete it.</li>
+</ul>
+<div class="chfoot"><label class="chk"><input type="checkbox" data-ch="spawn"> I did this</label><a class="next" href="#glue">Next: Glue things together &rarr;</a></div>
+</article>
+<article class="ch" id="glue">
+<div class="chhead"><div class="chnum">4</div><h2>Glue things together</h2></div>
+<p class="goal">Glue is the whole game. Here is how it works.</p>
+<ul>
+<li>Pick up a part, hold it against another part, and press <kbd>G</kbd>. Now they're stuck together.</li>
+<li>Hold a part against the ground and press <kbd>G</kbd> to anchor it in place.</li>
+<li>Gluing from far away: without holding anything, press <kbd>G</kbd> on part A, then <kbd>G</kbd> on part B.</li>
+<li>Press <kbd>X</kbd> to unglue a part.</li>
+<li>Every glue joint shows up as an amber blob. Look at one and press <kbd>Z</kbd> to break just that joint.</li>
+<li>Glue isn't unbreakable. Big crashes and explosions snap joints.</li>
+</ul>
+<div class="tip"><b>Try it:</b> Glue three <span class="ob">Plywood Panels</span> into a big U shape. Pick it up. The whole thing moves together.</div>
+<div class="chfoot"><label class="chk"><input type="checkbox" data-ch="glue"> I did this</label><a class="next" href="#car">Next: Build your first car &rarr;</a></div>
+</article>
+<article class="ch" id="car">
+<div class="chhead"><div class="chnum">5</div><h2>Build your first car</h2></div>
+<p class="goal">Make something you can drive.</p>
+<ol class="steps">
+<li>Spawn a <span class="ob">Plywood Panel</span>. This is the body of your car.</li>
+<li>Spawn a <span class="ob">Driver Seat</span>, hold it on top of the panel, and press <kbd>G</kbd>.</li>
+<li>Spawn a <span class="ob">Motor Wheel</span> and glue it to one side of the panel. A wheel glued to a body turns into a motorized axle.</li>
+<li>Glue three more <span class="ob">Motor Wheels</span> so there's one on each corner.</li>
+<li>Walk up to the seat and press <kbd>E</kbd> to sit down.</li>
+<li><kbd>W</kbd>/<kbd>S</kbd> to drive forward and back, <kbd>A</kbd>/<kbd>D</kbd> to steer. Press <kbd>E</kbd> again to get out.</li>
+</ol>
+<h4>Upgrades</h4>
+<ul>
+<li>Glue a <span class="ob">Thruster</span> on the back. <kbd>Space</kbd> fires it while you drive.</li>
+<li>Swap in <span class="ob">Spring Wheels</span>. They have so much grip they can climb mountains.</li>
+<li>Glue on a <span class="ob">Stop Block</span> and press <kbd>E</kbd> on it to stop the car dead.</li>
+</ul>
+<div class="tip"><b>Shortcut:</b> The build menu has a ready-made <span class="ob">Starter Car</span> if you just want to drive.</div>
+<div class="chfoot"><label class="chk"><input type="checkbox" data-ch="car"> I did this</label><a class="next" href="#fly">Next: Make it fly &rarr;</a></div>
+</article>
+<article class="ch" id="fly">
+<div class="chhead"><div class="chnum">6</div><h2>Make it fly</h2></div>
+<p class="goal">Planes, helicopters and hover cars.</p>
+<h4>Plane</h4>
+<ul>
+<li>Glue <span class="ob">Wings</span>, a <span class="ob">Tail Wing</span>, a <span class="ob">Tail Fin</span> and a <span class="ob">Propeller Engine</span> to a body with a <span class="ob">Driver Seat</span>.</li>
+<li><kbd>W</kbd> is throttle, <kbd>Space</kbd>/<kbd>Shift</kbd> tilt the nose up and down, <kbd>A</kbd>/<kbd>D</kbd> turn.</li>
+<li>Or grab the ready-made <span class="ob">Starter Plane</span> from the build menu.</li>
+</ul>
+<h4>Helicopter</h4>
+<ul>
+<li>Glue a <span class="ob">Helicopter Rotor</span> on top of anything with a seat. Sit down and it lifts off.</li>
+<li><kbd>Space</kbd>/<kbd>Shift</kbd> climb and sink, <kbd>W</kbd>/<kbd>S</kbd> fly, <kbd>A</kbd>/<kbd>D</kbd> turn.</li>
+</ul>
+<h4>Hover car</h4>
+<ul>
+<li>Glue <span class="ob">Hoverballs</span> under a build. While driving, <kbd>Space</kbd> moves them up and <kbd>Shift</kbd> moves them down.</li>
+<li>Add a <span class="ob">Gyro Stabilizer</span> so it doesn't flip over.</li>
+</ul>
+<div class="chfoot"><label class="chk"><input type="checkbox" data-ch="fly"> I did this</label><a class="next" href="#move-parts">Next: Make things move &rarr;</a></div>
+</article>
+<article class="ch" id="move-parts">
+<div class="chhead"><div class="chnum">7</div><h2>Make things move</h2></div>
+<p class="goal">Hinges, pistons and your own keybinds.</p>
+<ul>
+<li><span class="ob">Hinge</span>: glue the steel side to the base and the brass side to the part that should swing.</li>
+<li><span class="ob">Motor Hinge</span>: same thing, but <kbd>E</kbd> swings it 90 degrees.</li>
+<li><span class="ob">Piston</span>: glue the base and the red head to different parts. <kbd>E</kbd> pushes it out 1.5 m.</li>
+<li><kbd>E</kbd> also turns on hoverballs, spinners, fans, turrets, lamps and thrusters.</li>
+<li><b>Keybinds:</b> look at a part, press <kbd>K</kbd>, then press any key. Now that key runs it, even while you're driving.</li>
+<li><b>Rope:</b> pick the rope with <kbd>=</kbd>, then right-click one spot and then another to tie them together.</li>
+</ul>
+<div class="tip"><b>Try it:</b> Build a door with a <span class="ob">Motor Hinge</span> and bind it to <kbd>O</kbd>.</div>
+<div class="chfoot"><label class="chk"><input type="checkbox" data-ch="move-parts"> I did this</label><a class="next" href="#items">Next: Use your items &rarr;</a></div>
+</article>
+<article class="ch" id="items">
+<div class="chhead"><div class="chnum">8</div><h2>Use your items</h2></div>
+<p class="goal">Tools and weapons you hold in your hand.</p>
+<ul>
+<li>Press <kbd>Q</kbd> to switch items. <kbd>LMB</kbd> or <kbd>F</kbd> uses or fires them. Switch back to fists to grab things again.</li>
+<li>You start with a <span class="it">Pistol</span>, <span class="it">Shotgun</span>, <span class="it">SMG</span>, <span class="it">Rocket Launcher</span> and <span class="it">Grenade Launcher</span>.</li>
+<li><span class="it">Physics Gun</span>: grab anything from far away. Scroll to push or pull, <kbd>RMB</kbd> freezes it in mid-air.</li>
+<li><span class="it">Grappling Hook</span>: hook onto anything up to 95 m away and reel in. <kbd>Space</kbd> lets go with a boost.</li>
+<li><span class="it">Duplicator</span>: right-click a build to copy it, left-click the ground to paste it.</li>
+<li><span class="it">Material Tool</span>: turn parts into stone, steel, gold, glass, ice, rubber and more. Ice slides, rubber bounces, metal sticks to magnets.</li>
+<li><span class="it">Paintbrush</span>: draw on anything. Scroll picks the color.</li>
+</ul>
+<div class="chfoot"><label class="chk"><input type="checkbox" data-ch="items"> I did this</label><a class="next" href="#night">Next: Survive the night &rarr;</a></div>
+</article>
+<article class="ch" id="night">
+<div class="chhead"><div class="chnum">9</div><h2>Survive the night</h2></div>
+<p class="goal">Enemies, gathering and crafting.</p>
+<h4>Enemies</h4>
+<ul>
+<li>At night, <span class="en">Husks</span> rise out of the ground. They crumble at sunrise.</li>
+<li>A giant <span class="en">Husk Titan</span> shows up every night. Beat it to get the <span class="it">Thunder Staff</span>.</li>
+<li>Glue <span class="ob">Torches</span> to walls or stick them in the ground to light up the dark.</li>
+</ul>
+<h4>Gather and craft</h4>
+<ul>
+<li>Press <kbd>F</kbd> on trees to get <span class="mt">Sticks</span>. Press <kbd>F</kbd> on boulders to get <span class="mt">Stone</span> and <span class="mt">Iron Ore</span>.</li>
+<li>Press <kbd>E</kbd> on a material to stash it. Press <kbd>I</kbd> to see what you have.</li>
+<li>Glue materials onto the <span class="ob">Workbench</span>, then press <kbd>E</kbd> at the bench:</li>
+</ul>
+<ul>
+<li><span class="mt">Stick</span> + <span class="mt">Stone</span> = <span class="it">Stone Hammer</span></li>
+<li>2 <span class="mt">Sticks</span> + <span class="mt">Stone</span> = <span class="it">Spear</span></li>
+<li><span class="mt">Stick</span> + 2 <span class="mt">Stones</span> = <span class="it">Stone Axe</span></li>
+<li><span class="mt">Stick</span> + <span class="mt">Crystal</span> = <span class="it">Crystal Sword</span></li>
+</ul>
+<div class="chfoot"><label class="chk"><input type="checkbox" data-ch="night"> I did this</label><a class="next" href="#save">Next: Save, record and play with friends &rarr;</a></div>
+</article>
+<article class="ch" id="save">
+<div class="chhead"><div class="chnum">10</div><h2>Save, record and play with friends</h2></div>
+<p class="goal">Keep your stuff and show it off.</p>
+<ul>
+<li>Press <kbd>F5</kbd> to save a snapshot and <kbd>F9</kbd> to load it. Save before you try something dumb.</li>
+<li>Your world saves, so you can hit <b>Continue</b> next time.</li>
+<li>Press <kbd>F8</kbd> to open the Clip Editor. It turns the last 5 minutes into a video with your own camera angles, effects and music.</li>
+<li>Play <b>multiplayer</b> on a public server, or make a private one locked with a code for your friends.</li>
+<li>Turn on voice chat in the Multiplayer screen. Hold <kbd>N</kbd> to talk. People sound louder the closer they are.</li>
+</ul>
+<div class="chfoot"><label class="chk"><input type="checkbox" data-ch="save"> I did this</label><a class="next" href="#finish">Finish &rarr;</a></div>
+</article>
+
+      <div class="ch finish" id="finish">
+        <h2>You know Gluebox now</h2>
+        <p class="goal">The rest is up to you. Build something huge, wreck it, build it again.</p>
+        <a class="bigbtn" href="/">Play Gluebox</a>
+      </div>
+    </main>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">GLUEBOX · made by Claude · ideas by Mark the Alien Gaming · <a href="info">info page</a> · <a href="/">play at gluebox.net</a></div>
+</footer>
+
+<script>
+{
+  const KEY='gluebox-tutorial-done';
+  let done={};
+  try{done=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){done={};}
+  const boxes=[...document.querySelectorAll('.chk input')];
+  const total=boxes.length;
+  function paint(){
+    let n=0;
+    boxes.forEach(b=>{
+      const id=b.dataset.ch, on=!!done[id];
+      b.checked=on; if(on)n++;
+      document.getElementById(id).classList.toggle('done',on);
+      const a=document.querySelector('.side a[data-ch="'+id+'"]'); if(a)a.classList.toggle('done',on);
+    });
+    document.getElementById('bar').style.width=(n/total*100)+'%';
+    document.getElementById('barlbl').textContent=n+' of '+total+' done';
+  }
+  boxes.forEach(b=>b.addEventListener('change',()=>{
+    done[b.dataset.ch]=b.checked;
+    try{localStorage.setItem(KEY,JSON.stringify(done));}catch(e){}
+    paint();
+  }));
+  paint();
+}
+</script>
+</body>
+</html>
