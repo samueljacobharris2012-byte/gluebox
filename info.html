@@ -129,6 +129,20 @@ kbd{font-family:var(--f-mono);font-size:.82em;color:var(--key);background:#10182
 .markpeek{position:absolute;right:18px;bottom:-6px;width:110px;transform:rotate(-6deg);pointer-events:none;filter:drop-shadow(4px 4px 0 rgba(0,0,0,.25))}
 @media(max-width:900px){.markpeek{display:none}}
 
+
+/* trailer */
+.trailerbtn{display:inline-flex;align-items:center;gap:14px;margin:26px auto 0;font-family:var(--f-display);font-weight:900;font-size:26px;text-transform:uppercase;letter-spacing:.03em;
+  color:var(--ink);background:var(--panel);border:2px solid var(--edge);border-radius:999px;padding:10px 26px 10px 10px;cursor:pointer;transition:border-color .15s,transform .1s}
+.trailerbtn:hover{border-color:var(--glue);transform:translateY(-1px)}
+.trailerbtn .pl{width:46px;height:46px;border-radius:50%;background:var(--glue);display:flex;align-items:center;justify-content:center;box-shadow:0 0 18px rgba(242,169,59,.5)}
+.trailerbtn .pl::after{content:"";border-left:15px solid #1a1206;border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:4px}
+.tmodal{position:fixed;inset:0;z-index:50;background:rgba(6,5,4,.88);display:none;align-items:center;justify-content:center;padding:4vw}
+.tmodal.open{display:flex}
+.tmodal .box{position:relative;width:min(1100px,100%)}
+.tmodal video{width:100%;border-radius:14px;border:2px solid var(--glue);background:#000;box-shadow:0 20px 60px rgba(0,0,0,.6);display:block}
+.tmodal .x{position:absolute;top:-52px;right:0;width:42px;height:42px;border-radius:50%;border:2px solid var(--edge);background:var(--panel);color:var(--ink);font-size:24px;line-height:1;cursor:pointer}
+.tmodal .x:hover{border-color:var(--glue)}
+
 footer{padding:36px 0 50px;text-align:center;color:var(--faint);font-family:var(--f-mono);font-size:13px}
 </style>
 </head>
@@ -152,6 +166,8 @@ footer{padding:36px 0 50px;text-align:center;color:var(--faint);font-family:var(
   <div class="hero" id="tutorial">
     <h1>Glue<span>box</span> info</h1>
     <p>A first-person physics sandbox where you glue parts together to build cars, planes, boats, contraptions and whatever else you can think of.</p>
+
+    <button class="trailerbtn" id="trailerbtn" type="button"><span class="pl"></span>Watch the trailer</button>
 
     <div class="tut">
       <h2>New here? Start the tutorial</h2>
@@ -425,6 +441,27 @@ footer{padding:36px 0 50px;text-align:center;color:var(--faint);font-family:var(
   <img class="markpeek" src="img/mark-wave.png" alt="" aria-hidden="true">
 </section>
 
+
+<div class="tmodal" id="tmodal" role="dialog" aria-label="Gluebox trailer">
+  <div class="box">
+    <button class="x" id="tclose" type="button" aria-label="Close">&times;</button>
+    <video id="tvid" controls playsinline preload="none" poster="img/trailer-poster.jpg">
+      <source src="trailer.mp4" type="video/mp4">
+    </video>
+  </div>
+</div>
+<script>
+{
+  const m=document.getElementById('tmodal'),v=document.getElementById('tvid');
+  const open=()=>{m.classList.add('open');v.currentTime=0;v.play().catch(()=>{});};
+  const close=()=>{v.pause();m.classList.remove('open');};
+  document.getElementById('trailerbtn').addEventListener('click',open);
+  document.getElementById('tclose').addEventListener('click',close);
+  m.addEventListener('click',e=>{if(e.target===m)close();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
+  if(location.hash==='#trailer')open();
+}
+</script>
 
 <footer>
   <div class="wrap">GLUEBOX · made by Claude · ideas by Mark the Alien Gaming · <a href="/">play at gluebox.net</a></div>
